@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stop Paying $20/month. Use NVIDIA Build: 80+ Free AI Models</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Stop Paying $20/month. Use NVIDIA Build: 80+ Free AI Models</h1>
+<div class="meta">Lo Zarantonello · GoPenAI · 5 min read · <a href="https://medium.com/gopenai/stop-paying-20-month-use-nvidia-build-80-free-ai-models-0b08205f91b5" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/gopenai/stop-paying-20-month-use-nvidia-build-80-free-ai-models-0b08205f91b5" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">NVIDIA Build(NIM) API를 활용하면 월 구독료 없이 80개 이상의 최신 AI 모델을 Cursor와 VS Code에서 무료로 사용할 수 있다.</p>
+  <p>NVIDIA가 운영하는 build.nvidia.com에서는 MiniMax, DeepSeek, Kimi, GLM, GPT-OSS 등 100개 이상의 AI 모델을 무료 API로 제공한다. 가입 시 추론 크레딧 1,000개를 즉시 받을 수 있고, 요청 시 최대 5,000개까지 늘릴 수 있으며 신용카드는 필요하지 않다. API 키 하나를 발급받아 OpenAI 호환 엔드포인트(<code>https://integrate.api.nvidia.com/v1</code>)에 연결하면 Cursor와 Cline(VS Code 확장) 모두에서 즉시 쓸 수 있다. 저자가 직접 여러 모델을 테스트한 결과, 일부 모델은 응답이 느리거나 불안정했지만 <code>gpt-oss</code> 모델은 무료 티어 시작점으로 충분히 실용적이었다고 평가한다. 유료 플랜(Cursor Pro, Claude Code 등) 수준의 성능에는 미치지 못하지만 학습·사이드 프로젝트 용도로는 매력적인 선택지다.</p>
+</div>
+
+<h2>매달 20달러가 아깝다면</h2>
+<p>AI 코딩 도구에 매달 20달러씩 내고 있는가? Cursor Pro, Claude Code, Copilot — 이런 구독이 하나씩 쌓이면 금세 수십 달러가 된다. 그런데 NVIDIA가 이미 1년 넘게 100개 이상의 AI 모델을 무료로 풀어두고 있었고, 대부분의 개발자는 그 사실조차 몰랐다.</p>
+
+<p>이 글은 필자가 NVIDIA Build(NIM) API로 Cursor와 VS Code에서 여러 무료 AI 모델을 직접 써본 뒤 정리한 실사용 후기다.</p>
+
+<h2>NVIDIA Build란</h2>
+<p>NVIDIA NIM(NVIDIA Inference Microservices)이라고도 불리는 이 서비스는 <a href="https://build.nvidia.com" target="_blank">build.nvidia.com</a>에서 운영된다. NVIDIA 자체 DGX Cloud 인프라 위에서 구동되는 100개 이상의 AI 모델을 API로 제공하며, 그 중 상당수가 무료다. 목록에는 이미 익숙한 이름들이 줄지어 있다.</p>
+
+<ul>
+  <li>MiniMax — 복잡한 추론에 강점</li>
+  <li>Kimi — 대용량 컨텍스트 처리에 특화</li>
+  <li>DeepSeek — 코딩 작업에 강력한 성능</li>
+  <li>GLM</li>
+  <li>GPT-OSS (120B 파라미터)</li>
+  <li>Sarvam-M 등</li>
+</ul>
+
+<figure>
+  <img src="https://media2.dev.to/dynamic/image/width=800%2Cheight=%2Cfit=scale-down%2Cgravity=auto%2Cformat=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2F6jzt302rwfr58k0dk6ui.png" alt="NVIDIA Build 모델 카탈로그">
+  <figcaption>NVIDIA Build 모델 카탈로그 — 무료 모델들이 빼곡하다</figcaption>
+</figure>
+
+<h2>무료 API 키 발급</h2>
+<p>build.nvidia.com에 접속해 계정을 만들면 된다. 이메일과 전화번호 인증이 필요하지만 신용카드는 요구하지 않는다. 계정 설정에서 API 키를 발급받으면 다음과 같은 형태의 키가 생성된다.</p>
+
+<pre><code>nvapi-xxxxxxxxxxxxxxxx</code></pre>
+
+<p>이 키는 최초 발급 시 한 번만 표시되므로 즉시 저장해 두어야 한다. 가입 즉시 추론 크레딧 1,000개가 지급되며, 요청하면 최대 5,000개까지 추가로 받을 수 있다. 분당 요청 한도는 40회다.</p>
+
+<h2>Cursor에서 연결하기</h2>
+<p>Cursor에서 이 키를 쓰려면 Settings → Models로 이동해 OpenAI API 키 토글을 켠 뒤, 기본 URL 재정의 항목에 <code>https://integrate.api.nvidia.com/v1</code>을 입력하고 발급받은 <code>nvapi-</code> 키를 붙여 넣으면 된다.</p>
+
+<figure>
+  <img src="https://media2.dev.to/dynamic/image/width=800%2Cheight=%2Cfit=scale-down%2Cgravity=auto%2Cformat=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fmu5h6964qbufpxppu2ym.png" alt="Cursor에서 NVIDIA API 키 설정">
+  <figcaption>Cursor 설정 화면 — base URL과 API 키를 입력한다</figcaption>
+</figure>
+
+<p>단, Cursor와의 연동 과정에서 몇 가지 주의할 점이 있다. 전체 내용은 원문의 Cursor 관련 섹션에서 다루고 있다.</p>
+
+<h2>Cline(VS Code)에서 연결하기</h2>
+<p>VS Code나 Cursor 마켓플레이스에서 Cline 확장을 설치하면 2분 안에 설정을 끝낼 수 있다.</p>
+
+<ol>
+  <li>Cline 설정을 열고 공급자(provider)를 <strong>OpenAI Compatible</strong>으로 선택한다.</li>
+  <li>기본 URL을 <code>https://integrate.api.nvidia.com/v1</code>로 설정한다.</li>
+  <li><code>nvapi-</code> 키를 붙여 넣는다.</li>
+  <li>NVIDIA 카탈로그에서 원하는 모델 ID를 입력한다(예: <code>moonshotai/kimi-k2.6</code>). 사용할 모델에 대한 API 키를 별도로 발급받아야 하는 경우도 있으니 확인하자.</li>
+</ol>
+
+<figure>
+  <img src="https://media2.dev.to/dynamic/image/width=800%2Cheight=%2Cfit=scale-down%2Cgravity=auto%2Cformat=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fcrm0na73q6mzjpnhykgz.png" alt="Cline에서 NVIDIA API 키 설정">
+  <figcaption>Cline 설정 화면 — OpenAI Compatible 공급자로 NVIDIA를 연결한다</figcaption>
+</figure>
+
+<h2>실제로 써보니</h2>
+<p>필자는 여러 무료 모델을 직접 Cline과 함께 사용해 봤다. 결론부터 말하면, 모델에 따라 경험이 크게 달랐다.</p>
+
+<p>일부 모델은 응답이 지나치게 느리거나 아예 동작하지 않는 경우도 있었다. 아마도 수요가 몰려 서버가 과부하 상태였던 것으로 보인다. 반면 <code>gpt-oss</code> 모델은 무료 AI 코딩 환경의 출발점으로 쓸 만한 성능을 보여줬다.</p>
+
+<p>유료 플랜의 SOTA 모델에 비하면 성능이 떨어지는 것은 사실이다. 하지만 AI를 배우거나 사이드 프로젝트를 돌리는 용도라면, 굳이 매달 돈을 쓰지 않아도 충분히 시작할 수 있다.</p>
+
+<h2>정리</h2>
+<p>NVIDIA Build API는 무료로 고성능 AI 모델을 체험할 수 있는 실용적인 선택지다. 핵심만 요약하면 다음과 같다.</p>
+
+<ul>
+  <li>신용카드 없이 가입, 즉시 1,000 크레딧 지급</li>
+  <li>OpenAI SDK와 완전 호환 — 엔드포인트 URL만 바꾸면 된다</li>
+  <li>Cursor, VS Code(Cline) 모두 2분 이내 연동 가능</li>
+  <li>피크 시간대 일부 모델 응답 지연 발생 가능</li>
+  <li>최고 성능을 원한다면 유료 플랜이 여전히 우위</li>
+</ul>
+
+<p>AI 코딩 도구를 처음 써보거나 비용 없이 다양한 모델을 실험해 보고 싶다면, NVIDIA Build는 지금 당장 시도할 가치가 있다.</p>
+
+</body>
+</html>

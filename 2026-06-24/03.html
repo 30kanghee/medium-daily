@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Top 25 Generative AI System Design Interview Questions and Answers</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Top 25 Generative AI System Design Interview Questions and Answers</h1>
+<div class="meta">Dr. Sanjay Kumar · 5 min read · <a href="https://skphd.medium.com/llm-system-design-interview-questions-and-answers-2a7a16212492" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://skphd.medium.com/llm-system-design-interview-questions-and-answers-2a7a16212492" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">LLM 기반 시스템을 프로덕션 환경에 설계하고 배포하는 데 필요한 핵심 개념과 실전 질문들을 아키텍처·비용·안전·확장 관점에서 총정리한 인터뷰 가이드다.</p>
+  <p>이 글은 대규모 언어 모델(LLM)을 실제 서비스에 적용하는 시스템 설계 인터뷰에 자주 등장하는 핵심 주제들을 다룬다. RAG(검색 증강 생성), 추론 최적화, 비기능 요구사항(NFR), 멀티 에이전트 설계, 비용 절감, 모니터링, 윤리적 리스크 등을 실제 사례와 함께 설명한다. 각 문항은 "무엇을 설계할 것인가"뿐 아니라 "왜 그 선택인가"라는 판단 근거까지 명확히 제시하는 형식으로 구성됐다. 고객 지원 챗봇, PDF 문서 대화 시스템, 대규모 트래픽 확장 시나리오 등 구체적인 케이스 스터디도 포함돼 있다.</p>
+</div>
+
+<h2>Q1. LLM 시스템 설계란 무엇이며 왜 중요한가?</h2>
+
+<p>LLM 시스템 설계는 대규모 언어 모델을 프로덕션 환경에 배포하기 위한 엔드투엔드 아키텍처를 말한다. 구체적으로는 인프라(하드웨어, 클라우드 서비스, GPU/TPU 최적화), 추론 파이프라인(지연 시간 단축, 캐싱, 배치 처리), 통합(API, RAG, 안전 필터), 확장성(고트래픽 처리, 비용-성능 트레이드오프) 전반을 다룬다.</p>
+
+<p>제대로 된 시스템 설계 없이는 높은 지연 시간, 환각 현상, 보안 위험, 지속 불가능한 비용 문제에 직면한다. 잘 설계된 시스템은 안정성, 확장성, 사용자 만족을 모두 확보할 수 있다.</p>
+
+<h2>Q2. RAG(검색 증강 생성)를 설명하고 LLM 시스템에서의 역할을 말하라</h2>
+
+<p>RAG는 외부 데이터(예: 벡터 데이터베이스)를 동적으로 가져와 LLM 출력을 사실에 기반하게 만드는 방식이다.</p>
+
+<p>처리 순서는 다음과 같다. 첫째, 사용자 질의를 임베딩(예: SentenceTransformers)한다. 둘째, FAISS나 Pinecone 같은 도구로 가장 관련성 높은 문서 k개를 검색한다. 셋째, 이 컨텍스트를 프롬프트에 추가한 뒤 LLM에 전송한다.</p>
+
+<p>RAG를 쓰는 이유는 세 가지다. 환각을 줄이고, 모델을 재학습하지 않고도 지식을 업데이트할 수 있으며, 고객 지원 같은 도메인 특화 질의의 정확도를 높인다.</p>
+
+<h2>Q3. 낮은 지연 시간과 높은 처리량을 위한 LLM 추론 최적화 방법은?</h2>
+
+<ul>
+  <li><strong>양자화(Quantization):</strong> 모델 정밀도를 낮춰 추론을 가속한다(예: FP32 → INT8).</li>
+  <li><strong>캐싱:</strong> 자주 묻는 질의("환불 정책이 뭔가요?")의 응답을 저장해둔다.</li>
+  <li><strong>배치 처리:</strong> 여러 요청을 병렬로 처리한다.</li>
+  <li><strong>모델 증류(Distillation):</strong> 더 작게 파인튜닝된 모델(예: DistilBERT)을 사용한다.</li>
+  <li><strong>하드웨어:</strong> Triton이나 vLLM으로 효율적인 GPU/TPU 서빙 환경을 구성한다.</li>
+</ul>
+
+<p>실제 사례로, 챗봇에 캐싱과 양자화를 함께 적용하면 지연 시간이 2초에서 200ms로 줄어들 수 있다.</p>
+
+<h2>Q4. LLM 시스템의 핵심 비기능 요구사항(NFR)을 설명하라</h2>
+
+<ul>
+  <li><strong>지연 시간:</strong> 실시간 앱(예: 채팅)은 1초 미만이어야 한다.</li>
+  <li><strong>비용:</strong> 단순한 작업에는 저렴한 모델을 써서 비용을 최적화한다.</li>
+  <li><strong>확장성:</strong> 트래픽 급증에 대응하는 오토스케일링(Kubernetes).</li>
+  <li><strong>보안:</strong> 데이터 암호화, GDPR·HIPAA 등 규정 준수.</li>
+  <li><strong>신뢰성:</strong> 폴백 모델, 재시도 로직, 서킷 브레이커.</li>
+  <li><strong>편향/안전:</strong> 유해 콘텐츠 필터(예: Perspective API)와 공정성 점검.</li>
+</ul>
+
+<h2>Q5. 고객 지원 챗봇 설계 케이스 스터디</h2>
+
+<p><strong>요구사항:</strong> 동시 접속 1만 명 이상 처리, 1초 미만 응답, 주문 추적 데이터베이스 연동.</p>
+
+<p><strong>솔루션:</strong></p>
+<ul>
+  <li><strong>프론트엔드:</strong> 스트리밍 응답을 지원하는 React 기반 채팅 UI.</li>
+  <li><strong>백엔드:</strong> Pinecone 벡터 DB에서 주문 정보를 가져오는 RAG 파이프라인, LangChain 오케스트레이션, FastAPI 게이트웨이(속도 제한 포함).</li>
+  <li><strong>최적화:</strong> 양자화된 Llama-2 모델, 자주 묻는 질의를 위한 Redis 캐시, 지연 시간/SLO 모니터링을 위한 Prometheus.</li>
+</ul>
+
+<p><strong>결과:</strong> 비용 40% 절감, 의도 파악 정확도 95% 달성.</p>
+
+<h2>Q6. 환각이나 편향 같은 LLM의 한계는 어떻게 처리하는가?</h2>
+
+<ul>
+  <li><strong>환각:</strong> RAG와 사실 검증 도구(예: VerifAI)를 함께 사용한다.</li>
+  <li><strong>편향:</strong> 정제된 데이터로 파인튜닝하고, 후처리 필터를 적용한다.</li>
+  <li><strong>안전:</strong> 규칙 기반 차단(욕설 등)과 적대적 테스트.</li>
+  <li><strong>투명성:</strong> 감사 목적으로 프롬프트와 응답을 기록한다.</li>
+</ul>
+
+<h2>Q7. 클라우드 vs. 엣지 배포 비교</h2>
+
+<p>클라우드 배포는 대규모 모델과 높은 트래픽에 적합하며 유연한 확장이 가능하지만 네트워크 지연과 비용이 단점이다. 엣지 배포는 오프라인 환경이나 개인정보 보호가 중요한 사용 사례에서 빛을 발한다. 저지연이 필수인 의료 기기나 산업 현장처럼 인터넷 연결이 불안정한 환경에서는 엣지가 유리하다. 실시간 고객 서비스나 다국어 번역처럼 대규모 처리가 필요한 경우에는 클라우드가 적합하다.</p>
+
+<h2>Q8. LLM 모니터링과 평가에 쓰는 도구는?</h2>
+
+<ul>
+  <li><strong>지연 시간/처리량:</strong> Prometheus + Grafana.</li>
+  <li><strong>환각 감지:</strong> Luna 또는 수동 검토.</li>
+  <li><strong>유해성:</strong> Detoxify 또는 Perspective API.</li>
+  <li><strong>사용자 피드백:</strong> A/B 테스트 + 좋아요/싫어요 버튼.</li>
+</ul>
+
+<h2>Q9. LLM 시스템에서 비용과 성능 균형을 어떻게 맞추는가?</h2>
+
+<ul>
+  <li><strong>계층형 모델:</strong> 복잡한 질의에는 GPT-4를, 단순한 작업에는 Mistral 같은 소형 모델을 사용한다.</li>
+  <li><strong>콜드 스타트:</strong> 소형 모델은 항상 워밍업 상태를 유지하고, 대형 모델은 필요할 때만 기동한다.</li>
+  <li><strong>스팟 인스턴스:</strong> 중요도가 낮은 워크로드에는 저렴한 클라우드 VM을 활용한다.</li>
+</ul>
+
+<h2>Q10. 프롬프트 일관성을 위한 접근법은?</h2>
+
+<ul>
+  <li><strong>템플릿:</strong> "당신은 이커머스에 특화된 친절한 어시스턴트입니다" 같은 시스템 프롬프트를 사용한다.</li>
+  <li><strong>퓨샷 예시:</strong> 프롬프트에 2~3개의 예시를 포함한다.</li>
+  <li><strong>함수 호출:</strong> OpenAI의 tools API를 활용해 동적 데이터(예: "사용자 주문 상태 조회")를 가져온다.</li>
+</ul>
+
+<h2>Q11. LLM API 요청의 속도 제한(Rate Limiting) 시스템 설계</h2>
+
+<ul>
+  <li><strong>토큰 버킷 알고리즘:</strong> 사용자/IP별 요청을 추적한다(예: 분당 100건).</li>
+  <li><strong>API 게이트웨이:</strong> Kong, NGINX, AWS API Gateway로 제한을 적용한다.</li>
+  <li><strong>폴백:</strong> 한도 초과 시 캐시된 응답이나 가벼운 모델(예: Mistral)을 제공한다.</li>
+  <li><strong>우선순위 큐:</strong> 프리미엄 사용자에게 더 높은 처리량을 배정한다.</li>
+</ul>
+
+<h2>Q12. 양자화가 LLM 효율성을 어떻게 개선하는가? 트레이드오프는?</h2>
+
+<p>양자화는 모델 가중치를 32비트 부동소수점에서 8비트 정수로 줄이는 기법이다. 추론이 빨라지고 메모리가 줄어드는(예: 모델 크기 4배 감소) 이점이 있지만, 정확도가 소폭 떨어진다(벤치마크 기준 약 1~2%). 주요 도구로는 ONNX Runtime과 TensorRT가 있다.</p>
+
+<h2>Q13. 새 LLM 버전의 무중단 롤아웃 방법은?</h2>
+
+<ul>
+  <li><strong>블루-그린 배포:</strong> 두 개의 동일한 환경 사이에서 트래픽을 전환한다.</li>
+  <li><strong>섀도우 테스트:</strong> 두 모델에 동시에 쿼리를 보내 출력을 비교한다.</li>
+  <li><strong>카나리 릴리즈:</strong> 트래픽을 1%에서 100%로 점진적으로 전환한다.</li>
+  <li><strong>롤백 계획:</strong> 지연 시간, 오류율 등 지표를 모니터링하며 문제 시 이전 버전으로 되돌린다.</li>
+</ul>
+
+<h2>Q14. 서로 다른 모델이 각기 다른 작업을 처리하는 멀티 에이전트 LLM 시스템 설계</h2>
+
+<ul>
+  <li><strong>라우터 모델:</strong> 쿼리를 분류한다(예: "고객 지원" → GPT-4, "번역" → NLLB).</li>
+  <li><strong>오케스트레이터:</strong> LangChain이나 Celery로 워크플로를 관리한다.</li>
+  <li><strong>데이터 전달:</strong> 에이전트 간 JSON 페이로드로 컨텍스트를 넘긴다.</li>
+  <li><strong>폴백:</strong> 오류 시 범용 모델(예: Claude)로 기본 응답한다.</li>
+</ul>
+
+<h2>Q15. 트래픽이 많은 LLM 앱에서 GPU 비용을 줄이는 방법은?</h2>
+
+<ul>
+  <li><strong>모델 증류:</strong> 대형 모델을 모방하는 소형 모델(예: TinyLlama)을 훈련한다.</li>
+  <li><strong>희소 MoE(Mixture of Experts):</strong> 쿼리별로 관련 모델 레이어만 활성화한다.</li>
+  <li><strong>스팟 인스턴스:</strong> 배치 작업에 AWS/GCP 스팟 VM을 활용한다.</li>
+  <li><strong>캐싱:</strong> 자주 묻는 응답(예: "반품 정책이 뭔가요?")을 캐시한다.</li>
+</ul>
+
+<h2>Q16. LLM 기반 고객 지원 봇의 기능 우선순위는 어떻게 정하는가?</h2>
+
+<p>영향 대비 노력 매트릭스를 활용한다. 영향이 크고 노력이 적은 것(예: RAG 통합으로 환각 감소)을 먼저 한다. 영향이 크지만 노력도 많이 드는 것(예: 전화 지원을 위한 음성-텍스트 변환)은 이후 단계로 미룬다. 반복적인 상위 20% 질의(예: 주문 추적)에서 시작해서 CSAT, 해결 시간, 전환율을 지표로 삼는다.</p>
+
+<h2>Q17. LLM 프로젝트의 ROI를 어떻게 측정하는가?</h2>
+
+<ul>
+  <li><strong>비용 절감:</strong> 인건비와 LLM 운영 비용을 비교한다.</li>
+  <li><strong>매출 영향:</strong> 업셀 성공률(예: 챗봇의 제품 추천 전환율).</li>
+  <li><strong>효율성:</strong> 시간당 처리 질의 수, 상담사 지원 소요 시간.</li>
+  <li><strong>정성적 지표:</strong> 사용자 피드백(NPS 설문).</li>
+</ul>
+
+<h2>Q18. LLM과 관련해 제품 관리자가 고려해야 할 윤리적 리스크는?</h2>
+
+<ul>
+  <li><strong>편향:</strong> 학습 데이터가 다양한 인구 집단을 대표하는지 확인한다.</li>
+  <li><strong>개인정보:</strong> 개인 식별 정보(PII) 로깅을 피하고 익명화를 적용한다.</li>
+  <li><strong>투명성:</strong> AI 사용 여부를 공개한다("이 응답은 자동화된 것입니다").</li>
+  <li><strong>악용 방지:</strong> 스팸/허위정보 차단을 위한 속도 제한.</li>
+</ul>
+
+<h2>Q19. LLM이 잘못된 법률 조언을 제공하는 상황은 어떻게 처리하는가?</h2>
+
+<p>두 가지 안전 장치를 적용한다. 전처리 단계에서는 법률 키워드("소송", "계약")를 감지해 사람 상담원에게 라우팅한다. 후처리 단계에서는 "변호사와 상담하세요"라는 면책 문구를 자동으로 추가한다. 모든 법률 관련 질의는 감사 로그에 플래그를 달아 검토한다. 필요하다면 법률 학습 데이터를 제거하거나 Harvey AI 같은 전문화된 모델을 사용하는 파인튜닝도 검토한다.</p>
+
+<h2>Q20. 'PDF와 대화하기' 시스템 설계 (RAG 집중 사례)</h2>
+
+<p><strong>처리 흐름:</strong></p>
+<ol>
+  <li><strong>PDF 업로드:</strong> PyPDF나 Unstructured.io로 텍스트를 추출한다.</li>
+  <li><strong>청크 분할 및 임베딩:</strong> 단락 단위로 쪼개고 OpenAI 임베딩으로 벡터화한다.</li>
+  <li><strong>쿼리 처리:</strong> 사용자가 "이 문서를 요약해줘"라고 물으면 RAG가 관련 청크를 검색하고 LLM이 요약한다.</li>
+</ol>
+
+<p><strong>도구:</strong> LangChain(오케스트레이션), Pinecone(벡터 DB), Next.js(UI).</p>
+
+<p><strong>최적화:</strong> 지연 시간을 줄이기 위해 업로드 시점에 미리 임베딩을 생성해둔다. 자주 묻는 질의(예: "핵심 내용이 뭔가요?")는 캐시한다.</p>
+
+<h2>Q21. 사용자 100명에서 100만 명으로 LLM 앱 확장하기</h2>
+
+<p><strong>인프라:</strong></p>
+<ul>
+  <li><strong>무상태 API:</strong> Kubernetes로 수평 확장한다.</li>
+  <li><strong>CDN:</strong> 정적 자산(JS, 모델 가중치 등)을 캐시한다.</li>
+</ul>
+
+<p><strong>데이터베이스:</strong></p>
+<ul>
+  <li><strong>읽기 복제본:</strong> 벡터 DB(Weaviate/Chroma) 읽기 부하를 분산한다.</li>
+  <li><strong>샤딩:</strong> 사용자 데이터를 지역별로 파티셔닝한다.</li>
+</ul>
+
+<p><strong>비용 통제:</strong></p>
+<ul>
+  <li><strong>오토스케일링:</strong> 트래픽이 주기적이라면 야간에 스케일다운한다.</li>
+  <li><strong>스팟 인스턴스:</strong> 문서 재임베딩 같은 배치 작업에 활용한다.</li>
+</ul>
+
+</body>
+</html>

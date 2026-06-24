@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Complete Guide to Claude Code — Plugins</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>The Complete Guide to Claude Code — Plugins</h1>
+<div class="meta">zhaozhiming · AI Advances · 12 min read · <a href="https://ai.gopubby.com/the-complete-guide-to-claude-code-plugins-3e24ed7b8f7d" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://ai.gopubby.com/the-complete-guide-to-claude-code-plugins-3e24ed7b8f7d" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">Claude Code의 Plugin은 커맨드·스킬·훅·MCP 서버를 하나의 배포 가능한 패키지로 묶어 팀 전체가 일관된 작업 방식을 공유할 수 있게 해주는 공식 확장 메커니즘이다.</p>
+  <p>Plugin은 CLAUDE.md, 슬래시 커맨드, 스킬, 훅으로 이어진 Claude Code 커스터마이징 시리즈의 완결판이다. 흩어진 설정들을 이름과 버전이 붙은 단위로 묶어 설치·공유·업데이트를 체계적으로 관리할 수 있게 한다. Marketplace를 통한 설치, 직접 개발, 플러그인 내부 서브에이전트의 기능 제한, 타 코딩 에이전트(Codex, Cursor, Gemini CLI)와의 비교까지 꼼꼼히 다루며, 에코시스템의 현황과 GPT Store 전철을 밟을 위험도 솔직하게 짚는다.</p>
+</div>
+
+<h2>들어가며</h2>
+<p>이 시리즈에서 우리는 Claude Code를 커스터마이징하는 방법들을 차례로 살펴봤다. CLAUDE.md로 프로젝트 맥락을 미리 설명하고, 슬래시 커맨드와 스킬로 반복 작업을 워크플로로 만들고, 훅(Hook)으로 실행 과정의 경계를 제어하는 방법들이었다. 이 도구들은 Claude Code의 능력을 꾸준히 넓혀왔지만, 각각은 여전히 독립적으로 작동한다. 아이언맨, 스파이더맨, 토르처럼 혼자서도 강력하지만, 세상을 구하려면 어벤저스가 필요한 것처럼.</p>
+
+<p>Claude Code에는 이 강력한 기능들을 하나의 일관된 단위로 묶어주는 것이 있다. 바로 Plugin이다. Plugin은 Claude Code의 여러 능력을 배포 가능한 하나의 설치 단위로 패키징해 재사용과 공유를 훨씬 쉽게 만들어준다.</p>
+
+<h2>Plugin이란 무엇인가</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*JL7S6WdcrcFm_UaR2D3ekA.jpeg" alt="Claude Code Plugin 개요">
+</figure>
+
+<p>Claude Code 공식 문서의 Plugin 정의는 간결하다.</p>
+
+<blockquote>
+<p><em>Plugin은 슬래시 커맨드, 서브에이전트, MCP 서버, 훅의 임의 조합을 패키징하고 공유하는 경량 방식이다.</em></p>
+</blockquote>
+
+<blockquote>
+<p><em>Plugin은 Claude Code 커스터마이징을 묶고 공유하는 표준 방식이 될 것이며, 더 많은 확장 포인트가 추가되면서 형식도 계속 발전할 것이다.</em></p>
+</blockquote>
+
+<p>즉, Plugin은 커스텀 기능을 배포하는 표준 방식으로 자리잡고 있으며, 실제로 이후에 LSP, 모니터, 테마 등의 기능이 추가됐다.</p>
+
+<p>Plugin이 필요한 핵심 이유는 재사용성이다. 단일 프로젝트에서 혼자 쓴다면 커맨드·스킬·훅을 <code>.claude/</code> 아래에 직접 두는 게 가장 간단하다. 하지만 기기를 바꾸거나, 새 프로젝트를 시작하거나, 동료와 설정을 공유할 때는 수동 복사가 금세 골칫거리가 된다. 버전 관리가 없고, 파일을 빠뜨리기 쉽고, 일부 컴포넌트는 복사만으로는 작동하지 않는다. Plugin은 이 문제를 해결한다. 기능 모음에 이름과 버전을 붙이고 명확한 구조로 포장해서, 공유·설치·업데이트·제거를 관리 가능하고 반복 가능하게 만든다.</p>
+
+<p>덕분에 사용자는 Plugin이 내부에서 커맨드로 구현됐는지 훅으로 구현됐는지 알 필요가 없다. 매니페스트의 버전 번호로 팀 모두가 정확히 같은 버전을 쓰고 있는지 확인할 수 있고, 프로젝트 스코프로 설치하면 저장소 협업자와 설정을 함께 쓸 수 있다. 또한 Plugin 안의 모든 컴포넌트는 플러그인 이름을 네임스페이스로 사용한다. 예를 들어 커맨드가 <code>/hello</code>가 아니라 <code>/team-plugin:hello</code>가 되므로, 서로 다른 소스의 여러 플러그인에 같은 이름이 있어도 충돌하지 않는다.</p>
+
+<h2>Plugin 설치와 사용</h2>
+<p>설치 과정을 이해하려면 Marketplace와 Plugin의 차이를 먼저 구분해야 한다. Plugin은 최종적으로 설치하는 기능 패키지이고, Marketplace는 여러 Plugin을 목록으로 나열하는 디렉터리다. Marketplace는 기능 자체를 담고 있지 않고, 단지 어떤 플러그인을 설치할 수 있는지 Claude Code에게 알려줄 뿐이다. 공식 문서의 비유가 딱 맞다. Marketplace는 앱스토어와 같다. 스토어를 추가하면 진열대를 둘러볼 수 있지만, 개별 앱(Plugin)을 선택하고 내려받는 건 별도로 해야 한다.</p>
+
+<p>Anthropic의 공식 Marketplace인 <code>claude-plugins-official</code>은 Claude Code를 시작할 때 자동으로 포함된다. 공식 플러그인을 설치하기 전에 Marketplace를 별도로 추가할 필요가 없다. <code>frontend-design</code> 플러그인을 설치하려면 <code>플러그인이름@마켓플레이스이름</code> 형식을 사용한다.</p>
+
+<pre><code>/plugin install frontend-design@claude-plugins-official</code></pre>
+
+<p>서드파티 Marketplace라면 플러그인을 설치하기 전에 먼저 Marketplace를 추가해야 한다. 예를 들어 <code>planning-with-files</code> 플러그인을 설치할 때는 Marketplace 이름과 플러그인 이름이 모두 <code>planning-with-files</code>다. Marketplace를 추가할 때는 GitHub 저장소의 owner/repo 형식으로 소스를 지정한다.</p>
+
+<pre><code>/plugin marketplace add OthmanAdi/planning-with-files
+/plugin install planning-with-files@planning-with-files</code></pre>
+
+<p>설치 후 <code>/reload-plugins</code>를 실행하면 활성화된다. 이후 <code>/planning-with-files:plan</code>처럼 네임스페이스가 붙은 커맨드를 쓸 수 있다.</p>
+
+<p>Marketplace는 여러 방식으로 추가할 수 있다. GitHub의 <code>owner/repo</code> 단축 표기가 가장 흔하고, GitLab·Bitbucket·자체 호스팅 등 모든 Git 저장소의 전체 URL도 되며, <code>#</code> 뒤에 브랜치나 태그를 붙일 수 있다. 로컬 디렉터리나 원격 <code>marketplace.json</code> 파일을 직접 가리키는 것도 가능하다. 공통 조건은 하나다. 해당 소스에 <code>.claude-plugin/marketplace.json</code> 파일이 있어야 한다.</p>
+
+<pre><code># 임의의 Git 저장소
+/plugin marketplace add https://gitlab.com/my-team/ai-plugins.git
+
+# 브랜치나 태그 지정
+/plugin marketplace add https://gitlab.com/my-team/ai-plugins.git#dev
+/plugin marketplace add https://gitlab.com/my-team/ai-plugins.git#v1.0.0
+
+# 로컬 플러그인 마켓플레이스 디렉터리
+/plugin marketplace add /Users/jimmy/work/ai-plugin-marketplace
+
+# 원격 marketplace.json 파일 직접 지정
+/plugin marketplace add https://example.com/marketplace.json</code></pre>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*wwuLg337JtOyID9qmxUsFQ.png" alt="Claude Code 플러그인 관리 UI">
+</figure>
+
+<p>Plugin을 설치하고 관리하는 방법은 두 가지다. Claude Code 내부에서는 <code>/plugin</code> 커맨드가 네 개의 탭이 있는 대화형 인터페이스를 열어 플러그인을 둘러보고 선택하기 좋다. Claude Code 외부에서는 <code>claude plugin</code> CLI 커맨드가 터미널 스크립트와 배치 작업에 적합하다. Marketplace를 추가하거나 플러그인을 설치할 때 스코프도 선택할 수 있다. user 스코프는 모든 프로젝트에 적용되고, project 스코프는 저장소 공동 작업자와 공유할 수 있도록 <code>.claude/settings.json</code>에 설정을 기록하며, local 스코프는 현재 저장소에서 나에게만 적용된다.</p>
+
+<pre><code># Claude Code 외부에서 설치
+claude plugin install planning-with-files@planning-with-files
+
+# 설치 스코프 선택 (기본값: user)
+claude plugin install planning-with-files@planning-with-files --scope user|project|local</code></pre>
+
+<p>Marketplace를 거치지 않고 <code>--plugin-dir</code>로 로컬 플러그인 디렉터리를 직접 불러올 수도 있다. Marketplace 설정 없이 시작할 때 디렉터리만 지정하면 된다. 주로 직접 만든 플러그인을 개발하고 디버깅할 때 쓴다. 압축 파일(<code>.zip</code>)을 풀지 않고 직접 불러오는 것도 지원된다. <code>--plugin-dir</code>로 불러온 플러그인의 이름이 이미 설치된 마켓플레이스 플러그인과 같으면, 현재 세션에서는 로컬 버전이 우선 적용되므로 설치된 버전을 제거하지 않고도 변경 사항을 테스트할 수 있다.</p>
+
+<pre><code># 로컬 플러그인 디렉터리 불러오기
+claude --plugin-dir /Users/jimmy/work/dev-helper
+
+# 로컬 플러그인 압축 파일 불러오기
+claude --plugin-dir /Users/jimmy/work/dev-helper.zip</code></pre>
+
+<p>일상적인 관리는 간단하다. 플러그인을 설치·활성화·비활성화한 후에는 <code>/reload-plugins</code>를 실행해 변경 사항을 적용해야 한다. 원하지 않는 플러그인은 <code>/plugin disable</code>로 일시적으로 비활성화하거나 <code>/plugin uninstall</code>로 완전히 제거할 수 있다. 주의할 점이 하나 있다. Marketplace를 삭제하면 그 Marketplace에서 설치한 모든 플러그인도 함께 제거된다. Marketplace를 지우기 전에 해당 플러그인들이 더 이상 필요하지 않은지 확인해야 한다.</p>
+
+<h2>Plugin 개발하기</h2>
+<p>Plugin 개발의 진입 장벽은 생각보다 낮다. 가장 작은 플러그인은 플러그인의 정체성을 선언하는 <code>.claude-plugin/plugin.json</code> 매니페스트 파일 하나가 담긴 디렉터리다.</p>
+
+<pre><code>{
+  "name": "my-first-plugin",
+  "description": "A greeting plugin to learn the basics",
+  "version": "1.0.0",
+  "author": { "name": "Your Name" }
+}</code></pre>
+
+<ul>
+<li><code>name</code>은 고유 식별자이자 커맨드 실행 시 사용되는 네임스페이스다.</li>
+<li><code>version</code>은 시맨틱 버저닝으로 릴리스를 관리한다.</li>
+<li><code>description</code>은 플러그인 관리자에 표시된다.</li>
+</ul>
+
+<p>매니페스트가 생기면 플러그인의 정체성이 만들어진다. 이제 기능을 추가하는 작업이 남았다.</p>
+
+<p>Plugin 기능은 규약에 따른 디렉터리에 배치한다. 커맨드는 <code>commands/</code>, 스킬은 <code>skills/</code>, 서브에이전트는 <code>agents/</code>, 훅은 <code>hooks/hooks.json</code>, MCP 설정은 <code>.mcp.json</code>에 넣는다. 코드 인텔리전스가 필요할 때는 <code>.lsp.json</code>도 추가할 수 있다. 특히 주의해야 할 함정이 하나 있다. <code>plugin.json</code>을 제외한 모든 디렉터리와 파일은 <code>.claude-plugin/</code> 안이 아니라 플러그인 루트에 있어야 한다. 그렇지 않으면 Claude Code가 로드하지 않는다. 전체 구조는 대략 이렇다.</p>
+
+<pre><code>my-plugin/
+├── .claude-plugin/
+│   └── plugin.json     # 이 디렉터리에는 이 파일만 허용
+├── commands/
+├── skills/
+├── agents/
+├── hooks/
+│   └── hooks.json
+└── .mcp.json</code></pre>
+
+<blockquote>
+<p><strong>LSP란?</strong> Claude Code의 LSP 코드 인텔리전스는 언어 서버에 연결해 프로젝트 수준의 코드 이해를 제공한다. 정의로 이동, 참조 찾기, 타입 정보, 심볼 분석 등이 포함된다. 덕분에 Claude Code가 코드를 더 정확하게 읽고 수정할 수 있다.</p>
+</blockquote>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*lp-LHTsTAdMV3eD8DvlJAg.jpeg" alt="Claude Code Plugin 구조 개요">
+</figure>
+
+<p>개발 시 꼭 알아야 할 세부 사항이 하나 더 있다. <code>${CLAUDE_PLUGIN_ROOT}</code> 변수다. 플러그인이 설치되면 Claude Code는 이를 캐시 디렉터리에 복사한다. 훅 스크립트나 설정이 플러그인에 번들된 파일을 참조해야 할 때 상대 경로나 절대 경로를 하드코딩하면 안 된다. 대신 <code>${CLAUDE_PLUGIN_ROOT}</code>를 사용해 플러그인 루트를 찾아야 한다. 훅 관련 글에서 소개된 <code>superpowers</code> 플러그인이 이 방식을 따른다. 해당 플러그인의 SessionStart 훅은 <code>"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd"</code>로 스크립트를 호출해서, 어떤 기기나 캐시 경로에 설치되더라도 스크립트를 항상 찾을 수 있게 한다.</p>
+
+<p>플러그인을 작성한 뒤 디버깅하는 가장 쉬운 방법은 마켓플레이스에 배포하기 전에 <code>--plugin-dir</code>로 로컬 디렉터리를 직접 불러오는 것이다. 시작 시 플러그인 디렉터리를 지정하고, 여러 플러그인을 불러올 때는 옵션을 반복한다.</p>
+
+<pre><code>claude --plugin-dir ./my-plugin</code></pre>
+
+<p>테스트 중 문제를 발견하고 플러그인을 수정했다면, Claude Code에서 <code>/reload-plugins</code>를 실행하면 재시작 없이 변경 사항을 다시 불러올 수 있다.</p>
+
+<p>이미 <code>.claude/</code> 아래에 커맨드와 스킬 모음이 있다면 Plugin으로 전환하는 것도 간단하다. 매니페스트가 있는 플러그인 디렉터리를 만들고, <code>.claude/commands/</code>, <code>.claude/agents/</code>, <code>.claude/skills/</code>의 내용을 복사한 뒤, <code>settings.json</code>의 <code>hooks</code> 객체를 같은 형식으로 <code>hooks/hooks.json</code>에 옮기면 된다. 이것으로 독립 설정에서 플러그인으로의 마이그레이션이 완료된다. 플러그인이 안정화되어 배포할 준비가 됐다면, 마켓플레이스 저장소에 <code>marketplace.json</code>을 추가하면 다른 사람들이 여느 플러그인처럼 설치할 수 있다.</p>
+
+<h2>Plugin의 한계와 단점</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*nHRn95XrQZzEr0aXusELfg.jpeg" alt="Plugin 한계">
+</figure>
+
+<p>Plugin은 배포 메커니즘으로서 분명 편리하지만, 아직 비교적 초기 단계의 기능이다. 팀 협업·프로젝트 표준·복잡한 워크플로에 실제로 사용하다 보면 몇 가지 명확한 한계가 드러난다.</p>
+
+<h3>Plugin 서브에이전트의 기능 제한</h3>
+<p>첫 번째 한계는 Plugin 안의 서브에이전트가 일부 기능을 잃는다는 점이다. 훅 관련 글에서도 언급했듯이, Plugin 서브에이전트의 프론트매터에 <code>hooks</code>, <code>mcpServers</code>, <code>permissionMode</code> 필드를 포함하더라도 보안상의 이유로 런타임에 무시된다. 자신의 <code>.claude/agents/</code> 디렉터리에 놓았을 때는 잘 작동하는 서브에이전트 정의도, Plugin으로 패키징하고 배포하면 일부 기능이 조용히 멈출 수 있다는 뜻이다.</p>
+
+<p>이 제한의 이유는 이해하기 어렵지 않다. 서브에이전트는 그 자체로 더 제한된 실행 단위다. Plugin 안에서 훅을 등록하고, MCP 서버를 연결하고, 권한 모드를 변경할 수 있게 하면, 낮은 권한의 역할이 실행 과정의 제어 규칙을 수정할 수 있어 전체 권한 모델의 보안 경계가 흔들린다. 따라서 보안 관점에서는 합리적인 제한이지만, Plugin 개발자는 이를 미리 알아야 한다. Plugin 안의 서브에이전트가 로컬 서브에이전트와 완전히 같은 기능을 갖는다고 가정하면 안 되며, 영향받는 로직은 다른 곳에서 구현해야 한다.</p>
+
+<h3>Marketplace 카테고리 부재와 Plugin 내용 불투명성</h3>
+<p>두 번째 문제는 검색 가능성과 신뢰 모두에 영향을 미친다. 검색 가능성부터 살펴보면, 현재 Marketplace는 체계적인 카테고리·태그·필터링 없는 평면적인 플러그인 목록에 가깝다. 탐색이 주로 플러그인 이름과 설명에 의존한다. 플러그인이 몇 개 없을 때는 감당할 수 있지만, 에코시스템이 커지고 비슷한 플러그인이 많아지면 적합한 것을 찾거나 여러 대안을 비교하기가 점점 어려워진다.</p>
+
+<p>내용 불투명성은 더 큰 주의가 필요하다. Plugin을 설치한다는 것은 자신의 권한으로 임의의 코드를 실행할 수 있는 무언가를 기기에 들이는 것이다. 훅은 셸 명령을 실행할 수 있고, MCP 서버는 외부 연결을 맺을 수 있으며, 커맨드는 컨텍스트에 프롬프트를 주입할 수 있다. 하지만 설치 전에 패키지 안에 무엇이 있는지 명확하게 파악하기가 쉽지 않다. 공식 문서에도 명시되어 있다. Anthropic은 플러그인에 포함된 MCP 서버·파일·소프트웨어를 통제하거나 검증하지 않으므로, 설치 전에 반드시 출처를 신뢰할 수 있는지 확인해야 한다고.</p>
+
+<h3>Plugin 단위의 크기 문제</h3>
+<p>세 번째 문제는 Plugin 단위의 적정 크기에 관한 것이다. 현재 배포된 플러그인들을 보면 흥미로운 패턴이 보인다. 앞서 소개한 <code>planning-with-files</code>처럼 스킬 하나만 담은 극단적으로 가벼운 플러그인들이 있다. 하나의 컴포넌트가 플러그인 전체를 차지하면서 <code>plugin.json</code>, 디렉터리 구조, 버전 관리까지 전부 필요하다. 쉽게 말해 편지 하나를 운반하는데 컨테이너선을 쓰는 격이다.</p>
+
+<p>사실 업계에는 스킬을 설치하는 더 가벼운 방법이 이미 있다. <code>npx skills add &lt;package&gt;</code>다. Vercel Labs의 오픈소스 CLI 도구로, AI 에이전트를 위한 스킬 패키지 관리자 역할을 한다. npm이 JavaScript를 관리하듯이. 결정적으로 이 도구는 에이전트에 종속되지 않는다. 같은 스킬을 Claude Code, Codex, Cursor, Gemini CLI에서 모두 쓸 수 있고 특정 도구에 묶이지 않는다.</p>
+
+<p>둘의 근본적인 차이는 작동 레벨이 다르다는 데 있다. 스킬은 내용이다. SKILL.md 파일에 선택적 스크립트와 리소스가 함께 있는 것. Plugin은 컨테이너다. 여러 스킬과 훅, 서브에이전트, MCP 서버를 함께 조율하는. <code>npx skills</code>는 GitHub 저장소에서 SKILL.md 파일을 내려받아 적절한 디렉터리에 놓는, 본질적으로 스킬 파일 전송 메커니즘이다. Plugin은 Claude Code의 네이티브 확장 시스템 안에 전체 기능 컴포넌트 세트를 등록한다.</p>
+
+<p>그렇다면 언제 Plugin을 쓰고 언제 <code>npx skills</code>를 쓸까? 단독 스킬만 있다면 <code>npx skills</code>로 충분하다. 가볍고 깔끔하고, 같은 스킬을 다른 에이전트에서도 재사용할 수 있다. 하지만 팀 협업 관례 전체를 배포해야 한다면 Plugin이 맞는 선택이다.</p>
+
+<h2>다른 코딩 에이전트 Plugin과의 비교</h2>
+<p>더 넓은 코딩 에이전트 생태계를 보면 흥미로운 흐름이 보인다. 2026년에 접어들면서 주류 도구들이 서로 독립적으로 같은 방향으로 움직였다. 바로 Plugin이다. Claude Code가 비교적 일찍 이 방식을 채택했고, 2026년 상반기에 Codex, Cursor, Gemini CLI도 각자의 대응 메커니즘을 추가했다. Plugin은 Claude Code만의 특별한 기능에서 이 세대 코딩 에이전트의 표준 기능으로 발전했다.</p>
+
+<p>Codex는 2026년 3월에 Plugin을 도입했고, Cursor는 2026년 2월에 버전 2.5에서 뒤를 따랐으며, Gemini CLI는 Extension으로 비슷한 기능을 제공한다. Claude Code와 비교하면 대체로 유사하다. 대부분이 매니페스트 파일과 <code>skills/</code>, <code>hooks/hooks.json</code>, <code>.mcp.json</code> 같은 구조를 함께 사용한다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*R7m1vf42kPeoYeHa_yD7QA.png" alt="코딩 에이전트 Plugin 비교표">
+</figure>
+
+<p>하지만 각 도구의 제품 포지셔닝을 더 자세히 살펴볼 필요가 있다.</p>
+
+<ul>
+<li>Claude Code는 터미널에서의 에이전틱 코딩과 재사용 가능한 팀 워크플로 수집에 집중한다.</li>
+<li>Codex는 스킬·MCP와 함께 앱 연결을 강조하며, 애플리케이션 통합과 크로스 서비스 자동화에 더 무게를 둔다.</li>
+<li>Cursor의 플러그인은 에디터에 깊이 통합되어, Linear 이슈를 읽고 Figma 디자인을 코드로 변환하고 원클릭으로 배포하는 엔드투엔드 제품 개발 워크플로를 강조한다.</li>
+<li>Gemini CLI의 Extension은 MCP 주변에 컨텍스트와 커맨드를 감싸는 CLI 확장 패키지 형식에 가깝고, 도구를 바로 쓸 수 있게 만들며 Google Cloud 생태계와 더 긴밀하게 통합된다.</li>
+</ul>
+
+<p>이런 메커니즘들이 비슷한 기능을 제공하더라도 직접 호환되지는 않는다. 코딩 에이전트 Plugin은 아직 진정한 통합 표준을 따르지 않는다. 훅이 대표적인 예다. Claude Code와 Gemini CLI 모두 훅을 <code>hooks/hooks.json</code>에 저장하지만, 이벤트 이름이 전혀 다르다. Claude Code는 <code>UserPromptSubmit</code>, <code>PostToolUse</code>, <code>Stop</code> 같은 이름을 쓰고, Gemini CLI는 <code>BeforeAgent</code>, <code>AfterTool</code>, <code>SessionEnd</code>를 쓴다. 따라서 플러그인 디렉터리를 그대로 복사해도 다른 도구에서 제대로 작동하지 않을 수 있다.</p>
+
+<h2>Plugin의 미래</h2>
+<p>이 이야기는 처음 보는 게 아니다. 2023년 말, OpenAI는 오늘날의 Plugin과 비슷한 비전으로 GPTs를 출시했다. 누구나 맞춤형 AI 어시스턴트를 만들어 Store를 통해 배포하거나 수익을 올릴 수 있고, 앱스토어가 모바일 인터넷을 바꾼 것처럼 AI를 바꿀 것이라고 했다. 하지만 그 이후를 우리 모두 봤다. 많은 GPT가 프롬프트를 껍데기로 감싼 것에 불과했고, Store에는 효과적인 품질 필터와 검색이 없었으며, 창작자에게는 지속 가능한 수익 모델이 없었다. GPT는 지금도 존재하지만, 한때 꿈꿨던 새로운 에코시스템과는 거리가 멀다.</p>
+
+<p>Plugin에서도 비슷한 경고 신호가 보인다.</p>
+
+<ul>
+<li>내용이 프롬프트 기반의 스킬과 커맨드에 크게 의존해 범용화 위험이 상당하다.</li>
+<li>Marketplace 검색과 리뷰 메커니즘이 아직 초보적인 수준이다.</li>
+<li>개발자에게 명확한 인센티브가 없으며, 대부분의 플러그인이 오픈소스 커뮤니티로 기여되고 상업화 경로가 확립되지 않았다.</li>
+</ul>
+
+<p>하지만 GPTs와 다른 점도 있다. Plugin은 글 쓰기·이미지 생성·정보 검색 같은 범용 수요를 겨냥하지 않는다. 코딩 표준 통합, 도메인 지식 수집, 워크플로 자동화라는 개발팀의 핵심 프로덕션 니즈를 해결한다. CI/CD 파이프라인에 이미 내장된 코드 리뷰 Plugin은 열기가 식었다고 버려지지 않는다. 따라서 롱테일이 식더라도 가치 높은 워크플로 Plugin은 지속적으로 쓰일 탄탄한 기반이 있다.</p>
+
+<p>Plugin이 GPTs의 전철을 밟을지는 결국 하나의 질문에 달려 있다. Anthropic이 Plugin을 기능 체크리스트의 항목 하나로 보는지, 아니면 검색·품질 기준·개발자 인센티브에 지속적으로 투자할 의지가 있는지. 현재 Plugin의 기반 메커니즘은 탄탄하다. 하지만 에코시스템 인프라는 아직 갈 길이 멀다.</p>
+
+<h2>마치며</h2>
+<p>Plugin이 해결하는 핵심 문제는 Claude Code의 흩어진 커스텀 기능을 관리 가능하고 배포 가능한 단위로 변환하는 것이다. 이 시리즈의 앞선 글들과 함께, 우리는 이제 Claude Code 컴포넌트가 어떻게 사용되고 배포되는지 더 명확히 이해하게 됐다. Claude Code Plugin은 설치·버전 관리·마켓플레이스 배포·컴포넌트 구성 등에서 이미 비교적 완성된 설계를 갖추고 있다. 하지만 더 넓은 코딩 에이전트 생태계에서 보면, 플러그인 하나를 다른 에이전트에 직접 재사용하기는 여전히 어렵다. 진정한 크로스 도구 상호운용성은 아직 요원하다.</p>
+
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harnesses - Intuitively and Exhaustively Explained</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Agent Harnesses — Intuitively and Exhaustively Explained</h1>
+<div class="meta">Daniel Warfield (@danielwarfield1) · Intuitively and Exhaustively Explained · 10 min read · <a href="https://medium.com/intuitively-and-exhaustively-explained/agent-harnesses-intuitively-and-exhaustively-explained-52aa6b4e7ebd" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/intuitively-and-exhaustively-explained/agent-harnesses-intuitively-and-exhaustively-explained-52aa6b4e7ebd" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">에이전트 하네스(Agent Harness)는 AI 에이전트에게 역할, 맥락, 능력을 체계적으로 부여하는 새로운 표준으로, 스킬(Skill)을 묶어 복잡한 작업을 수행할 수 있도록 구조화한 개념이다.</p>
+  <p>AI 에이전트는 LLM을 기반으로 추론(chain of thought)과 도구 활용(tool use)을 결합한 ReAct 방식으로 동작한다. 스킬은 에이전트가 특정 시스템과 상호작용하는 데 필요한 정보와 기능을 하나로 묶은 패키지이며, 에이전트 하네스는 이 스킬 여러 개를 통합하여 에이전트가 복합적인 역할을 맡을 수 있게 해주는 상위 개념이다. 하네스는 <code>HARNESS.md</code>, <code>skills/</code> 디렉터리, <code>references/</code> 디렉터리 세 요소로 구성되며, '점진적 공개(progressive disclosure)' 원칙에 따라 에이전트가 필요한 정보를 단계적으로 탐색하게 설계된다. 하네스 구조가 커지면 하위 디렉터리와 <code>SKILLS.md</code>, <code>REFERENCES.md</code> 파일로 계층을 구성해 에이전트가 효율적으로 관련 자료를 탐색할 수 있다. 이 표준은 오픈소스로 공개되어 있으며, 데이터 분석가 보조, 소프트웨어 개발 보조, 마케팅 콘텐츠 생성 등 다양한 예제가 제공된다.</p>
+</div>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*ITuyyowGqAy8H2EASFEwZA.png" alt="커버 이미지">
+  <figcaption>"Connected" by Daniel Warfield using Midjourney. 이 글은 IAEE 구독자들의 지원으로 제공됩니다.</figcaption>
+</figure>
+
+<p>이 글에서는 AI 에이전트 개발의 새로운 표준인 '에이전트 하네스(Agent Harness)'를 다룬다. 하네스는 AI 시스템이 생각하고 행동하는 방식을 둘러싼 구조를 만들어, 다양한 작업을 수행하도록 AI 시스템을 맞춤화할 수 있게 해준다.</p>
+
+<p>먼저 하네스가 기반으로 삼는 핵심 개념들을 살펴보고, 그 위에서 하네스가 무엇이며 어떻게 구현할 수 있는지를 설명한다.</p>
+
+<blockquote>
+  <p><strong>에이전트 하네스</strong>란 AI 에이전트에게 역할, 맥락, 능력을 표준화된 방식으로 부여하는 구조다.</p>
+</blockquote>
+
+<h2>기초 개념 정리</h2>
+
+<h3>LLM 복습</h3>
+
+<p>LLM은 함수처럼 생각하면 된다. 텍스트를 넣으면 텍스트 응답이 나온다. 이것이 전부다. 최근 쏟아지는 대부분의 AI 기술은 이 텍스트 응답 기능 위에 쌓인 것들이다.</p>
+
+<h3>에이전트 복습</h3>
+
+<p>'에이전트'는 학문적으로는 여러 유형이 있지만, 일반적으로는 한 가지 개념을 뜻한다. 사용자의 입력을 받아 무언가를 하고 응답하는 채팅 AI 시스템이다. 이를 보통 ReAct 방식의 에이전트라고 부른다. LLM을 기능과 연결하는 가벼운 코드를 통해, 모델이 추론(Reason)하고 행동(Act)하며 결과를 관찰(Observe)할 수 있게 한다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*IJUm5S8X-9FkadUx.png" alt="ReAct 에이전트 다이어그램">
+</figure>
+
+<p>이 글에서 '에이전트'라고 할 때는 모두 이 ReAct 방식을 가리킨다.</p>
+
+<h3>사고 연쇄와 도구 활용 복습</h3>
+
+<p>ReAct 방식의 에이전트를 이해하려면 '추론'과 '행동'의 작동 원리를 알아야 한다.</p>
+
+<p>추론은 주로 '사고 연쇄(chain of thought)'로 구현된다. 모델이 답을 내놓기 전에 먼저 문제를 생각하도록 유도하는 방식이다. 원래는 프롬프트에 예시를 넣어 구현했지만, 지금은 모델 자체가 생각을 먼저 하도록 훈련되어 있다. DeepSeek로 대중화된 '추론 모델'은 이 단계를 더욱 명시적으로 길게 펼친다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*Q62s_te3q5oOXZAo.png" alt="사고 연쇄 다이어그램">
+</figure>
+
+<p>도구 활용도 오래된 개념이지만 이제 표준이 되어가고 있다. 가장 단순하게 설명하면, LLM에게 "이 특정 텍스트를 출력하면 내가 코드를 실행해서 결과를 알려주겠다"고 말하는 것이다. 이를 통해 모델이 인터넷 검색, 파일 탐색, 데이터베이스 조회 같은 작업을 스스로 결정해서 수행할 수 있게 된다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*U3Wz47gSZ8CsJPfJ.png" alt="도구 활용 다이어그램">
+</figure>
+
+<h3>스킬(Skill) 복습</h3>
+
+<p>에이전트, 도구 활용, 프롬프트 기법이 발전하면서 자연스럽게 표준적인 관행이 생겨났다. 에이전트가 데이터베이스에 필드를 추가하는 작업을 자동화하려면, 데이터베이스를 조회하고 수정할 수 있는 도구와 그 구조를 설명하는 프롬프트가 필요하다.</p>
+
+<p>스킬은 이런 정보와 기능을 하나의 패키지로 묶는 표준화된 방법이다. 에이전트가 특정 역량을 온전히 활용할 수 있도록 완결된 단위로 제공한다.</p>
+
+<pre><code>my-skill/
+├── SKILL.md          # 필수: 메타데이터 + 지침
+├── scripts/          # 선택: 실행 가능한 코드
+├── references/       # 선택: 문서
+├── assets/           # 선택: 템플릿, 리소스
+└── ...               # 기타 파일 또는 디렉터리</code></pre>
+
+<p>스킬은 놀라울 정도로 단순하다. 대부분 텍스트 파일들이다. 하지만 에이전트가 복잡한 시스템을 이해하고 상호작용하는 데 있어 스킬의 힘은 강력하며, 재사용 가능하고 이식 가능한 계층을 제공한다.</p>
+
+<h2>하네스의 핵심 개념</h2>
+
+<p>하네스는 스킬의 확장으로 이해하면 가장 쉽다. 웹사이트 수정이나 데이터베이스 관리 같은 개별 기능을 하나의 스킬에 담을 수 있다. 하지만 제품을 개발하는 팀의 보조 역할처럼 복합적인 임무를 수행하려면 에이전트가 여러 스킬을 동시에 활용해야 한다. 하네스는 그 여러 스킬들과 에이전트가 맥락과 역할을 이해하는 데 필요한 참조 정보를 하나로 묶어준다.</p>
+
+<h2>에이전트 하네스 표준</h2>
+
+<p>하네스는 세 가지 핵심 요소로 구성된다. 하네스를 설명하는 마크다운 파일, 에이전트가 환경과 상호작용할 수 있도록 하는 스킬 모음, 그리고 에이전트가 작업 환경을 더 잘 이해하는 데 쓰이는 참조 문서들이다.</p>
+
+<pre><code>my-harness/
+├── HARNESS.md        # 필수: 메타데이터 + 지침
+├── skills/           # 선택: 스킬 모음
+└── references/       # 선택: 참조 문서 모음</code></pre>
+
+<p><code>HARNESS.md</code>는 하네스를 전체적으로 설명하는 가벼운 문서다. 에이전트가 처리해야 할 문제의 가장 핵심적인 고수준 정보를 빠르게 파악하고, <code>skills</code>와 <code>references</code> 안에서 더 구체적인 정보를 어디서 찾을 수 있는지 파악할 수 있도록 설계됐다.</p>
+
+<p>이 구조는 '점진적 공개(progressive disclosure)' 원칙을 따른다. 에이전트가 다음 과정을 거친다.</p>
+
+<ul>
+  <li><strong>탐색(Discovery):</strong> 시작 시 <code>HARNESS.md</code>만 로드한다. 프롬프트가 주어지면 하네스에 정의된 스킬과 참조 문서들의 이름과 설명을 점진적으로 탐색하며 필요한 자료를 찾는다.</li>
+  <li><strong>활성화(Activation):</strong> 관련 자료가 발견되면 해당 스킬과 참조 문서의 전체 내용을 로드해서 읽는다.</li>
+  <li><strong>실행(Execution):</strong> 하네스가 제공한 정보를 따르고 필요에 따라 스킬을 실행한다.</li>
+</ul>
+
+<h3>HARNESS.md 구성</h3>
+
+<p>스킬과 마찬가지로 하네스도 프론트매터(frontmatter)를 사용해 에이전트가 핵심 정보를 빠르게 파악할 수 있도록 한다.</p>
+
+<pre><code>---
+name: &lt;하네스 이름&gt;
+description: &lt;이 하네스가 무엇을 위한 것인지 설명&gt;
+---
+
+&lt;본문&gt;</code></pre>
+
+<p><code>HARNESS.md</code>에서 <code>name</code>과 <code>description</code>은 필수다. 에이전트가 하네스를 즉시 파악할 수 있어야 하기 때문이다. 본문은 하네스의 핵심 요소를 설명하는 간결한 마크다운 문서로, 에이전트가 어떤 스킬이나 참조 자료를 활용해야 하는지 이해할 수 있게 안내한다.</p>
+
+<h3>skills 디렉터리 구성</h3>
+
+<p><code>skills</code> 디렉터리는 에이전트 스킬 표준을 따르는 스킬들의 모음이다. 스킬 표준은 스킬을 다음과 같이 정의한다.</p>
+
+<pre><code>my-skill/
+├── SKILL.md          # 필수: 메타데이터 + 지침
+├── scripts/          # 선택: 실행 가능한 코드
+├── references/       # 선택: 문서
+├── assets/           # 선택: 템플릿, 리소스
+└── ...               # 기타 파일 또는 디렉터리</code></pre>
+
+<p>하네스는 이 기능을 확장한다. 따라서 <code>skills</code> 디렉터리는 다음과 같은 구조를 가질 수 있다.</p>
+
+<pre><code>my-harness/
+├── HARNESS.md
+├── skills/
+|  ├── my-skill-1/
+|  |  ├── SKILL.md
+|  |  ├── scripts/
+|  |  ├── references/
+|  |  ├── assets/
+|  |  └── ...
+|  └── my-skill-2/
+|     ├── SKILL.md
+|     ├── scripts/
+|     ├── references/
+|     ├── assets/
+|     └── ...
+└── references/</code></pre>
+
+<h3>references 디렉터리 구성</h3>
+
+<p><code>references</code> 디렉터리는 에이전트가 환경, 역할, 기타 고수준 정보를 더 잘 이해하는 데 쓰이는 임의의 문서 모음이다.</p>
+
+<p>스킬에도 참조 문서 개념이 있다. 하네스 수준의 <code>references</code>는 스킬 내 참조보다 더 높은 추상화 수준을 다뤄야 한다. 스킬 내 참조는 그 스킬을 어떻게 활용하는지에 관한 것이고, 하네스 수준의 참조는 여러 스킬에 걸쳐 공통으로 필요한 정보를 담는다.</p>
+
+<p>예를 들어 마케팅 콘텐츠 제작을 보조하는 에이전트를 만든다고 하자. 블로그 글 작성 스킬, 이미지 생성 스킬, 소셜 미디어 모니터링 스킬이 있을 것이다.</p>
+
+<pre><code>my-marketing-harness/
+├── HARNESS.md
+├── skills/
+|  ├── create-blog-post/
+|  |  ├── SKILL.md
+|  |  └── ...
+|  ├── generate-images/
+|  |  ├── SKILL.md
+|  |  └── ...
+|  └── scan-social/
+|     ├── SKILL.md
+|     └── ...
+└── references/</code></pre>
+
+<p>각 스킬은 자체 기능에 필요한 참조를 가진다. <code>scan-social</code>은 회사 소셜 미디어 계정 정보를, <code>generate-images</code>는 이미지 저장 경로를, <code>create-blog-post</code>는 발행 프로세스를 담을 수 있다.</p>
+
+<p>이때 하네스 수준의 <code>references</code>에는 모든 스킬에 공통으로 적용되는 스타일 가이드나 브랜드 우선순위 같은 자료를 넣을 수 있다.</p>
+
+<pre><code>my-marketing-harness/
+├── HARNESS.md
+├── skills/
+|  ├── create-blog-post/
+|  |  ├── SKILL.md
+|  |  └── ...
+|  ├── generate-images/
+|  |  ├── SKILL.md
+|  |  └── ...
+|  └── scan-social/
+|     ├── SKILL.md
+|     └── ...
+└── references/
+   ├── style-guide.md
+   └── brand-priorities.md</code></pre>
+
+<p>참조 문서에도 <code>description</code> 프론트매터를 추가하는 것이 강력히 권장된다. 에이전트가 해당 참조가 관련 있는지 빠르게 판단할 수 있도록 해준다.</p>
+
+<pre><code>---
+description: 마케팅 웹사이트의 스타일 가이드. 모든 시각적 자산 제작과
+표준 타이포그래피 규칙을 다룬다.
+---
+
+&lt;본문&gt;</code></pre>
+
+<h2>큰 하네스 구조화하기</h2>
+
+<p>하네스에 스킬과 참조가 많아지면 관리가 복잡해지고 에이전트에게 필요한 정보를 효율적으로 전달하기 어려워진다. 이를 해결하기 위해 <code>skills</code>와 <code>references</code> 디렉터리 안에 하위 디렉터리를 만들어 그룹화할 수 있다.</p>
+
+<pre><code>my-harness/
+├── HARNESS.md
+├── skills/
+│   ├── software-development/
+│   │   ├── SKILLS.md
+│   │   ├── skill1/
+│   │   │   └── SKILL.md
+│   │   └── skill2/
+│   │       └── SKILL.md
+│   ├── market-analysis/
+│   │   ├── SKILLS.md
+│   │   └── skill3/
+│   │       └── SKILL.md
+│   └── social-media/
+│       ├── SKILLS.md
+│       ├── skill4/
+│       │   └── SKILL.md
+│       └── skill5/
+│           └── SKILL.md
+└── references/
+    ├── brand-assets/
+    │   ├── REFERENCES.md
+    │   ├── reference1.md
+    │   └── reference2.md
+    ├── software-infrastructure/
+    │   ├── REFERENCES.md
+    │   ├── reference3.md
+    │   └── reference4.md
+    └── product-information/
+        ├── REFERENCES.md
+        └── reference5.md</code></pre>
+
+<p>에이전트가 이 구조를 충분히, 하지만 간결하게 이해할 수 있도록 <code>HARNESS.md</code>에 전달해야 한다. 각 하위 디렉터리에는 해당 내용을 설명하는 파일을 두어야 한다. <code>SKILLS.md</code>는 하위 디렉터리의 스킬들을 설명하고, <code>REFERENCES.md</code>는 참조 문서들을 설명한다.</p>
+
+<p>이 구조가 바로 '점진적 공개'를 가능하게 한다. 에이전트는 <code>HARNESS.md</code>로 전체 구조를 파악한 뒤, 필요에 따라 특정 <code>SKILLS.md</code>와 <code>REFERENCES.md</code>를 탐색해 관련 자료를 효율적으로 찾는다.</p>
+
+<p>디렉터리 구조는 임의의 깊이로 중첩될 수 있다. 각 하위 디렉터리마다 <code>SKILLS.md</code> 또는 <code>REFERENCES.md</code> 파일을 두어 에이전트가 각 계층의 구조를 파악할 수 있도록 한다.</p>
+
+<pre><code>...
+└── references/
+  └── data-sources/
+      ├── REFERENCES.md
+      ├── relational/
+      │   ├── REFERENCES.md
+      │   └── schema-overview.md
+      └── warehouse/
+          ├── REFERENCES.md
+          └── dataset-catalog.md</code></pre>
+
+<h2>더 읽을거리</h2>
+
+<p>앞으로 며칠에 걸쳐 에이전트 하네스 표준을 실제로 구현하는 방법, 하네스를 에이전트에게 효율적으로 노출하는 클라이언트 개발 방법 등을 다루는 글들이 이어질 예정이다. 지금 더 알고 싶다면 공식 문서와 GitHub 저장소를 참고하라.</p>
+
+<p>에이전트 하네스 표준은 여러 예제도 제공한다. 데이터 분석가 보조 하네스, 소프트웨어 개발 보조 하네스, 글쓰기 및 출판 보조 하네스가 준비되어 있어, 표준이 실제로 어떻게 적용되는지 직접 탐색할 수 있다.</p>
+</body>
+</html>

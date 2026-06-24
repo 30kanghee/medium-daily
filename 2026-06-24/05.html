@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8 Data Pipeline Patterns Exist. Most Engineers Only Know 3</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>8 Data Pipeline Patterns Exist. Most Engineers Only Know 3</h1>
+<div class="meta">Pravash · Towards Data Engineering · 10 min read · <a href="https://medium.com/towards-data-engineering/8-data-pipeline-patterns-exist-most-engineers-only-know-3-ad646f3b3257" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/towards-data-engineering/8-data-pipeline-patterns-exist-most-engineers-only-know-3-ad646f3b3257" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">파이프라인 실패의 원인은 버그가 아니라 잘못된 패턴 선택이며, 실전에서 통하는 8가지 패턴을 이해하면 처음부터 다시 짜는 일을 예방할 수 있다.</p>
+  <p>데이터 팀이 파이프라인을 처음부터 다시 짜는 이유는 대부분 코드 버그가 아니라 처음부터 잘못된 패턴을 선택했기 때문이다. 이 글은 실무에서 거의 모든 데이터 엔지니어링 시나리오를 커버하는 8가지 패턴—ETL, ELT, 스트리밍, 람다, 카파, 마이크로배치, 팬아웃, 이벤트 드리븐—을 각각의 핵심 코드 예시와 함께 설명한다. 각 패턴이 어떤 문제를 해결하는지, 어떤 상황에서 쓰이는지를 구체적으로 다루며, 마지막에는 신선도 요구사항·로직 변경 빈도·다운스트림 소비자 수에 따른 패턴 선택 기준을 제시한다.</p>
+</div>
+
+<h2>들어가며</h2>
+<p>매주 어딘가의 데이터 팀이 파이프라인 전체를 처음부터 다시 짜고 있다. 원래 코드에 버그가 있어서도 아니고, 인프라가 잘못된 것도 아니다. 비즈니스가 실제로 필요로 하는 것에 맞지 않는 패턴을 선택했기 때문이다.</p>
+
+<p>한 스타트업이 일일 매출 보고서를 처리하는 깔끔한 ETL 파이프라인을 만들었다. 완벽하게 돌아갔다—제품팀이 실시간 부정 거래 탐지를 요청하기 전까지는. 핀테크 회사는 모든 것에 스트리밍 파이프라인을 구축했는데, 간단한 배치 작업으로 충분했을 월별 청구 처리까지 포함해서. 6개월 치 엔지니어링 작업이 날아갔다.</p>
+
+<p>진실은 이렇다. 데이터 파이프라인 설계는 "최고의" 기술을 고르는 게 아니다. 문제에 패턴을 맞추는 일이다. 현재 실무 환경에서 거의 모든 데이터 엔지니어링 시나리오를 커버하는 패턴은 정확히 8가지다. 이것들을 이해하면 파이프라인을 처음부터 다시 짜는 일은 없어진다.</p>
+
+<h2>1. ETL — 검증 후 적재, 고전적인 표준</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*vQKN37VWLW_LptJsMsm_yg.png" alt="ETL 파이프라인 다이어그램">
+</figure>
+
+<p><strong>어떤 문제를 해결하는가:</strong> 여러 소스에서 들어오는 지저분하고 일관성 없는 데이터를 데이터베이스에 닿기 전에 정제해야 할 때.</p>
+
+<p>이커머스 주문이 세 가지 시스템에서 세 가지 형식으로 들어온다. 통화도 다르고, 데이터도 지저분하고, 재무팀은 아침까지 한곳에 모아 달라고 한다. ETL이 이걸 처리한다—데이터를 끌어와서, 중간에 정제하고, 유효한 것만 적재한다. 깨진 데이터는 DLQ(Dead Letter Queue)에 보관했다가 근본 원인이 해결되면 재처리한다. 규칙은 단순하다. 더러운 데이터는 웨어하우스에 닿으면 안 된다.</p>
+
+<p><strong>쓰이는 곳:</strong> 레거시 기업 데이터 웨어하우스, 규정 준수 보고 파이프라인, 저장된 데이터의 오염이 용납되지 않는 금융·의료 시스템.</p>
+
+<pre><code># etl_pipeline.py
+
+# 핵심: 적재 전 변환 - 유효하지 않은 레코드는 DLQ로
+
+def transform(record):
+    if not record.get("order_id") or record["amount"] <= 0:
+        dlq.append(record)          # 유효하지 않음 -> DLQ
+        return None
+    record["amount_usd"] = record["amount"] * fx_rate(record["currency"])
+    record["loaded_at"] = datetime.utcnow().isoformat()
+    return record
+
+cleaned  = [r for r in (transform(row) for row in extract()) if r]
+warehouse.load(cleaned)            # 정제된 레코드만 저장소에 도달
+dlq_table.load(dlq)                # 불량 레코드는 재처리 대기</code></pre>
+
+<blockquote>
+<p>ETL은 웨어하우스를 깔끔하게 유지해준다. 하지만 요구사항이 바뀔 때 원본 데이터를 잃어버릴 여유가 없다면? 그것이 ELT가 등장하는 이유다.</p>
+</blockquote>
+
+<h2>2. ELT — 먼저 적재, 나중에 변환하는 현대적 방식</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*Og1LCLrMEeseUnvNh_n9tQ.png" alt="ELT 파이프라인 다이어그램">
+</figure>
+
+<p><strong>어떤 문제를 해결하는가:</strong> 방대한 원본 데이터가 있고, 어떤 질문을 해야 할지 아직 정확히 모를 때.</p>
+
+<p>미디어 회사가 하루에 5천만 번의 클릭을 수집한다. ML에 어떤 이벤트가 필요하고 BI에 어떤 게 필요한지 아직 알 수 없다. 미리 변환하면 무언가를 버리게 된다. ELT는 순서를 뒤집어 이 문제를 해결한다. 모든 것이 원본 그대로 저장되고, 웨어하우스 내에서 나중에 변환된다. BigQuery는 100GB를 초 단위에 처리할 수 있다. 한 번 저장하고, 필요한 방식으로 자르면 된다. 하나의 원본 레이어, 다양한 정제된 출력.</p>
+
+<p><strong>쓰이는 곳:</strong> 현대적 클라우드 데이터 스택, dbt 기반 파이프라인, 애널리틱스 엔지니어링 워크플로, 유연하고 다용도 데이터가 필요한 모든 시나리오.</p>
+
+<pre><code># etl_pipeline.py
+
+# 핵심: 원본 그대로 적재, BigQuery 내에서 dbt/SQL로 변환
+
+# 1단계 - 원본 데이터를 손대지 않고 적재
+df_raw = extract_from_api()
+bq_client.load_table_from_dataframe(df_raw, "project.raw.events")
+
+# 2단계 - 웨어하우스 내에서 변환 (dbt가 이 SQL을 실행)
+curated_sql = """
+    SELECT
+        user_id,
+        COUNT(*)        AS total_events,
+        SUM(revenue)    AS total_revenue
+    FROM raw.events
+    WHERE _loaded_at >= CURRENT_DATE - 1
+    GROUP BY user_id
+"""
+# 각 소비자(BI, ML, API)는 자체 정제 뷰를 가짐
+bq_client.query(curated_sql).to_dataframe()</code></pre>
+
+<blockquote>
+<p>ELT는 저장된 데이터의 유연성을 제공한다. 하지만 웨어하우스에 도달하기 전에 응답이 필요한, 기다릴 여유가 없는 데이터라면? 그것이 스트리밍의 문제다.</p>
+</blockquote>
+
+<h2>3. 스트리밍 파이프라인 — 실시간 데이터, 기다림 없음</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*2WhnLPe2ov1bqClyDhHRjg.png" alt="스트리밍 파이프라인 다이어그램">
+</figure>
+
+<p><strong>어떤 문제를 해결하는가:</strong> 데이터가 도착하는 순간 즉각 행동해야 할 때. 밀리초 단위가 중요한 상황.</p>
+
+<p>파리에서 카드가 사용됐다. 3초 후 서울에서 같은 카드가 사용됐다. 1시간마다 돌아가는 배치 파이프라인은 6시간이 지나서야 이걸 잡아낸다. 스트리밍 파이프라인은 두 번째 거래가 승인되기 전에 잡는다. 이벤트가 프로듀서에서 Kafka 브로커로, Flink 프로세서로 흐른다. 모든 이벤트가 실시간으로 평가되어 데이터베이스, 알림, 또는 대시보드로 라우팅된다. 아무것도 기다리지 않는다.</p>
+
+<p><strong>쓰이는 곳:</strong> 부정 거래 탐지, 실시간 추천 엔진, 광고 기술의 실시간 입찰, IoT 센서 모니터링, 주식 거래 시스템, 차량 호출 서비스의 탄력 요금제.</p>
+
+<pre><code># streaming_pipeline.py
+
+# 핵심: Kafka 소비, 각 이벤트 처리, 싱크로 라우팅
+
+consumer = KafkaConsumer("transactions", bootstrap_servers=KAFKA_BROKER)
+
+for msg in consumer:
+    event = json.loads(msg.value)
+    try:
+        if is_fraudulent(event):          # 전송 중 평가
+            alert_sink.send(event)      # -> PagerDuty / Slack
+        else:
+            db_sink.insert(event)       # -> Postgres / BigQuery
+        consumer.commit()               # 오프셋 커밋 = 재처리 없음
+    except Exception as e:
+        dlq_producer.send("txn-dlq", event)   # 실패 -> DLQ 토픽</code></pre>
+
+<blockquote>
+<p>스트리밍은 지연 시간을 해결하지만, 배치 처리가 보장하는 역사적 정확성을 희생한다. 둘 다 필요하다면? 람다 아키텍처가 등장한다.</p>
+</blockquote>
+
+<h2>4. 람다 아키텍처 — 두 마리 토끼, 그러나 비용 있음</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*8VC6yKAEYzkW2ERZky_pKw.png" alt="람다 아키텍처 다이어그램">
+</figure>
+
+<p><strong>어떤 문제를 해결하는가:</strong> 정확성과 속도 둘 다 필요하고, 어느 쪽도 희생할 수 없을 때.</p>
+
+<p>물류 회사에 불가능해 보이는 두 가지가 동시에 필요하다. 몇 초마다 업데이트되는 실시간 지도, 그리고 늦게 도착한 GPS 데이터를 보정한 정확한 배송 보고서. 하나는 속도가 필요하고, 다른 하나는 정밀도가 필요하다. 람다는 둘 다 병렬로 실행한다. 정확성을 위한 Spark 배치 레이어, 신선함을 위한 Kafka 속도 레이어, 그리고 쿼리 시점에 둘을 합치는 서빙 레이어. 항상 최선의 답을 얻을 수 있다.</p>
+
+<p><strong>쓰이는 곳:</strong> 실시간 대시보드가 있는 금융 보고, 물류와 공급망, 소셜 미디어 분석, "현재 최선 추정치"와 "정확한 역사 기록"이 동시에 필요한 모든 시나리오.</p>
+
+<pre><code># lambda_architecture.py
+
+# 핵심: 정확성을 위한 배치 레이어, 신선함을 위한 속도 레이어
+# 서빙 레이어가 쿼리 시 둘을 합침
+
+# 배치 레이어 - Spark가 매일 밤 전체 이력을 재계산
+batch_view = (spark.read.parquet("s3://events/history/")
+    .groupBy("user_id")
+    .agg(F.sum("revenue").alias("total_revenue"))  # 정확함
+)
+
+# 속도 레이어 - Kafka 소비자가 최근 N분만 업데이트
+speed_view = redis.hgetall("realtime:revenue")           # 신선함
+
+# 서빙 레이어 - 합침: 배치가 보정하고, 속도 레이어가 갭을 채움
+def serve(user_id):
+    base    = batch_view.get(user_id, 0)
+    realtime = float(speed_view.get(user_id, 0))
+    return base + realtime               # 합산 답변</code></pre>
+
+<blockquote>
+<p>람다는 두 세계를 모두 제공하지만, 두 개의 별도 시스템을 유지하는 비용이 따른다. 카파는 더 어려운 질문을 던진다. 스트림 하나가 배치가 하는 모든 것을 할 수 있다면?</p>
+</blockquote>
+
+<h2>5. 카파 아키텍처 — 스트림 하나로 모든 것을</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*IybHefK2lvuaaRZ5b0HqhA.png" alt="카파 아키텍처 다이어그램">
+</figure>
+
+<p><strong>어떤 문제를 해결하는가:</strong> 두 개의 별도 시스템 유지 복잡성 없이 람다 아키텍처의 힘을 원할 때.</p>
+
+<p>Kafka 공동 창시자인 Jay Kreps는 단순한 질문을 던졌다. 배치 레이어가 전혀 필요 없다면 어떨까? 카파에서는 이력을 포함한 모든 것이 스트림이다. 로직이 바뀌면 새 스트림 작업을 시작하고, Kafka 로그를 처음부터 재생하며, 이전 버전과 나란히 실행한다. 따라잡으면 트래픽을 전환한다. 코드베이스 하나. 별도 배치 시스템 없음. Kafka의 무한 보존이 전체를 가능하게 한다.</p>
+
+<p><strong>쓰이는 곳:</strong> 통합 코드베이스를 원하는 팀, 처리 로직이 자주 바뀌는 시스템, Kafka 생태계에 이미 깊이 있는 기업.</p>
+
+<pre><code># kappa_architecture.py
+
+# 핵심: t=0부터 재생해 새 로직으로 이력 재처리
+# 배치 레이어 없음 - 스트림 작업 하나가 모든 것을 처리
+
+def run_stream_job(version, start_offset="latest"):
+    consumer = KafkaConsumer(
+        "events",
+        auto_offset_reset=start_offset,   # "earliest" = 전체 이력 재생
+        group_id=f"job-v{version}"          # 새 그룹 = 독립적 재생
+    )
+    for msg in consumer:
+        result = process_v(version, json.loads(msg.value))
+        serving_store.write(f"v{version}", result)
+
+# v1 라이브와 나란히 전체 이력을 재생하는 v2 배포
+run_stream_job(version=1, start_offset="latest")    # 라이브 트래픽
+run_stream_job(version=2, start_offset="earliest")  # t=0부터 재생
+swap_traffic(to_version=2)                           # v2가 따라잡으면 전환</code></pre>
+
+<blockquote>
+<p>카파는 이론적으로 우아하지만, 수십억 이벤트를 처음부터 재생하는 건 비용이 크다. 밀리초가 아닌 초 단위 신선함이 필요하면서 스트리밍의 전체 복잡성 없이 처리하고 싶다면? 더 간결한 선택지가 있다.</p>
+</blockquote>
+
+<h2>6. 마이크로배치 파이프라인 — Spark의 숨겨진 기본값</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*A-Q4xKH7FdcdUU9h0Lqlpg.png" alt="마이크로배치 파이프라인 다이어그램">
+</figure>
+
+<p><strong>어떤 문제를 해결하는가:</strong> 시간이 아닌 초 단위의 근실시간 신선함이 필요하지만, 배치 처리의 단순함도 유지하고 싶을 때.</p>
+
+<p>한 유통 체인이 재고 대시보드를 30초마다 갱신하고 싶다. 완전한 스트리밍은 과하다. 시간별 배치는 너무 느리다. 마이크로배치가 중간 지점이다. 이것이 실제로 Spark Structured Streaming의 기본 모드다. 스트림이 버퍼를 채우고, N초마다 트리거가 발동하고, Spark가 드레인해서 미니 배치로 처리한 뒤 체크포인트를 저장한다. 크래시가 나면 정확히 멈춘 지점에서 재개한다. 초 단위 신선함, 스트리밍 복잡성 없음.</p>
+
+<p><strong>쓰이는 곳:</strong> 초 단위 신선함이 필요한 대시보드와 보고서, 로그 집계, 완전한 스트리밍 복잡성 없이 정확히 한 번(exactly-once) 의미 체계가 필요한 ETL 파이프라인.</p>
+
+<pre><code># microbatch_pipeline.py
+
+# 핵심: Spark Structured Streaming - N초마다 트리거
+# 체크포인트로 재시작 시 정확히 한 번 보장
+
+query = (
+    spark.readStream
+        .format("kafka")
+        .option("subscribe", "orders")
+        .load()
+    .withColumn("value", F.from_json("value", schema))
+    .groupBy(F.window("event_time", "1 minute"))
+    .agg(F.sum("amount").alias("total"))
+    .writeStream
+        .format("delta")
+        .trigger(processingTime="30 seconds")   # 30초마다 실행
+        .option("checkpointLocation", "/chk/orders") # 재시작 생존
+        .start("s3://warehouse/orders_agg")
+)
+query.awaitTermination()</code></pre>
+
+<blockquote>
+<p>마이크로배치는 하나의 소스가 하나의 목적지로 가는 흐름을 깔끔하게 처리한다. 하지만 단일 이벤트가 여섯 개의 서로 다른 시스템에 동시에 도달해야 한다면? 그것이 팬아웃 문제다.</p>
+</blockquote>
+
+<h2>7. 팬아웃 파이프라인 — 하나의 소스, 여러 목적지</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*0o5LOLlCBevODHaNBehEww.png" alt="팬아웃 파이프라인 다이어그램">
+</figure>
+
+<p><strong>어떤 문제를 해결하는가:</strong> 동일한 데이터가 여러 완전히 다른 시스템에 동시에 도달해야 할 때.</p>
+
+<p>주문 하나가 이커머스 플랫폼에 들어왔다. 여섯 개 시스템이 즉시 알아야 한다. 재고, 배송, 분석, 추천, 검색, 이메일. 하나의 소스에 여섯 개의 별도 파이프라인을 연결하면 취약하고 비용이 많이 든다. 팬아웃은 단일 이벤트 버스로 이걸 해결한다. SNS나 Pub-Sub에 한 번 발행한다. 각 소비자가 독립적으로 구독하고 병렬로 처리한다. 캐시 소비자가 실패해도 분석은 계속 돌아간다. 연쇄 장애 없음.</p>
+
+<p><strong>쓰이는 곳:</strong> 이커머스 주문 처리, 사용자 활동 이벤트, 알림 시스템, 두 개 이상의 다운스트림 시스템이 소비해야 하는 모든 이벤트.</p>
+
+<pre><code># fanout_pipeline.py
+
+# 핵심: SNS를 통해 독립 소비자에게 이벤트 브로드캐스트
+# 각 소비자는 독립적으로 실패 - 연쇄 장애 없음
+
+def publish_order_event(order):
+    sns.publish(
+        TopicArn=ORDER_TOPIC_ARN,
+        Message=json.dumps(order),
+        MessageAttributes={"event_type": {"DataType": "String", "StringValue": "order_placed"}}
+    )
+
+# 각 Lambda는 독립 구독자 - 하나의 토픽, 여러 소비자
+def analytics_consumer(event):   bigquery.insert(parse(event))
+def cache_consumer(event):       redis.hset("orders", order_id, parse(event))
+def search_consumer(event):      elasticsearch.index(parse(event))
+
+# cache_consumer의 실패가 analytics나 search에 영향 없음</code></pre>
+
+<blockquote>
+<p>팬아웃은 광범위하게 브로드캐스트한다. 하지만 모든 소비자는 여전히 스케줄이나 폴링으로 실행된다. 파이프라인 자체가 시간이 아닌 결과에 반응할 수 있다면? 그것이 이벤트 드리븐 파이프라인이 만들어진 이유다.</p>
+</blockquote>
+
+<h2>8. 이벤트 드리븐 파이프라인 — 스케줄러도 없고, 기다림도 없음</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*u-DoaKLg9ZFcBxWVTbX88Q.png" alt="이벤트 드리븐 파이프라인 다이어그램">
+</figure>
+
+<p><strong>어떤 문제를 해결하는가:</strong> 각 단계가 다음 단계를 자동으로 트리거해야 할 때. 중앙 오케스트레이터, cron 작업, 시간 대기 없이.</p>
+
+<p>대부분의 파이프라인은 시계에 따라 실행된다. 이벤트 드리븐 파이프라인은 결과에 따라 실행된다. 계약서 PDF가 S3에 올라왔다. Handler A가 발동해서 텍스트를 추출하고 Handler B를 발동시킨다. Handler B는 개체 인식을 실행하고 Handler C를 발동시킨다—계약 금액이 100만 달러를 넘는 경우에만. 스케줄러 없음. Cron 작업 없음. 완료된 각 단계가 다음 단계를 트리거한다. 파이프라인이 시간이 아니라 데이터 안에 있는 것에 반응한다.</p>
+
+<p><strong>쓰이는 곳:</strong> 서버리스 아키텍처(AWS Lambda, Google Cloud Functions), 문서와 미디어 처리 파이프라인, 마이크로서비스 코레오그래피, 이전 단계의 결과에 따라 다음 단계가 달라지는 모든 워크플로.</p>
+
+<pre><code># event_driven_pipeline.py
+
+# 핵심: 각 핸들러가 다음을 트리거 - 스케줄러 불필요
+# 이벤트 내용에 따른 조건부 라우팅
+
+def handler_a(event):               # S3 업로드로 트리거
+    text = extract_text(event["file"])
+    db.save(event["id"], text)
+    event_bus.emit("text_extracted", {**event, "text": text})  # B 발동
+
+def handler_b(event):               # "text_extracted"로 트리거
+    entities = run_ner(event["text"])
+    notify_slack(entities)
+    if event["contract_value"] > 1_000_000:
+        event_bus.emit("high_value", event)           # 조건부로 C 발동
+
+def handler_c(event):               # 100만 달러 초과 계약에만 발동
+    compliance.trigger_review(event["id"])</code></pre>
+
+<h2>올바른 패턴 선택: 빠른 의사결정 기준</h2>
+
+<p>솔직히 말하면, 대부분의 실제 프로덕션 시스템은 이 패턴들을 동시에 여러 개 사용한다. 성숙한 데이터 플랫폼은 이력 분석에는 ELT, 부정 거래 탐지에는 스트리밍, 대시보드에는 마이크로배치, 다운스트림 팀에 이벤트를 브로드캐스트하는 데는 팬아웃을 함께 쓸 수 있다.</p>
+
+<p>하지만 새 파이프라인을 시작하면서 하나를 골라야 한다면, 이 질문들을 던져봐라.</p>
+
+<p><strong>데이터가 얼마나 신선해야 하는가?</strong> 시간 단위라면 ETL 또는 ELT. 초 단위라면 마이크로배치. 밀리초 단위라면 스트리밍.</p>
+
+<p><strong>처리 로직이 자주 바뀌어야 하는가?</strong> 그렇다면 카파. 아니라면 람다 또는 스트리밍.</p>
+
+<p><strong>같은 이벤트가 여러 시스템에 도달해야 하는가?</strong> 그렇다면 팬아웃.</p>
+
+<p><strong>파이프라인 단계들이 시간이 아닌 결과에 반응해야 하는가?</strong> 그렇다면 이벤트 드리븐.</p>
+
+<p><strong>이력 정확성과 실시간 신선함이 둘 다 필요한가?</strong> 그렇다면 람다.</p>
+
+<p>오래 살아남는 시스템을 만드는 엔지니어들은 도구를 가장 많이 아는 사람이 아니다. 어떤 패턴이 어떤 문제를 해결하는지 깊이 이해하고, 더 그럴싸해 보이는 대안이 있어도 올바른 것을 선택하는 규율을 가진 사람들이다.</p>
+
+</body>
+</html>

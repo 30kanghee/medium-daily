@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Do You Still Need Claude Code? I Tested OpenCode With NVIDIA Nemotron</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Do You Still Need Claude Code? I Tested OpenCode With NVIDIA Nemotron</h1>
+<div class="meta">CodeWithYog (@CodeWithYog) · Let's Code Future · 8 min read · <a href="https://medium.com/lets-code-future/do-you-still-need-claude-code-i-tested-opencode-with-nvidia-nemotron-cd266bc9c700" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/lets-code-future/do-you-still-need-claude-code-i-tested-opencode-with-nvidia-nemotron-cd266bc9c700" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">OpenCode와 NVIDIA Nemotron의 조합은 Claude Code의 완전한 대체재는 아니지만, 비용과 유연성을 중시하는 개발자에게 진지하게 고려할 만한 선택지다.</p>
+  <p>저자는 오랫동안 Claude Code를 최선의 AI 코딩 도구로 꼽아왔다. 넓은 프로젝트 맥락 이해, 버그 추적 능력, 페어 프로그래밍에 가까운 다단계 작업 처리 능력 덕분이었다. 그러나 비용 부담, 특정 제공사 종속, 다양한 모델을 시험해보기 어렵다는 세 가지 문제가 개발자들을 OpenCode로 이끌고 있다. OpenCode는 오픈소스 코딩 에이전트로, 터미널에서 실행하며 Claude, GPT, Gemini, NVIDIA Nemotron 등 다양한 모델을 연결할 수 있다. Nemotron의 100만 토큰 컨텍스트 윈도는 대규모 코드베이스 작업에서 강점을 발휘하며, OpenCode의 핵심 가치는 특정 제공사에 묶이지 않고 작업 유형에 따라 최적의 모델을 선택할 수 있는 자유에 있다.</p>
+</div>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*yRj2YynixemVvJx6" alt="커버 이미지">
+  <figcaption>Photo by Glen Carrie on Unsplash</figcaption>
+</figure>
+
+<h2>몇 주 전까지만 해도 내 답은 명확했다</h2>
+
+<p>어떤 AI 코딩 도구가 실제 업무에서 가장 유용하냐고 물으면, 나는 주저 없이 Claude Code라고 답했다.</p>
+
+<p>그전에는 Codex로 코딩 도움을 받았다. 작은 작업에는 충분했다. 코드 설명, 스니펫 생성, 빠른 수정 정도는 잘 해줬다.</p>
+
+<p>그런데 Claude Code는 달랐다. 더 큰 프로젝트를 더 잘 이해했고, 코드베이스의 구조를 파악했으며, 버그를 더 꼼꼼하게 추적했다. 여러 단계에 걸친 작업을 페어 프로그래밍에 가까운 방식으로 처리했다.</p>
+
+<p>문제는 단 하나였다. 비용이었다.</p>
+
+<p>많은 개발자에게 이 비용은 사소한 문제가 아니다. 학생, 취미 개발자, 1인 창업자, 달러 가치가 중요한 나라의 개발자일수록 더욱 그렇다. AI 코딩 도구가 일상적인 개발 작업의 일부가 되어가고 있지만, 프리미엄 구독료는 여전히 부담스럽다.</p>
+
+<p>그래서 OpenCode가 눈에 들어왔다. 또 다른 'Claude 킬러'가 등장했다는 소문이 아니었다. 오픈소스 코딩 에이전트에 무료 모델 옵션을 연결하고 NVIDIA Nemotron 같은 모델을 활용할 수 있다는 이야기였다.</p>
+
+<p>처음에는 무시했다. 매주 새로운 'Claude 킬러'가 나타나 금세 사라지니까. 그런데 OpenCode는 달랐다. Claude를 이기려는 게 아니라, 개발자에게 더 많은 선택권을 주려는 방향이었다. 그 점이 달랐다.</p>
+
+<h2>OpenCode란 무엇인가</h2>
+
+<p>OpenCode는 개발자를 위한 오픈소스 AI 코딩 에이전트다. 터미널에서 실행하거나 데스크탑 앱으로 쓸 수도 있고 에디터와 연결할 수도 있다. 핵심 개념은 단순하다. 코드를 브라우저 챗창에 복사해 붙여넣는 대신, AI 어시스턴트를 프로젝트 안으로 직접 가져오는 것이다.</p>
+
+<p>이 방식은 워크플로를 바꿔놓는다. 파일 읽기, 코드 설명, 모듈 리팩터링, 테스트 생성, 아키텍처 분석, 기능 구현까지 OpenCode에게 맡길 수 있다. 텍스트 생성기가 아니라 코딩 에이전트처럼 동작한다.</p>
+
+<p>"React 컴포넌트 만들어줘"가 아니라 "이 프로젝트가 어떻게 구성됐는지 파악하고, 이 변경사항을 안전하게 적용할 방법을 찾아줘"라고 요청하는 방식이다. AI를 활용하는 훨씬 나은 방법이다.</p>
+
+<h2>개발자들이 Claude Code를 떠나는 세 가지 이유</h2>
+
+<h3>첫 번째: 비용</h3>
+
+<p>적극적으로 사용하다 보면 비용이 금방 불어난다. AI 도구 하나는 괜찮다. 여기에 또 다른 API, 디자인 도구, 호스팅, 데이터베이스 비용이 쌓이면 이야기가 달라진다. 현업 개발자에게는 여전히 감당할 만할 수 있다. 학생이나 1인 개발자에게는 매달 진지하게 고민해야 할 지출이 된다.</p>
+
+<p>OpenCode는 프리미엄 설정에서 시작하지 않아도 강력한 코딩 워크플로를 시험해볼 수 있는 통로를 열어준다.</p>
+
+<h3>두 번째: 종속성</h3>
+
+<p>코딩 어시스턴트는 습관이 된다. 명령어를 익히고, 그것에 맞춰 워크플로를 짜고, 프로젝트 규칙을 설정 파일에 담고, 그 도구의 동작 방식에 의존하게 된다. 그런데 요금제가 바뀌거나 제한이 생기거나 접근 방식이 달라지면? 그게 단일 제공사에 의존하는 위험이다.</p>
+
+<p>OpenCode는 다른 길을 제시한다. 다양한 모델을 연결하고, 무료 모델을 테스트하고, 어려운 작업에는 유료 모델을 쓰고, 개인 프로젝트에는 로컬 모델을 활용할 수 있다. 처음에는 사소해 보이는 자유지만, 실제로 써보면 그 차이가 크다.</p>
+
+<h3>세 번째: 실험의 한계</h3>
+
+<p>모든 작업을 한 모델이 가장 잘 해내지는 않는다. 추론과 아키텍처에는 Claude가 강하고, 프론트엔드 변경에는 빠른 오픈 모델이 낫고, 소규모 리팩터링에는 로컬 모델로도 충분하고, 큰 코드베이스를 읽을 때는 긴 컨텍스트 모델이 필요하다. OpenCode는 새 모델을 시험하고 싶을 때마다 워크플로 전체를 재구성하지 않아도 된다.</p>
+
+<h2>대화를 바꾸는 Nemotron 기능</h2>
+
+<p>내 시선을 사로잡은 것은 최신 NVIDIA Nemotron 모델의 100만 토큰 컨텍스트 윈도였다.</p>
+
+<p>마케팅 문구처럼 들릴 수 있으니 실용적으로 풀어보자. 컨텍스트 윈도가 크다는 것은 하나의 세션에서 모델이 더 많은 정보를 유지할 수 있다는 의미다. 개발자 입장에서는 이런 것들을 한꺼번에 올려놓을 수 있다는 뜻이다.</p>
+
+<ul>
+  <li>프로젝트 파일</li>
+  <li>아키텍처 노트</li>
+  <li>API 명세</li>
+  <li>데이터베이스 스키마</li>
+  <li>배포 스크립트</li>
+  <li>에러 로그</li>
+  <li>테스트 파일</li>
+  <li>기존 의사결정 내역</li>
+</ul>
+
+<p>컨텍스트가 작으면 어시스턴트가 앞에서 준 정보를 잊어버린다. 파일 하나, 또 하나, 또 하나를 주다 보면 초반 내용이 사라진다. 컨텍스트가 크다고 해서 모델이 완벽해지는 건 아니지만, 이해할 수 있는 공간이 넓어진다. 큰 프로젝트에서 이 차이는 실질적이다.</p>
+
+<h2>Claude Code vs OpenCode with Nemotron</h2>
+
+<p>이 둘을 싸움 구도로 보는 건 별로 유용하지 않다. 있는 그대로 보는 게 낫다.</p>
+
+<blockquote>
+  <p>Claude Code는 다듬어진 경험을 원하는 개발자에게 여전히 가장 쉽고 강력한 AI 코딩 도구다.<br>
+  OpenCode는 제어권을 원하는 개발자에게 더 매력적이다.<br>
+  Claude Code는 더 매끄러운 경로를 제공한다.<br>
+  OpenCode는 더 많은 선택지를 준다.<br>
+  Claude Code는 시작하기 쉽다.<br>
+  OpenCode는 초기 설정이 조금 더 필요하다.<br>
+  Claude Code는 자체 생태계 안에서 가장 잘 작동한다.<br>
+  OpenCode는 여러 제공사를 연결하고 다양한 모델을 시험할 수 있다.<br>
+  Claude Code는 도구가 '그냥 작동'하길 원하는 개발자에게 맞다.<br>
+  OpenCode는 자신의 스택을 직접 소유하고 싶은 개발자에게 맞다.</p>
+</blockquote>
+
+<p>이것이 진짜 비교다.</p>
+
+<h2>Nemotron이 코딩에서 흥미로운 이유</h2>
+
+<p>개발자들은 모델 크기에 지나치게 집착하는 경향이 있다. 그것만이 전부가 아니다.</p>
+
+<p>코딩에서 모델에게 필요한 것은 단계적으로 추론하는 능력, 지시를 따르는 능력, 도구를 사용하는 능력, 긴 작업 내내 일관성을 유지하는 능력이다.</p>
+
+<p>Nemotron의 최신 모델들은 에이전트 작업, 코딩, 추론, 계획 수립, 도구 활용, 긴 컨텍스트 워크플로에 맞춰 설계됐다. 개발자가 실제로 일하는 방식과 일치한다. 개발자는 질문만 하지 않는다. 조사하고, 변경하고, 테스트하고, 수정하고, 반복한다. AI 코딩 에이전트가 지원해야 할 바로 그 워크플로다.</p>
+
+<h2>단계별 설치 가이드</h2>
+
+<h3>1단계: 터미널 열기</h3>
+
+<p>Windows라면 PowerShell이나 Windows Terminal을, macOS나 Linux라면 기본 터미널을 연다.</p>
+
+<h3>2단계: OpenCode 설치</h3>
+
+<pre><code>curl -fsSL https://opencode.ai/install | bash</code></pre>
+
+<h3>3단계: 프로젝트 폴더로 이동</h3>
+
+<pre><code>cd my-project</code></pre>
+
+<p>예시:</p>
+
+<pre><code>cd ecommerce-app</code></pre>
+
+<p>실제 프로젝트 폴더 안에서 실행해야 파일, 구조, 컨텍스트를 제대로 활용할 수 있다.</p>
+
+<h3>4단계: OpenCode 시작</h3>
+
+<pre><code>opencode</code></pre>
+
+<p>프로젝트 안에서 에이전트가 실행된다. 여기서 모델을 선택하고 제공사를 연결한 뒤 실제 코드 작업을 시작할 수 있다.</p>
+
+<h3>5단계: 모델 선택</h3>
+
+<p>OpenCode는 다양한 모델 제공사를 지원한다. Claude, GPT, Gemini, Nemotron, DeepSeek, Qwen, MiniMax, Kimi 등을 연결할 수 있다. 작업에 따라 모델을 골라 쓸 수 있다는 것이 OpenCode의 가장 강력한 장점 중 하나다.</p>
+
+<h2>첫 번째 실전 프롬프트</h2>
+
+<p>대부분의 개발자는 너무 작은 것부터 시작한다.</p>
+
+<pre><code>Create a button component.</code></pre>
+
+<p>이것도 되기는 한다. 하지만 코딩 에이전트의 진짜 힘을 보여주지는 못한다. 완결된 엔지니어링 과제를 통째로 맡겨보자.</p>
+
+<pre><code>Build a premium SaaS landing page.
+Requirements:
+- React
+- TypeScript
+- Dark theme
+- Smooth scrolling
+- Hero section
+- Pricing section
+- Testimonials
+- Mobile responsive
+- Clean component structure
+- Reusable sections</code></pre>
+
+<p>이런 프롬프트는 에이전트에게 진짜 목표를 준다. 스니펫을 요청하는 게 아니라 일을 맡기는 것이다. 그 마인드셋이 결과물을 바꾼다.</p>
+
+<h2>더 나은 프롬프트가 더 나은 코드를 만든다</h2>
+
+<p>AI 코딩 도구를 검색 엔진처럼 쓰는 것이 개발자들이 가장 많이 하는 실수다.</p>
+
+<p>약한 프롬프트:</p>
+<pre><code>Create login page.</code></pre>
+
+<p>나은 프롬프트:</p>
+<pre><code>Build a production-ready authentication flow.
+Requirements:
+- React frontend
+- ASP.NET Core backend
+- JWT authentication
+- Refresh tokens
+- Role-based authorization
+- Login, logout, and token renewal
+- Basic unit tests
+- Clear folder structure</code></pre>
+
+<p>두 번째 프롬프트는 에이전트에게 제약 조건을 준다. 기술 스택을 알고, 기대하는 동작을 알고, 완료 기준을 안다. AI 코딩 도구는 아키텍트처럼 생각할 때 더 잘 작동한다. 원하는 것, 사용하는 스택, 따라야 할 규칙, 완료의 의미를 명확히 전달하라.</p>
+
+<h2>내 개발 워크플로에서 OpenCode가 맞는 자리</h2>
+
+<p>.NET 개발자로서 나는 OpenCode가 네 가지 영역에서 실용적으로 맞는다고 본다.</p>
+
+<h3>아키텍처 탐색</h3>
+
+<p>코드를 쓰기 전에 두세 가지 설계를 비교해 달라고 요청할 수 있다.</p>
+
+<pre><code>Review this project structure and suggest two clean ways to add offline sync support.</code></pre>
+
+<p>이런 프롬프트는 코딩 전에 생각을 정리하는 데 도움이 된다.</p>
+
+<h3>빠른 프로토타이핑</h3>
+
+<p>때로는 작동하는 개념 증명이 빨리 필요하다. OpenCode가 첫 버전을 만들고, 내가 검토하고 다듬고 보강한다. 개발자의 판단을 없애지 않으면서 시간을 아낀다.</p>
+
+<h3>문서화</h3>
+
+<p>문서화는 팀이 가장 먼저 무시하는 것 중 하나다. AI가 설치 메모, API 문서, 모듈 요약, 온보딩 가이드 작성을 도울 수 있다. 빠르게 움직이는 팀에게 유용하다.</p>
+
+<h3>리팩터링</h3>
+
+<p>긴 컨텍스트가 빛을 발하는 영역이다. 코딩 에이전트가 관련 파일을 살펴보고, 반복되는 로직을 찾아내고, 더 깔끔한 구조를 제안할 수 있다. 여전히 검토는 필요하지만 지루한 작업을 빠르게 처리해준다.</p>
+
+<h2>OpenCode가 대체하지 못하는 것</h2>
+
+<p>AI 코딩 에이전트는 점점 강해지고 있지만 개발자를 대체하지는 않는다.</p>
+
+<blockquote>
+  <p>팀만큼 비즈니스를 이해하지 못한다.<br>
+  프로덕션 장애를 책임지지 않는다.<br>
+  보안 버그에 대한 책임을 지지 않는다.<br>
+  어떤 트레이드오프가 더 중요한지 알지 못한다.<br>
+  코드를 쓸 수 있다. 코드를 설명할 수 있다. 코드를 리팩터링할 수 있다.</p>
+</blockquote>
+
+<p>하지만 최종 결정은 여전히 개발자의 몫이다. 그 선을 나는 넘지 않는다.</p>
+
+<h2>이 방향을 테스트한 뒤의 솔직한 생각</h2>
+
+<p>가장 흥미로운 부분은 OpenCode가 Claude Code와 경쟁한다는 사실이 아니다. 경쟁은 당연한 일이다. 진짜 이야기는 접근성이다.</p>
+
+<p>몇 년 전만 해도 고급 AI 코딩 워크플로는 비싼 도구, 유료 API, 클라우드 헤비 설정에 갇혀 있었다. 지금은 개발자가 오픈소스 코딩 에이전트를 설치하고, 다양한 모델을 연결하고, 터미널에서 실제 워크플로를 바로 시험해볼 수 있다.</p>
+
+<p>이것은 큰 변화다. OpenCode가 모든 개발자에게 Claude Code를 대체할까? 아니다. Claude Code는 여전히 많은 개발자에게 더 매끄러운 경험을 제공한다.</p>
+
+<p>OpenCode가 많은 개발자의 도구 모음 중 하나가 될까? 그렇다. 개발자들이 계속 요구해온 것을 OpenCode가 주기 때문이다. 선택의 자유.</p>
+
+<blockquote>
+  <p>어려운 추론에는 Claude를 쓴다.<br>
+  긴 컨텍스트 작업에는 Nemotron을 쓴다.<br>
+  실험에는 오픈 모델을 쓴다.<br>
+  개인 코드에는 로컬 모델을 쓴다.<br>
+  작업에 맞는 모델을 쓴다.</p>
+</blockquote>
+
+<p>AI 코딩이 향하는 방향이 바로 이것이다. 모델 하나, 도구 하나, 제공사 하나가 아니다. 개발자가 주도권을 쥔 유연한 워크플로. 그래서 OpenCode는 주목할 가치가 있다.</p>
+</body>
+</html>

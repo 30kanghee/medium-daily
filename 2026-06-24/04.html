@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Cowork 101: From Prompts to Deliverables &amp; Automated Workflows</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Claude Cowork 101: From Prompts to Deliverables &amp; Automated Workflows</h1>
+<div class="meta">Youssef Hosni · Level Up Coding · 40 min read · <a href="https://levelup.gitconnected.com/claude-cowork-101-from-prompts-to-deliverables-automated-workflows-42f31d73a57f" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://levelup.gitconnected.com/claude-cowork-101-from-prompts-to-deliverables-automated-workflows-42f31d73a57f" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">Claude Cowork는 단순한 채팅 인터페이스를 넘어, 파일·앱·스케줄 작업까지 연동해 완성된 결과물을 자동으로 만들어내는 에이전트형 데스크톱 어시스턴트다.</p>
+  <p>이 가이드는 Claude Chat, Claude Cowork, Claude Code의 차이를 명확히 정리한 뒤, Cowork를 실전에서 활용하기 위한 설정·지속 메모리·커넥터·스킬 체계를 단계별로 설명한다. 특히 "작업 지시형" 프롬프트 대신 "결과물 중심" 프롬프트로 전환하는 것이 핵심이며, 글로벌 지침을 통해 파일 수정·외부 전송 등 위험 행동에 제동을 걸 수 있다. 실습 워크플로로는 지저분한 폴더를 자동 정리하는 예제와, Slack 요약을 매일 아침 이메일로 받는 반복 예약 작업 설정을 직접 시연한다. Skills 기능을 활용하면 반복 업무를 표준화된 AI SOP로 패키지화해 팀 전체가 동일한 수준으로 작업할 수 있다.</p>
+</div>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*H17MNuKbjGnuU16OExOTCw.png" alt="Claude Cowork 101 커버 이미지">
+</figure>
+
+<h2>들어가며</h2>
+<p>대부분의 사람은 Claude를 챗봇처럼 쓴다. 질문하고, 파일 몇 개 올리고, 답을 받고, 끝. 이것도 분명 쓸만하지만, Claude 데스크톱 기능의 큰 부분을 그냥 흘려보내는 셈이다.</p>
+<p>Claude Cowork는 다른 방식으로 설계됐다. 작업 맥락을 대화창 안으로 끌어오는 대신, Claude를 작업이 이미 존재하는 곳—로컬 폴더, 프로젝트 파일, Gmail, 캘린더, Slack, Google Drive 등—으로 보내는 방식이다.</p>
+<p>이렇게 되면 상호작용의 성격이 달라진다. "답을 얻는 것"에서 "업무를 위임하는 것"으로. 목표는 이제 응답이 아니라 완성된 결과물이다. 정리된 폴더, 스프레드시트, 보고서 초안, 주간 요약, 반복 스케줄—이런 것들을 직접 만들어내는 작업 환경이다.</p>
+<p>이 가이드에서는 Claude Cowork의 핵심 개념을 단계별로 다룬다. Chat·Cowork·Code의 차이, 초기 설정 방법, 글로벌 지침과 지속 메모리 활용법, 그리고 커넥터가 Cowork를 어떻게 확장하는지 살펴본다. 마지막에는 실습 워크플로 두 가지—지저분한 폴더 정리와 첫 번째 반복 예약 작업—를 직접 만들어본다.</p>
+
+<h2>목차</h2>
+<ol>
+  <li>Claude Chat vs Claude Cowork vs Claude Code</li>
+  <li>Claude Cowork 필수 설정</li>
+  <li>Claude Cowork 지속 메모리</li>
+  <li>도구 &amp; 커넥터</li>
+  <li>Claude Cowork 스킬</li>
+  <li>워크플로 #1 — 지저분한 폴더 정리</li>
+  <li>워크플로 #2 — 첫 번째 반복 예약 작업</li>
+</ol>
+
+<h2>1. Claude Chat vs Claude Cowork vs Claude Code</h2>
+<p>워크플로를 만들기 전에, 세 가지 방식을 제대로 구분해두는 게 좋다. 겉보기엔 비슷해 보여도, 설계 목적이 전혀 다르다.</p>
+
+<p><strong>Claude Chat</strong>는 대화 중심이다. 질문하고, 파일 올리고, 컨텍스트를 붙여넣으면 답이 대화창에 돌아온다. 글쓰기, 요약, 코드 설명, 아이디어 탐구 같은 작업에 여전히 유용하다. 하지만 파일이 많거나 크고, 단계가 반복되거나, 여러 도구에 걸친 작업이라면 채팅 인터페이스는 금방 한계에 부딪힌다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*G608B1KVwLR7biSOfAlFBQ.png" alt="Figure 1. Claude chat 파일 업로드 용량 제한">
+<figcaption>Figure 1. Claude Chat의 파일 업로드 제한(31 MB). 파일이 이 한도를 넘으면 거부된다.</figcaption>
+</figure>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*AHqqs9IvChguGmdF8CB9GQ.png" alt="Figure 2. Claude chat 첨부 파일 수 제한">
+<figcaption>Figure 2. 첨부 파일이 20개를 넘으면 Claude Chat이 요청 자체를 거부한다.</figcaption>
+</figure>
+
+<p>이런 제약은 예외 상황이 아니다. 폴더 정리 작업에는 수백 개 파일이 있을 수 있고, 리서치 종합에는 수십 개 PDF가 필요할 수 있다. 보고서 자동화 워크플로에는 스프레드시트, 문서, 스크린샷, 연결된 앱이 동시에 필요하다. 그럴 때 문제는 Claude가 작업을 처리 못하는 게 아니라, 채팅이 그 작업에 맞지 않는 인터페이스라는 점이다.</p>
+
+<p><strong>Claude Cowork</strong>는 단순 채팅창이 아니다. 에이전트형 데스크톱 어시스턴트에 가깝다. 파일, 폴더, 커넥터, 플러그인, 스킬을 Cowork 인터페이스에서 직접 다룰 수 있다. 출력이 단순 텍스트 답변이 아니라 완성된 결과물—정리된 폴더, 스프레드시트, 보고서 초안, 주간 다이제스트, 반복 워크플로—인 작업에 훨씬 더 잘 맞는다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*N8HJ5hUYWo92U_oCj4STwg.png" alt="Figure 3. Claude Cowork 인터페이스">
+<figcaption>Figure 3. Claude Cowork에서는 파일, 폴더, 커넥터, 플러그인, 스킬을 직접 연결할 수 있다.</figcaption>
+</figure>
+
+<p>컨텍스트 창 크기도 중요한 차이다. Cowork는 데이터를 기기 로컬에 저장할 수 있어 더 큰 컨텍스트를 다룰 수 있다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*V9TerWGdXkuUFVR6HbCsVg.png" alt="Figure 4. Claude Cowork vs Claude Chat 컨텍스트 창 비교">
+<figcaption>Figure 4. Claude Cowork와 Claude Chat의 컨텍스트 창 크기 비교.</figcaption>
+</figure>
+
+<p>이 차이는 프롬프트 작성 방식도 바꿔놓는다.</p>
+
+<p>Chat에서는 많은 사람이 이런 식으로 쓴다.</p>
+<blockquote>
+<p><em>이 파일들 읽고 요약해줘. 스프레드시트 보고 정리해줘. 이 폴더 정리 도와줘.</em></p>
+</blockquote>
+
+<p>소규모 작업에는 통한다. 하지만 Cowork에서는 더 강력한 패턴이 있다. <strong>결과물 중심</strong>으로 쓰는 것이다. 완료된 상태가 어떻게 보여야 하는지, Claude가 어떤 입력을 쓸 수 있는지, 어떤 제약을 지켜야 하는지, 작업 완료를 어떻게 알 수 있는지를 명시한다.</p>
+
+<p>좋지 않은 Cowork 지시:</p>
+<blockquote>
+<p><strong><em>내 Downloads 폴더 정리해줘.</em></strong></p>
+</blockquote>
+
+<p>잘 작성된 Cowork 지시:</p>
+<blockquote>
+<p><strong><em>내 Downloads 폴더를 파일 종류와 프로젝트별로 명확한 하위 폴더로 구성해줘. 내가 삭제 승인하지 않는 한 원본 파일은 보존해. 30일이 지난 스크린샷은 archive 폴더로 이동해. 이동한 것, 그대로 둔 것, 판단이 어려운 파일 목록을 짧은 요약 파일로 만들어줘. 삭제나 덮어쓰기 전에 반드시 확인해.</em></strong></p>
+</blockquote>
+
+<p>두 번째 버전은 목표, 경계, 확인 시점, 최종 결과물을 모두 정의한다. 에이전트가 실제로 행동에 옮길 수 있는 지시다.</p>
+
+<p><strong>Claude Code</strong>는 다른 범주다. 코드베이스 탐색, 파일 수정, 명령어 실행, 디버깅, 테스트 작성, 개발 환경 작업처럼 소프트웨어 엔지니어링에 특화됐다. 리포지토리, 터미널, 코드 변경, 소프트웨어 배포가 주 업무라면 Claude Code가 더 적합하다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*4i_LBEWh9lUS6w-nE9JfYQ.png" alt="세 가지 Claude 인터페이스 선택 기준">
+<figcaption>세 인터페이스를 언제 써야 하는지 판단하는 간단한 기준.</figcaption>
+</figure>
+
+<p>중요한 교훈은 어느 하나가 나머지를 대체한다는 게 아니다. 각각이 서로 다른 프롬프트 방식을 필요로 한다는 것이다. Chat은 대화 스타일로 써도 되지만, Cowork는 결과물 중심으로 구조화해야 하고, Claude Code는 리포지토리·브랜치·명령어·테스트에 대해 정확해야 한다.</p>
+
+<h2>2. Claude Cowork 필수 설정</h2>
+<p>Cowork로 파일 재구성, 보고서 생성, 예약 작업을 시작하기 전에 설정에 몇 분을 투자하는 게 좋다. 이 단계를 건너뛰기 쉽지만, 실제 사용 경험에 큰 영향을 미친다.</p>
+
+<p>핵심 아이디어는 간단하다. Cowork는 파일, 앱, 커넥터, 예약 작업을 조작할 수 있다. 따라서 기본 동작이 일반 채팅보다 훨씬 신중해야 한다. Claude가 작업 선호도를 파악하게 하되, 파일 변경·외부 메시지 발송·자율 실행에는 명확한 경계를 설정해야 한다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*wusirAbIbmguge261VTl0w.png" alt="Figure 7. Claude Cowork 설정 화면">
+<figcaption>Figure 7. Claude Cowork 설정 화면. Claude 데스크톱 앱 → Settings에서 접근한다.</figcaption>
+</figure>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*q620anX2GuH8jbSgqDG2jQ.png" alt="Figure 8. 개인 정보 및 선호도 설정">
+<figcaption>Figure 8. General 탭에서 Claude의 전반적인 동작 방식(스타일, 답변 상세도 등)을 설정한다.</figcaption>
+</figure>
+
+<p>Cowork에서 더 중요한 설정은 전용 Cowork 설정 페이지에 있다. 세 가지를 주목해야 한다.</p>
+
+<p>첫째, <strong>Dispatch</strong>다. 스마트폰에서 작업을 시작해도 데스크톱에서 실행되게 해준다. Cowork가 로컬 파일과 데스크톱 환경에 의존하는 경우가 많으므로, 어디서든 작업을 시작할 수 있는 유연성이 생긴다.</p>
+
+<p>둘째, <strong>Cowork 파일 저장 위치</strong>다. 아티팩트와 예약 작업이 저장되는 폴더다. Cowork가 결과물을 어디에 만드는지 알고 있어야 한다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*Ar0glwq2wIKbweuSyQff0g.png" alt="Figure 9. Claude Cowork 설정 패널">
+<figcaption>Figure 9. Claude Cowork 설정 패널. Dispatch, 파일 저장 위치, 글로벌 지침 세 가지가 핵심이다.</figcaption>
+</figure>
+
+<p>셋째, 가장 중요한 <strong>글로벌 지침</strong>이다. 세션 전반에 걸쳐 Cowork가 따라야 할 기본 규칙을 정의하는 곳이다. 파일을 만들고, 편집하고, 이름을 바꾸고, 이동하고, 요약할 수 있기 때문에, "간결하게 써줘" 같은 채팅 선호도로는 부족하다. 운영 규칙이 필요하다.</p>
+
+<pre><code>## 실수로 인한 손상 방지
+- 기존 파일을 삭제, 덮어쓰기, 이름 변경하기 전에는 변경 내용을 정확히 보여주고 내 확인을 기다려라.
+- 내가 명시적으로 요청하지 않는 한 현재 작업 폴더 밖의 파일은 수정하지 마라.
+- 외부로 보내는 모든 것(이메일, 메시지, 캘린더 초대)이나 연결된 앱에 게시하기 전에
+  전체 내용과 수신자를 보여주고 확인을 기다려라.
+- 되돌릴 수 없는 단계에서 내 의도가 불분명하면, 추측하지 말고 멈추고 물어라.
+
+## 정리 정돈
+- 새 파일명은 YYYY-MM-DD-설명적이름 형식으로 지정해라(확장자는 유지).
+- 요청하지 않는 한 기존 파일의 이름이나 구조를 이 규칙에 맞게 바꾸지 마라.
+- 모든 작업 종료 후 생성하거나 수정한 파일 목록을 전체 경로와 함께 제공해라.
+
+## 자율 작업 속도 조절
+- 다단계 작업에서는 실행 전에 계획을 먼저 제시하고 승인을 받아라.
+- 각 주요 단계 후 완료한 내용과 다음 단계를 간략히 요약해라.
+- 실제 상황이 승인된 계획과 달라지면(오류, 예상치 못한 상황, 더 나은 방법),
+  조용히 즉흥적으로 처리하지 말고 멈추고 확인해라.
+
+## 막혔을 때
+- 필요한 파일, 권한, 세부 정보가 없으면 멈추고 물어라.
+  추측이나 자리 표시자로 대체해서 계속 진행하지 마라.</code></pre>
+
+<p>이 지침이 Cowork를 완벽하게 만들지는 않지만, 훨씬 안전한 기본값을 만들어준다. "내 Downloads 폴더 정리해줘"라는 요청이 있을 때, 이 규칙이 없으면 Claude는 파일 이름 변경, 이동, 중복 삭제, 폴더 재구성 등을 자기 판단으로 처리할 수 있다. 규칙이 있으면 계획을 먼저 제시하고, 위험한 행동 전에 확인을 구하며, 변경 사항 요약으로 마무리할 가능성이 높아진다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*Bag2cjB0asfkq4PKagFc2A.png" alt="Figure 10. Claude Cowork 메모리 기능 설정">
+<figcaption>Figure 10. 기능(Capabilities) 설정에서 과거 대화 검색 및 메모리 생성 옵션을 활성화할 수 있다.</figcaption>
+</figure>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*r_jQvMt1083OmOB4KMj2qg.png" alt="Figure 11. Claude Cowork 시각 출력 설정">
+<figcaption>Figure 11. 아티팩트, AI 기반 아티팩트, 인라인 시각화를 활성화하면 표, 차트, 대화형 결과물을 바로 확인할 수 있다.</figcaption>
+</figure>
+
+<p>이 설정이 끝나면 Cowork는 본격적인 작업 준비를 마친 셈이다. 결과물 저장 위치, 위험 행동에 대한 글로벌 안전 규칙, 반복 작업을 위한 메모리, 풍부한 출력을 위한 아티팩트 설정까지 갖춰진다. 막연한 요청을 던지고 결과를 기대하는 게 아니라, 운영 환경을 먼저 정의하는 것이 이후 모든 워크플로의 기반이 된다.</p>
+
+<h2>3. Claude Cowork 지속 메모리</h2>
+<p>Cowork에서 가장 유용한 패턴 중 하나가 지속 메모리다. "Claude가 당신에 대해 뭔가 기억한다"는 막연한 의미가 아니라, 더 실용적인 개념이다. 선호도, 결정, 프로젝트 규칙, 작업별 교훈을 파일로 저장해두면 Cowork가 나중에 다시 읽을 수 있다는 것이다.</p>
+
+<p>많은 실제 워크플로가 일회성이 아니기 때문에 이게 중요하다. LinkedIn 포스트를 한 편만 쓰거나, 보고서를 한 번만 작성하거나, 폴더를 한 번만 정리하는 게 아니다. 원하는 작업 방식을 Claude가 점차 이해하길 바란다.</p>
+
+<ul>
+  <li>LinkedIn 포스트를 어떤 톤으로 써야 하는가?</li>
+  <li>뉴스레터는 어떤 문체를 써야 하는가?</li>
+  <li>파일 명명 규칙은 무엇인가?</li>
+  <li>Cowork가 절대 건드리면 안 되는 폴더는?</li>
+  <li>주간 보고서에 포함하거나 제외할 내용은?</li>
+  <li>지난번에 Claude가 한 실수 중 반복하지 말아야 할 것은?</li>
+</ul>
+
+<p>일반적인 채팅 워크플로에서는 이런 컨텍스트가 대화 안에 갇혀 있다. 몇 번 주고받는 동안은 유용하지만, 반복 작업의 신뢰할 수 있는 운영 레이어가 되지는 못한다. 긴 대화는 결국 컨텍스트 한계에 부딪히고, 과거 세부 사항이 점점 보이지 않게 된다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*h6oDBbQNtR8cspOPL7NvPw.png" alt="Figure 12. Claude Chat 메모리와 Claude Cowork 메모리 비교">
+<figcaption>Figure 12. Chat은 대화 중에만 컨텍스트를 보유하지만, Cowork는 파일로 저장된 메모리를 세션 간에 유지할 수 있다.</figcaption>
+</figure>
+
+<p>간단한 패턴은 Cowork 프로젝트 폴더 루트에 두 파일을 만드는 것이다.</p>
+
+<pre><code>CLAUDE.md
+memory.md</code></pre>
+
+<p>이름보다 패턴이 중요하지만, 기억하기 쉬운 이름들이다.</p>
+
+<p><strong>CLAUDE.md</strong>는 운영 규칙을 담는다. 이 프로젝트에서 Claude가 어떻게 행동해야 하는지, 어떤 스타일을 따라야 하는지, 어떤 제약을 지켜야 하는지, 행동 전에 무엇을 확인해야 하는지.</p>
+
+<p><strong>memory.md</strong>는 축적된 교훈을 담는다. 변경 사항, 피드백을 통해 Claude가 배운 것, 선호하는 출력의 예시, 반복 결정, 이전 실행에서의 메모.</p>
+
+<pre><code>CLAUDE.md = 이 워크스페이스에 대한 고정 지침
+memory.md = 이전 작업에서 배운 교훈</code></pre>
+
+<p>특히 창의적·편집 워크플로에 유용하다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*0_6EgSbL1I7JobEgicwwKg.png" alt="Figure 13. Claude Cowork로 LinkedIn 포스트 작성 요청">
+<figcaption>Figure 13. Cowork로 Claude Cowork에 관한 LinkedIn 포스트 작성을 요청했다.</figcaption>
+</figure>
+
+<p>예를 들어 Cowork로 LinkedIn 포스트를 작성하게 했다고 하자. 그 다음 중요한 단계는 초안을 직접 편집한 뒤, 내 버전을 다시 Cowork에 붙여넣어 비교하게 하는 것이다. 현재 포스트를 개선하는 게 목적이 아니라, 편집 뒤에 숨어 있는 재사용 가능한 선호도를 추출하는 것이다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*4hozBMKcqj6gNgKcAr4wag.png" alt="Figure 14. 편집한 버전을 Cowork에 다시 넣어 비교">
+<figcaption>Figure 14. 편집한 버전을 Cowork에 다시 제공해 원본과 비교하게 한다.</figcaption>
+</figure>
+
+<p>이것이 매우 중요한 습관이다. 대부분의 사람들은 AI 피드백을 일시적으로만 활용한다. Claude가 무언가를 쓰면 직접 편집하고, 그 배움은 사라진다. 다음번에도 Claude는 같은 실수를 한다. Cowork에서는 편집을 지속적인 선호도로 변환할 수 있다.</p>
+
+<p>단순히 "이건 내 스타일이 아니야"라고 하는 대신:</p>
+<blockquote>
+<p>내 버전과 원본을 비교해. 주요 스타일 차이를 파악해. 재사용 가능한 선호도는 <code>CLAUDE.md</code>에, 이번 편집에서 얻은 구체적인 교훈은 <code>memory.md</code>에 저장해.</p>
+</blockquote>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*_mMbSZdr5uBtvj1IKdv9bA.png" alt="Figure 15. Cowork가 두 파일을 생성하고 교훈을 추출한 결과">
+<figcaption>Figure 15. Cowork가 프로젝트 폴더에 두 파일을 생성하고 편집에서 추출한 교훈을 요약했다.</figcaption>
+</figure>
+
+<p>이렇게 Cowork는 챗봇이 아닌 작업 어시스턴트처럼 느껴지기 시작한다. 처음에는 여전히 상세한 피드백이 필요하다. 하지만 두 번째 실행 때는 참고할 내용이 생기고, 세 번째에는 워크플로가 더 매끄러워진다. 시간이 지나면 폴더에는 작업 결과물뿐만 아니라, 그 결과물 뒤의 작업 메모리도 쌓인다.</p>
+
+<p>좋은 메모리 예시:</p>
+<pre><code>- 짧은 한 줄 멘트 스타일보다 단락형 LinkedIn 포스트를 선호한다.
+- "게임 체인저", "혁신적인", "강력한 힘을 잠금 해제"같은 과장 표현은 피한다.
+- 기술 포스트에서는 넓은 해석보다 구체적인 관찰로 시작한다.
+- 주장은 정확하게. 숫자나 벤치마크를 사용할 때는 출처를 포함하거나 불확실함을 명시한다.</code></pre>
+
+<p>약한 메모리 예시:</p>
+<pre><code>- 더 좋게 만들어줘.
+- 내 스타일로 써줘.
+- 전문적으로 써줘.
+- AI가 쓴 것처럼 들리지 않게 해줘.</code></pre>
+
+<p>전자는 실행 가능하다. 후자는 너무 모호하다. 지속 메모리는 좋은 작업 지시를 대체하는 게 아니다. 반복을 줄이고 Cowork가 같은 종류의 작업에 더 나은 출발점을 갖게 해준다.</p>
+
+<h2>4. 도구 &amp; 커넥터</h2>
+<p>Cowork는 작업이 실제로 존재하는 곳에 접근할 수 있을 때 훨씬 더 유용해진다. 프롬프트 창에 직접 입력하는 텍스트로만 쓰면, 여전히 일반 챗봇 워크플로에 가깝다. 진짜 차이는 Cowork가 파일, 폴더, 앱, 커넥터, 플러그인, 프로젝트 컨텍스트에 접근할 수 있을 때 나타난다.</p>
+
+<p>Cowork 사이드바에서 Customize로 들어가면 세 가지 카테고리로 나뉜다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*g7j6qBx0kb2KwxlYClE_7g.png" alt="Figure 17. Cowork 커스터마이즈 화면">
+<figcaption>Figure 17. Cowork 커스터마이즈 화면. 커넥터, 스킬, 플러그인으로 구분된다.</figcaption>
+</figure>
+
+<p><strong>커넥터</strong>는 외부 앱과 서비스에 접근권을 준다. Gmail 커넥터로 Claude가 받은 편지함을 검색하고 요약하거나 답장 초안을 쓸 수 있다. Google Drive로 문서를 찾아 작업할 수 있다.</p>
+
+<p><strong>스킬</strong>은 다르다. 스킬은 Claude에게 프로세스를 가르친다. 작업을 어떻게 해야 하는지, 어떤 파일을 확인해야 하는지, 어떤 규칙을 따라야 하는지, 어떤 단계를 반복해야 하는지 설명한다.</p>
+
+<p><strong>플러그인</strong>은 특정 분야에 대한 사전 구축된 지식이나 기능을 추가한다.</p>
+
+<p>Cowork의 핵심 개념을 한 줄로:</p>
+<blockquote>
+<p>커넥터는 접근을 제공한다. 스킬은 프로세스를 제공한다. 플러그인은 추가 기능을 제공한다.</p>
+</blockquote>
+
+<p>예를 들어 주간 이메일 다이제스트를 작성하려면, Gmail 커넥터가 이메일에 접근권을 준다. 작성 스킬이 다이제스트 구조를 알려준다. 글로벌 지침과 메모리 파일이 톤, 길이, 안전 규칙을 설정한다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*eytnvNoUtL3CVg1bO3POGQ.png" alt="Figure 18. Gmail 커넥터 검색 화면">
+<figcaption>Figure 18. Anthropic과 파트너사가 제공하는 Gmail 커넥터를 검색해 찾을 수 있다.</figcaption>
+</figure>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*v0fFTE280kn6EoOa9DJ8KQ.png" alt="Figure 19. Gmail 커넥터 연결 화면">
+<figcaption>Figure 19. Gmail 커넥터 페이지에서 Connect를 클릭해 연결을 시작한다.</figcaption>
+</figure>
+
+<p>커넥터는 단순한 기능 토글이 아니다. Claude에게 다른 애플리케이션 내 데이터에 대한 접근을 부여하는 것이다. 연결하기 전에 어떤 계정을 사용하는지, 어떤 종류의 접근이 요청되는지, 그 접근이 실행할 워크플로에 적절한지 확인해야 한다.</p>
+
+<p>Gmail 커넥터를 이용한 좋은 프롬프트 예시:</p>
+
+<pre><code>Gmail에서 최근 보낸 이메일을 검토하고 미래 이메일 작성에 재사용 가능한
+글쓰기 스타일 원칙을 추출해줘.
+
+내 글쓰기 스타일에만 집중해:
+- 톤
+- 인사말과 맺음말 스타일
+- 문장 길이
+- 격식체 수준
+- 요청과 후속 조치 구성 방식
+
+비공개 이메일 내용은 요약하지 마.
+민감한 세부 정보는 인용하지 마.
+이메일 발송, 보관, 삭제, 라벨 지정 또는 읽음 처리를 하지 마.
+
+현재 Cowork 프로젝트 폴더에 email-writing-style-principles.md 파일을 만들어줘.
+파일 저장 전에 제안된 원칙을 보여주고 내 확인을 기다려.</code></pre>
+
+<p>커넥터 접근 권한이 있을 때의 명확한 패턴: <strong>명확한 결과물 + 특정 소스 + 정의된 출력 + 명시적 안전 경계</strong>.</p>
+
+<h2>5. Claude Cowork 스킬</h2>
+<p>스킬은 2025년 10월 Anthropic이 출시했다. 단순한 지침과 달리, 스킬은 AI 에이전트가 필요할 때 컨텍스트를 필요한 만큼만 로딩할 수 있는 동적·구조화된 패키지다. 처음에는 Claude 전용 기능이었지만, 이후 OpenAI와 Microsoft 등 주요 플랫폼이 채택한 개방형 표준으로 발전했다.</p>
+
+<p>스킬을 쓰지 않으면 에이전트는 정적인 프롬프트에서 작동하며 모든 작업이 처음부터 시작된다. 스킬이 있으면 선별된 전문성, 컨텍스트, 워크플로를 필요할 때 상속받아 시간이 지남에 따라 가치가 복리로 쌓인다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/0*zQJXVl_DmZtfHQ-U.png" alt="Figure 24. 스킬 사용 팀과 미사용 팀의 성장 비교">
+<figcaption>Figure 24. 스킬을 도입한 팀은 시간이 지날수록 지수적으로 성과가 향상된다.</figcaption>
+</figure>
+
+<p>조직 차원에서 보면 스킬의 진짜 힘은 제도적 지식의 결정화다. 한 사람이 어떤 작업을 가장 잘 처리하는 방법을 파악하면, 그것을 스킬로 만들어 팀 전체가 그 수준으로 작업할 수 있다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/0*PTNWnuvggmI7aij-.png" alt="Figure 27. 스킬 = AI 에이전트를 위한 표준 운영 절차">
+<figcaption>Figure 27. 스킬은 AI 에이전트를 위한 SOP(표준 운영 절차)다. 사람 직원에게 SOP로 교육하는 것과 같은 방식이다.</figcaption>
+</figure>
+
+<h3>5.1. 에이전트 스킬 구조</h3>
+<p>스킬은 예측 가능한 구조를 가진 폴더로 프로젝트 안에 위치한다.</p>
+
+<pre><code>your-skill-name/
+├── SKILL.md              # 필수 - 메인 스킬 파일
+├── scripts/              # 선택 - 실행 가능한 코드
+│   ├── process_data.py
+│   └── validate.sh
+├── references/           # 선택 - 문서
+│   ├── api-guide.md
+│   └── examples/
+└── assets/               # 선택 - 템플릿, 폰트, 아이콘
+    └── report-template.md</code></pre>
+
+<p>모든 스킬의 핵심은 <strong>SKILL.md</strong> 파일이다. 메타데이터를 위한 YAML 프론트매터와 지침을 위한 Markdown 콘텐츠로 구성된다.</p>
+
+<pre><code>---
+name: project-workspace-setup
+description: 페이지, 데이터베이스, 템플릿을 포함한 완전한 프로젝트 워크스페이스
+  생성을 자동화한다. 사용자가 "새 프로젝트 설정", "워크스페이스 생성",
+  "프로젝트 구조 초기화"를 요청할 때 사용한다.
+---
+
+# 프로젝트 워크스페이스 설정
+## 지침
+[Claude가 따를 단계별 가이드]
+## 예시
+[구체적인 사용 시나리오]
+## 문제 해결
+[일반적인 문제와 해결책]</code></pre>
+
+<h3>5.2. Claude는 언제 스킬을 사용하는가?</h3>
+<p>스킬이 설치되면 Claude는 언제 활성화할지 알아야 한다. 두 가지 방법이 있다. 첫 번째는 명시적 트리거—<code>/humanizer</code>처럼 슬래시 커맨드로 직접 호출한다. 두 번째는 자연어 매칭—원하는 것을 일반 영어로 설명하면, Claude가 사용 가능한 모든 스킬 설명과 비교해 일치하는 게 있으면 자동으로 활성화한다. 커맨드 이름을 기억할 필요가 없다.</p>
+
+<h3>5.3. 첫 번째 스킬 만들고 추가하기</h3>
+
+<p><strong>A. 사전 구축된 스킬 설치 및 사용</strong></p>
+<p>직접 스킬을 만들 필요가 없을 수도 있다. 이미 풍부한 사전 구축 스킬 생태계가 있다. Anthropic 공식 라이브러리에서 125k GitHub 스타를 가진 50개 이상의 큐레이션된 스킬을 제공하며, 커뮤니티에는 380개 이상의 오픈소스 스킬이 있고, SkillsMP.com 같은 마켓플레이스에서 사고 팔 수 있다.</p>
+
+<pre><code>/plugin marketplace add anthropics/skills</code></pre>
+
+<p>커뮤니티 스킬을 사용하려면 스킬을 다운로드한 후 Customize 탭에서 Create Skill 버튼으로 업로드한다. 설치 후에는 자연어로 요청하거나 <code>/skill-name</code>으로 명시적으로 호출하면 된다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*kogVsHO-r6RJ1C-VKKfntw.png" alt="Figure 37. /humanizer 스킬 사용 예시">
+<figcaption>Figure 37. Cowork에서 /humanizer 스킬을 활성화한 모습. 파란색으로 표시되면 활성화된 것이다.</figcaption>
+</figure>
+
+<p><strong>B. Claude 스킬 생성 스킬 활용</strong></p>
+<p>새 스킬을 만드는 가장 쉬운 방법은 Claude가 직접 만들게 하는 것이다. Claude에는 내장된 <strong>skill-creator</strong> 스킬이 있어 전체 과정을 대화 방식으로 안내한다. SKILL.md 파일을 처음부터 작성하는 대신, 원하는 것을 평범한 언어로 설명하면 skill-creator가 구조, YAML 메타데이터, 설명, 트리거 구문을 자동으로 처리한다.</p>
+
+<p>Customize → Create new skills → "Create with Claude"를 선택하면 바로 시작할 수 있다.</p>
+
+<h2>6. 워크플로 #1 — 지저분한 폴더 정리</h2>
+<p>첫 번째 워크플로는 의도적으로 단순하다. Cowork에 지저분한 폴더에 대한 접근 권한을 주고, 내용을 파악하게 한 다음, 더 깔끔한 구조로 재구성하게 한다.</p>
+
+<p>복잡한 커넥터나 외부 시스템 없이도 Cowork의 핵심 루프를 보여줄 수 있어 좋은 시작 워크플로다. Cowork가 폴더를 읽고, 파일을 검사하고, 계획을 제안하고, 필요할 때 명확한 질문을 하고, 로컬 워크스페이스에 변경 사항을 적용한다.</p>
+
+<p>Cowork 홈 화면에서 <strong>Work in a project</strong> → <strong>Choose a folder</strong>를 선택한다. 이렇게 하면 현재 작업이 일반 채팅 컨텍스트가 아닌 특정 로컬 폴더를 기준으로 실행된다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*AGxtDZaO572-ajRiMNvPuQ.png" alt="Figure 42. Work in a project 선택 화면">
+<figcaption>Figure 42. Work in a project → Choose a folder 순서로 진행한다.</figcaption>
+</figure>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*iJxONSbkHSwDWk44KTO5-Q.png" alt="Figure 45. 정리 전 폴더 상태">
+<figcaption>Figure 45. 정리 전 폴더 모습. 스크린샷, PDF, JPEG, PNG가 뒤섞여 있다. 이런 폴더가 Chat의 업로드 한도를 금방 초과한다.</figcaption>
+</figure>
+
+<p>이 예제에서 사용한 프롬프트:</p>
+
+<pre><code>생성 시간을 기준으로 파일을 정렬하고 순서와 종류에 따라 이름을 바꿔줘.
+첫 번째 이미지는 image_01, 열 번째 PDF 파일은 pdf_10 이런 식으로.</code></pre>
+
+<p>짧지만 구체적인 결과물을 제시한다. 하지만 Cowork가 해결해야 할 세부 사항이 있다. png, jpg, jpeg, gif, webp를 모두 image로 묶어야 하는가? 각 확장자별로 별도의 순서가 있어야 하는가? 생성 타임스탬프가 없으면 어떻게 되는가?</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*aqXdq490w_qlEZf74ztBXA.png" alt="Figure 46. Cowork가 타임스탬프 문제를 발견하고 사용자에게 확인 요청">
+<figcaption>Figure 46. Claude가 폴더를 검사하고 파일 생성 타임스탬프를 예상대로 구할 수 없음을 발견했다. 조용히 추측하는 대신, 문제를 설명하고 수정 시간을 대신 사용할 것을 제안하며 파일 그룹화 방식에 대해 질문한다.</figcaption>
+</figure>
+
+<p>이것이 Cowork에서 원하는 동작이다. 지시가 모호할 때 파괴적인 변경으로 돌진하지 않는다. 결정 지점에서 멈추고, 트레이드오프를 설명하고, 선택하게 한다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*XI7UliMXDzMnQhgWf6i9ew.png" alt="Figure 47. 정리 후 폴더 상태">
+<figcaption>Figure 47. 정리 후 폴더. image_01.webp, image_02.jpg 같은 예측 가능한 순서로 이름이 바뀌었다.</figcaption>
+</figure>
+
+<p>여기서 가치는 폴더가 깔끔해 보이는 것만이 아니다. 작업이 검토 가능해졌다는 것이다. Cowork는 막연한 명령을 받아 파일을 맹목적으로 바꾼 게 아니다. 폴더를 검사하고, 96개 파일을 찾고, 파일 종류 분포를 파악하고, 타임스탬프 문제를 발견하고, 질문하고, 선택한 규칙을 적용했다. 그래야 신뢰할 수 있다.</p>
+
+<h2>7. 워크플로 #2 — 첫 번째 반복 예약 작업</h2>
+<p>두 번째 워크플로에서 Cowork는 일반 어시스턴트와 달리 느껴지기 시작한다.</p>
+
+<p>폴더 정리 워크플로는 한 번 실행하는 작업이었다. 유용하지만, 여전히 직접 시작해야 한다. 예약 작업은 한 단계 더 나아간다. 작업을 한 번 정의하고, 언제 실행할지 선택하고, Cowork가 반복하게 한다.</p>
+
+<p>이런 활용에 적합한 사례들:</p>
+<ul>
+  <li>일일 Slack 요약</li>
+  <li>주간 받은 편지함 분류</li>
+  <li>월요일 계획 브리핑</li>
+  <li>금요일 프로젝트 상태 보고서</li>
+  <li>주간 리서치 다이제스트</li>
+  <li>경쟁사 정기 모니터링</li>
+</ul>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*RAAVT7bYBDHS6sctVWX3Sg.png" alt="Figure 48. 예약 작업 페이지">
+<figcaption>Figure 48. 예약 작업 페이지. 모든 예약 작업과 다음 실행 시간을 표시한다. 컴퓨터가 켜져 있어야 작업이 실행된다.</figcaption>
+</figure>
+
+<p>중요한 세부 사항이 있다. Cowork는 데스크톱 환경을 통해 실행되므로, 클라우드 전용 자동화 서비스가 아니다. 예약 시간에 컴퓨터가 잠자기 모드라면 작업이 실행되지 않을 수 있다. 특정 시간에 실행해야 하는 워크플로는 Keep awake 옵션을 사용하거나 기기가 켜져 있는지 확인해야 한다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*3Ob6Ms7i9EHe7waThrFBvA.png" alt="Figure 49. 새 예약 작업 생성 화면">
+<figcaption>Figure 49. New task 버튼을 클릭하면 Claude와 함께 만들거나 수동으로 설정하는 옵션이 나온다.</figcaption>
+</figure>
+
+<p>이 예제에서 사용한 작업 내용:</p>
+
+<pre><code>매일 Slack을 스캔하고 어제 일어난 가장 중요한 이벤트를 요약해줘.
+오전 7시에 보고서를 줘.</code></pre>
+
+<p>좋은 첫 번째 반복 작업이지만, 아직 불완전하다. Cowork는 어떤 Slack 채널을 스캔할지, 보고서를 어디로 전달할지, 오전 7시가 어떤 시간대인지 알아야 한다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*279KgwQc2DzkZReXI0Bg9Q.png" alt="Figure 51. Cowork가 후속 질문을 하는 화면">
+<figcaption>Figure 51. Cowork가 후속 질문을 통해 세부 정보를 파악하고 계획을 수립한다.</figcaption>
+</figure>
+
+<p>Cowork가 후속 질문을 하고 답변으로 계획을 만든다. 이 예제에서는 멤버로 있는 모든 Slack 채널을 스캔하고, 이메일로 요약을 보내고, CET 기준 오전 7시에 실행하도록 구성됐다.</p>
+
+<p>이 단계가 중요한 이유가 있다. 예약 작업은 모호하면 안 된다. 모호한 일회성 프롬프트는 불편하다. 모호한 반복 작업은 더 나쁜데, 매일 같은 모호함이 반복되기 때문이다.</p>
+
+<p>반복 작업에서는 항상 네 가지를 정의해야 한다:</p>
+
+<pre><code>1. 소스: Cowork가 어디를 봐야 하는지
+2. 스케줄: 언제 실행해야 하는지
+3. 출력: 무엇을 만들어야 하는지
+4. 전달: 결과를 어디로 보내야 하는지</code></pre>
+
+<p>Slack 요약 예제에 적용하면:</p>
+
+<pre><code>소스: 내가 멤버인 Slack 채널
+스케줄: 매일 CET 오전 7:00
+출력: 전날 가장 중요한 이벤트의 간결한 요약
+전달: 이메일 요약</code></pre>
+
+<p>이것이 Cowork를 단순히 쓰는 것과 진짜 어시스턴트로 활용하는 것의 차이다. 처음 한 번 잘 정의하면, 이후에는 자동으로 반복된다.</p>
+
+<h2>마치며</h2>
+<p>이 가이드에서 다룬 내용을 정리하면:</p>
+<ul>
+  <li>Claude Chat, Cowork, Code는 각각 다른 작업 모드를 위해 설계됐다.</li>
+  <li>Cowork에서는 "작업 지시형" 프롬프트보다 "결과물 중심" 프롬프트가 훨씬 효과적이다.</li>
+  <li>글로벌 지침으로 위험 행동을 제어하고 자율 작업에 검토 가능한 구조를 만들 수 있다.</li>
+  <li>CLAUDE.md와 memory.md로 작업 선호도와 교훈을 지속적으로 축적할 수 있다.</li>
+  <li>커넥터는 접근을 제공하지만, 명확한 경계를 가진 지시와 함께 사용해야 한다.</li>
+  <li>스킬은 반복 업무를 표준화된 프로세스로 패키지화해 팀 전체가 공유할 수 있다.</li>
+  <li>예약 작업은 소스·스케줄·출력·전달 네 가지를 명확히 정의해야 제대로 작동한다.</li>
+</ul>
+<p>Cowork를 쓰는 핵심 마인드셋 전환은 이것이다. "Claude에게 도움을 요청한다"에서 "범위가 명확히 잡힌 업무를 위임한다"로.</p>
+
+</body>
+</html>

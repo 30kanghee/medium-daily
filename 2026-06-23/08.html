@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>14 Amazing Open Source Tools You Need To Try</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>14 Amazing Open Source Tools You Need To Try</h1>
+<div class="meta">Abhay Parashar · The Pythoneers · 9 min read · <a href="https://medium.com/pythoneers/14-amazing-open-source-tools-you-need-to-try-c0215246a106" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/pythoneers/14-amazing-open-source-tools-you-need-to-try-c0215246a106" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">OSINT 조사에서 대다수가 쓰는 익숙한 도구 대신, 남들이 놓치는 신호를 잡아주는 전문화된 오픈소스 도구 14가지를 소개한다.</p>
+  <p>정보 수집(OSINT) 분야에서 표면적인 결과와 실질적인 인텔리전스의 차이는 대개 어떤 도구를 쓰느냐에서 갈린다. 이 글은 URL 안전성 분석, YouTube 자막 검색, 사진 위치 추적, 사용자명 전방위 조회, 서브도메인 탐색, Telegram 스포일러 복원, 공개 파일 검색, 도메인 타이포스쿼팅 탐지, 블록체인 연계 OSINT, 유출 자격증명 조회, DNS 정찰, 웹사이트 인텔리전스, 다크웹 AI 수사, 디지털 발자국 추적까지 14가지 틈새 도구를 순서대로 살펴본다. 각 도구는 특정 문제를 조용히 해결하며, 일반적인 조사관이 놓치기 쉬운 단서를 찾아내는 데 특화되어 있다. 보너스로 여러 검색 엔진과 AI를 동시에 조회하는 메타 검색 플랫폼 Searchall도 소개한다.</p>
+</div>
+
+<p>OSINT 조사는 보통 비슷한 방식으로 시작된다. 이미 알려진 침해 검색 엔진을 열고, DNS를 조회하고, 소셜 미디어를 몇 군데 뒤진다. 몇 분 안에 다른 조사관들과 동일한 도구를 쓰고 있다는 사실을 깨닫는다.</p>
+
+<p>바로 이게 문제다.</p>
+
+<p>오픈소스 인텔리전스에서 표면적인 결과와 진짜 인텔리전스의 차이는 종종 어떤 도구를 쓰느냐에서 결정된다. 인기 있는 플랫폼이 주목을 독차지하는 동안, 조사관 대부분은 특정 문제를 조용히 해결해 주는 소규모 전문 도구들의 생태계를 모르고 넘어간다.</p>
+
+<p>이 글에서는 더 많은 관심을 받아야 마땅한 OSINT 도구 14가지를 살펴본다.</p>
+
+<blockquote>
+  <p>"인텔리전스 업무의 진짜 강점은 더 많은 데이터를 갖는 것이 아니라, 남들이 보지 않는 곳을 아는 것이다."</p>
+</blockquote>
+
+<h2>1. CyScan</h2>
+
+<p>CyScan은 링크를 클릭하기 전에 그 URL이 실제로 어떻게 동작하는지 파악하도록 도와주는 가벼운 URL 분석 도구다. 단순히 "안전/위험"으로 분류하는 것을 넘어, 리다이렉트 경로와 외부 연결, 백그라운드 활동을 분석해 웹사이트의 행동 방식을 더 선명하게 보여준다.</p>
+
+<p>URL: <a href="https://cyscan.io/" target="_blank">cyscan.io</a></p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*a1NZ3sJRjv9B5kK0dSNNQw.png" alt="CyScan 화면">
+</figure>
+
+<p>상세 보고서 기능도 제공한다. 이메일의 수상한 링크 검사, 채팅에서 공유된 URL 검증, 조사 초기 빠른 분석 등 일상적인 워크플로에 자연스럽게 녹아든다.</p>
+
+<h2>2. Filmot</h2>
+
+<p>Filmot은 YouTube 영상 내에서 특정 키워드나 문구를 검색할 수 있는 강력한 도구다. 긴 영상을 직접 훑어볼 필요 없이, 자막과 트랜스크립트를 색인화해 관련 장면으로 바로 점프할 수 있게 해준다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*NTfwbR4FBgp6V1maD20qUA.png" alt="Filmot 검색 결과">
+  <figcaption>"Iran WAR USA Israel" 검색 결과 예시</figcaption>
+</figure>
+
+<p>대규모 영상 아카이브에서 정보를 찾아야 하는 연구자, 조사관, 콘텐츠 분석가에게 특히 유용하다. 발언 사실 확인, 언급 추적, 콘텐츠 트렌드 분석 등 영상 데이터에서 인사이트를 추출하는 속도를 크게 높여준다.</p>
+
+<h2>3. FindPicLocation</h2>
+
+<p>FindPicLocation은 사진 속 시각적 요소를 분석해 촬영 장소를 추정하는 AI 기반 도구다. 랜드마크, 건축 양식, 지형, 간판 등 맥락 단서를 살펴 위치를 특정하거나 유력한 후보를 제시한다.</p>
+
+<p>GPS 메타데이터가 없거나 제거된 경우에 특히 유용하다. 이미지 출처를 검증하거나 위치 기반 챌린지를 풀거나 사진의 배경이 궁금할 때, 시각 정보에서 위치 단서를 빠르고 직관적으로 추출할 수 있다.</p>
+
+<p>URL: <a href="https://findpiclocation.com/" target="_blank">findpiclocation.com</a></p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*OH4ExiYOkWCDzGLj1s_aJw.png" alt="오슬로 조각상 위치 분석 결과">
+</figure>
+
+<p>오슬로의 조각상 사진으로 테스트해봤을 때, 도구는 조각상의 대략적인 위치를 정확히 잡아냈다. 무료 버전에서는 정확한 좌표까지는 나오지 않지만, 도로 표지판·식생·건물 스타일 같은 환경 정보에 의존해야 하는 상황에서 충분한 실마리를 제공한다.</p>
+
+<h2>4. WhatsMyName</h2>
+
+<p>WhatsMyName은 특정 사용자명이 수백 개의 웹사이트와 플랫폼에 존재하는지 한 번에 확인하는 도구다. 핸들 하나를 입력하면 수백 개의 소셜 미디어, 포럼, 온라인 서비스를 조회해 잠재적 일치 항목을 찾아준다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*25kt7R0QVujNSvgcrqBZfw.png" alt="WhatsMyName 검색 예시">
+  <figcaption>whatsmyname.app 예시 검색</figcaption>
+</figure>
+
+<p>조사 및 디지털 발자국 분석에 특히 유용하다. 오래된 Reddit 게시물, GitHub 레포, 10년 된 포럼 계정처럼 예상치 못한 흔적이 드러날 수도 있다.</p>
+
+<h2>5. Recox</h2>
+
+<p>Recox는 버그 바운티 헌터와 보안 연구자를 위한 웹 기반 정찰 도구다. 대상 웹사이트를 직접 스캔하거나 공격하지 않고, 여러 수동 데이터 소스를 활용해 서브도메인과 숨겨진 엔드포인트를 수집한다. 덕분에 안전하고 빠르게 공격 표면을 파악할 수 있다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*tTFCJf6Xa5H0Ha4Psl7X3Q.png" alt="Recox 도구 화면">
+  <figcaption>Recox 사용자 스크린샷</figcaption>
+</figure>
+
+<p>정찰 이후 단계에서 무엇을 해야 할지도 안내해 주기 때문에 입문자도 쓰기 좋으면서, 숙련된 테스터에게도 충분히 유용하다. 보안 테스트 초기 단계를 자동화하고 결과를 한 곳에 정리해주는 점이 강점이다.</p>
+
+<h2>6. Telegram Spoiler Decoder</h2>
+
+<p>이 도구는 macOS Telegram 클라이언트에서 읽을 수 없는 유사점자 문자로 표시되는 Telegram 스포일러 텍스트를 복원해준다. 피싱 링크, 유출된 자격증명, 악성코드 이름, 암호화폐 지갑 주소, 연락처 핸들, 작전 지침 같은 민감한 정보를 스포일러로 숨기는 위협 행위자 커뮤니티를 모니터링할 때 특히 유용하다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*LKXrfwx4z4JmzqO8xSzdLQ.png" alt="Telegram Spoiler Decoder 화면">
+</figure>
+
+<p>분석가가 스크린샷, 전달된 이미지, 화면 녹화본만 가지고 있는 경우에도 숨겨진 정보를 복원하고 인텔리전스를 보존할 수 있다.</p>
+
+<h2>7. EyeDex</h2>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*og6BgQ107tpMyTnaaGc_GA.png" alt="EyeDex 화면">
+</figure>
+
+<p>EyeDex는 인터넷 서버에 공개적으로 저장된 수 페타바이트의 파일을 검색할 수 있는 대규모 공개 파일 검색 엔진이다. FTP 서버, 웹 서버, 기타 노출된 스토리지에 있는 수백만 개의 디렉터리와 문서를 색인화해, 한 검색창에서 PDF, 텍스트 파일, 이미지, 아카이브, 설정 파일, 유출 문서 등을 빠르게 찾을 수 있다.</p>
+
+<p>공개 디렉터리를 수동으로 뒤지는 대신, 키워드·파일명·도메인·이메일 주소·민감한 문서를 단번에 검색해 방대한 공개 데이터 속에서 원하는 것을 찾아낸다.</p>
+
+<h2>8. haveibeensquatted</h2>
+
+<p>자신의 도메인과 유사한 이름을 피싱, 사칭, 사기 목적으로 누군가 등록했는지 확인하는 도메인 모니터링 도구다. 실제 도메인을 입력하면 오타 기반 복제본, 가짜 로그인 도메인, 비슷한 철자의 악성 변형을 탐색한다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*6Jr8RPe7jmkDzbskGCt5FQ.png" alt="haveibeensquatted 화면">
+</figure>
+
+<p>호스팅 정보, 스크린샷, DNS 레코드, 인증서, 리다이렉트, 위험 등급 같은 추가 정보도 함께 제공해 발견된 도메인이 무해한지 잠재적으로 위험한지 판단하는 데 도움을 준다. 타이포스쿼팅 위협이 보안 사고로 번지기 전에 잡아내도록 설계된 플랫폼이다.</p>
+
+<h2>9. OSINT Investigator's Toolkit</h2>
+
+<p>OSINT Intelligence On Chain은 전통적인 OSINT와 블록체인 추적 기능을 결합한 브라우저 기반 조사 플랫폼이다. 지갑 주소, 도메인, 사용자명, 이메일, 전화번호 등 다양한 디지털 식별자를 한 곳에서 조사하고, 가능한 경우 암호화폐 활동과 연결 지을 수 있다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*6bmNzrN8wTfRLZ0pnbjung.png" alt="OSINT Investigator's Toolkit 화면">
+</figure>
+
+<p>인터넷 상의 공개 발자국과 온체인 거래를 함께 추적해야 하는 연구자, 사기 조사관, 사기 피해자, 사이버 분석가를 위해 설계됐다. 소셜 미디어 검색, 도메인 정찰, 지갑 추적을 별도 도구로 쓰는 대신 단일 워크플로로 통합해 조사 속도를 높인다.</p>
+
+<h2>10. Antipublic</h2>
+
+<p>Antipublic은 이메일 주소, 사용자명, 비밀번호, 기업 관련 데이터가 공개 침해 자료에 등장했는지 확인하는 유출 자격증명 검색 플랫폼이다. 과거 침해 사고에서 수집된 대량의 도용 로그인 정보를 웹 인터페이스로 검색할 수 있어 haveibeenpwned의 대안으로 활용하기에 적합하다.</p>
+
+<p>사이트: <a href="https://antipublic.net/" target="_blank">antipublic.net</a></p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*5LriXN0wgx4FVGNCo4diSg.png" alt="Antipublic 화면">
+</figure>
+
+<h2>11. DNSDumpster</h2>
+
+<p>DNSDumpster는 도메인과 연결된 공개 인프라를 빠르게 파악하는 무료 DNS 정찰 도구다. 웹사이트 이름을 입력하면 공개 DNS 데이터 소스에서 서브도메인, IP 주소, 메일 서버, 네임 서버, DNS 레코드, 관련 호스트 정보를 순식간에 뽑아낸다.</p>
+
+<p>결과를 읽기 쉬운 시각적 지도로 표현해 대상의 외부 네트워크 구조를 한눈에 파악하게 해준다. 여러 DNS 쿼리를 수동으로 날리는 대신 한 번의 수동 조회로 모든 정보를 모아주기 때문에 초기 정찰 단계가 훨씬 빨라진다.</p>
+
+<p>직접 써보기: <a href="https://dnsdumpster.com/" target="_blank">DNSDumpster.com</a></p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*QtRCSVc2eYy0UkXNBw_TKw.png" alt="DNSDumpster 화면">
+</figure>
+
+<h2>12. Website Informer</h2>
+
+<p>Website Informer는 인터넷상의 어떤 도메인에 대해서도 빠른 인텔리전스 보고서를 제공하는 웹사이트 정보 도구다. 도메인을 입력하면 WHOIS 레코드, 호스팅 공급자, IP 주소, DNS 서버, 예상 트래픽, 관련 도메인, 안전성 평판, 유사 웹사이트 등을 한 대시보드에서 확인할 수 있다.</p>
+
+<p>여러 공개 소스에서 정보를 모아 보여주기 때문에 각각 별도로 조회하는 번거로움을 없애준다. 도메인 조사, 수상한 웹사이트 분석, 피싱 검증, 경쟁사 리서치 등에서 미지의 웹사이트를 처음 훑어볼 때—소유자가 누구인지, 어디에 호스팅됐는지, 어떤 인프라를 쓰는지, 유사 도메인이 있는지, 얼마나 신뢰할 수 있는지—를 빠르게 파악하는 데 유용하다.</p>
+
+<h2>13. Robin</h2>
+
+<p>Robin은 다크웹 소스를 더 빠르게 검색해야 하는 OSINT 연구자, 위협 인텔리전스 팀, 사이버 조사관을 위해 만들어진 AI 기반 다크웹 수사 도구다. 검색 쿼리를 정제하고, 여러 다크웹 검색 엔진에서 결과를 수집하고, Tor를 통해 관련 페이지를 스크래핑한 뒤, 대형 언어 모델로 읽기 쉬운 인텔리전스 요약을 생성하는 과정을 자동화한다.</p>
+
+<p>커맨드라인과 웹 인터페이스 모두 지원해 간단한 조회와 심층 조사 워크플로 모두에 적합하다. 다크넷 활동을 모니터링할 때 분석가가 수동으로 해야 하는 방대한 검색 작업을 줄이는 것이 주된 목표다.</p>
+
+<p>GitHub: <a href="https://github.com/apurvsinghgautam/robin" target="_blank">apurvsinghgautam/robin</a></p>
+
+<h2>14. ShareTrace</h2>
+
+<p>ShareTrace는 사용자명, 이메일, 전화번호 같은 식별자를 이용해 특정 인물의 온라인 존재를 추적하는 디지털 발자국 분석 도구다. 여러 공개 플랫폼과 오픈소스를 스캔해 해당 신원이 어디에 등장하는지 파악하고, 소셜 계정·노출된 기록·흩어진 온라인 흔적을 단일 검색으로 연결한다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*mh6Pd0NH7QBpIZf1F4a5NQ.png" alt="ShareTrace 화면">
+</figure>
+
+<p>플랫폼마다 일일이 수동 확인하는 대신, 초기 신원 조사 단계에서 공개 가시성 데이터를 한 인터페이스에 빠르게 모아준다.</p>
+
+<h2>보너스: Searchall</h2>
+
+<p>Searchall(<a href="https://searchall.net/" target="_blank">searchall.net</a>)은 키워드 하나로 여러 검색 엔진, AI 챗봇, 영상, 이미지, 쇼핑 사이트, 소셜 네트워크를 동시에 검색하는 메타 검색 플랫폼이다. Google, Bing, YouTube, Reddit, AI 도구를 따로 열지 않고도 같은 쿼리를 한 번에 여러 플랫폼에 날릴 수 있어 광범위한 온라인 리서치를 훨씬 빠르게 할 수 있다. 여러 공개 소스에서 정보를 한 번에 모으고 싶을 때 출발점으로 자주 활용된다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*J-mg_0d7dH4S8fG02ifFbA.png" alt="Searchall 화면">
+</figure>
+
+<hr>
+
+<p>소개한 도구들은 각자가 특정 문제를 조용히, 그러나 효과적으로 해결한다는 공통점이 있다. 대중적인 플랫폼이 놓치는 신호를 잡아내는 것, 그것이 이 도구들이 존재하는 이유다. 자신의 조사 워크플로에 하나씩 통합해보며 어떤 차이가 생기는지 확인해보길 권한다.</p>
+
+</body>
+</html>

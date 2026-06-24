@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code is Great. You Just Need to Learn How to Use It.</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Claude Code is Great. You Just Need to Learn How to Use It.</h1>
+<div class="meta">Leo Godin · 11 min read · <a href="https://leo-godin.medium.com/claude-code-is-great-6db35d8685f0" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://leo-godin.medium.com/claude-code-is-great-6db35d8685f0" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">Claude Code가 잘 안 된다고 느낀다면 도구 탓이 아니라 컨텍스트 관리 기술이 부족한 것이며, 이를 연마하는 것이 2026년 필수 역량이다.</p>
+  <p>저자는 처음에 Claude를 비롯한 여러 AI 도구를 써봤지만 결과가 신통치 않았고, 결국 문제는 도구가 아니라 자신의 사용 기술에 있었다는 것을 깨달았다. 8개월에 걸쳐 실제 프로젝트를 진행하며 터득한 핵심은 '컨텍스트가 전부'라는 것이다. LLM에게 너무 많은 정보를 주면 중요한 것과 사소한 것을 구분하지 못하고, 너무 적게 주면 스스로 지어내야 한다. 상황이 안 풀릴 때는 Claude를 탓하기보다 세션 로그를 분석해 프로세스를 개선하면 대부분 해결된다. 재사용 가능한 스킬을 만들고, 컨텍스트를 꼭 필요한 것으로만 정교하게 제어하면 긴 작업도 자율적으로 완주된다.</p>
+</div>
+
+<h2>AI에 대해 솔직히 말하자면</h2>
+
+<p>1년 전 AI에 대해 물었다면 전부 과장이라고 답했을 것이다. 실제로 써봤는데 결과가 형편없었다. 코드를 작성시켜 봤지만 항상 실패했고, 글쓰기를 맡겨봤지만 수준 이하였다. 그러다 두 가지가 달라졌다. LLM 자체와 주변 도구가 크게 나아졌고, 나는 LLM을 효과적으로 사용하는 방법을 익혔다. 효과적으로 LLM을 쓰는 것은 2026년에 우리 모두에게 필요한 기술이다.</p>
+
+<blockquote>
+  <p><em>미리 밝혀둔다. 이 글에서 AI가 쓴 문장은 한 줄도 없다. 100% 직접 작성했다.</em></p>
+</blockquote>
+
+<p>이 글은 "Claude Code 완벽 가이드"가 아니고, "LLM 생산성 3배 올리는 세 가지 비법"도 아니다. 그런 제목의 글을 내가 쓴다면 직접 혼내줘도 된다. 다른 기술과 마찬가지로 LLM을 잘 쓰려면 시간, 노력, 실험이 필요하다. 오늘은 어디서 시작하고 무엇에 집중해야 하는지를 이야기한다. 여정을 시작하기 위한 맥락이라고 생각하면 된다.</p>
+
+<h2>실제 이야기: 어떻게 여기까지 왔나</h2>
+
+<p>Shopify에 입사하면서 CEO가 회사 내 AI 활용에 대해 어떤 입장인지 읽었다. 솔직히 좀 무섭기도 했다. 그래서 Claude Pro 구독을 하고 웹사이트를 하나 만들어보기로 했다. 복잡한 것으로. 첫날은 기적이었다. "와, 실제로 되네." 둘째 날은 달랐다.</p>
+
+<p>프로덕션 수준이라더니. <em>"네, 맞습니다. 제가 동작 여부를 검증하는 테스트를 작성하지 않았네요."</em> 좋은 출발은 아니었다. 하지만 새 직장이 LLM 활용을 권장하니 계속 해보기로 했다. 한 달 동안 여러 차례 다시 시작하기를 반복했고, 결국 기능 추가, 리팩토링, 변경이 예전 혼자 했을 때보다 훨씬 빠르게 되는 지점에 이르렀다. 그 후 SQL 강좌 프로젝트를 시작했고, 데이터 생성기가 부실하다고 느껴 더 좋은 것을 만들기 시작했다.</p>
+
+<p>8개월 후, Claude Max 요금제로 업그레이드한 뒤에는 꽤 괜찮은 합성 데이터 생성기가 완성되었다. 그 과정에서 유명한 Claude 여름 버그도 겪었고, 여러 차례 프로젝트를 전면 재설계했으며, 집과 직장 양쪽에서 많은 성과를 거뒀다. 가장 중요하게 배운 것은 <strong>컨텍스트가 전부라는 것</strong>이다.</p>
+
+<h2>컨텍스트가 전부다: 골디락스 지점</h2>
+
+<p>프롬프트 엔지니어링이 한창 유행했을 때가 있었다. "당신은 전문 데이터 엔지니어입니다, 특히 …에 정통한"이나, 내가 좋아했던 "당신은 정밀함이 연쇄살인마 수준인 사이코패스 데이터 분석가입니다" 같은 것들이었다. 후자는 Cursor에서 Claude가 더 열심히 문제를 추적하게 만들었다. 이런 트릭이 한때는 효과가 있었지만, 이제는 대부분 흥미로운 구경거리 수준이다.</p>
+
+<p>LLM은 이제 훨씬 똑똑해졌고, 프롬프트보다 컨텍스트가 훨씬 중요해졌다. 왜 중요할까? LLM에 제공하는 컨텍스트가 좋은 결과와 계속되는 좌절 사이를 가른다. 모든 LLM에는 한계가 있다. 세션에 담을 수 있는 토큰 수. 대부분의 Claude 모델은 20만 토큰이다. 어떤 날은 넉넉해 보이고, 어떤 날은 너무 부족하다. 비결은 이렇다. 세션 컨텍스트를 그 한도의 약 2/3 이하로 유지하면 결과가 훨씬 좋아진다.</p>
+
+<p>내가 직접 겪었던 문제를 예로 들겠다. 며칠에 걸쳐 만들고 싶은 것의 아키텍처 문서를 여러 시간 공들여 작성했다. 그러고는 Claude에게 그 일부만 구현하라고 했다. Claude는 문서를 읽고 해당 부분을 구현했다. 그리고 아직 구현할 준비가 안 된 다른 것들도 잔뜩 만들었다. 망가지거나 미완성된 채로. 내 프롬프트에 무엇을 구현할지 명확히 적어뒀는데 왜 더 많이 하려 했을까?</p>
+
+<p>Claude에게 무엇이 잘못됐는지 물었더니 당연히 이렇게 답했다. <em>"맞습니다. 명시적인 지시를 따르지 않았네요."</em> 이 패턴이 보이는가? 프로젝트 전반에 대한 방대한 컨텍스트를 주고, 그 일부만 실행하라고 하면, 뭐든 더 하고 싶어하는 사람 좋은 기계가 될 뿐이다.</p>
+
+<p>컨텍스트를 계층적 색인과 필요할 때 읽을 수 있는 상세 문서로 구조화하면 결과가 훨씬 좋아진다. 컨텍스트를 필요한 것만으로 정확히 제한하는 프로세스를 만들면 놀라운 결과를 볼 수 있다. 내가 만든 `implement-sprint` 스킬의 첫 번째 규칙이 이렇다.</p>
+
+<pre><code>### Rule 1: Orchestrator Reads Minimally
+
+You (the orchestrator) read ONLY these files:
+
+| File | Purpose |
+|------|---------|
+| `docs/sprints/current/spec.md` | Sprint spec (required) |
+| `docs/sprints/current/state.yaml` | Phase status (required) |
+
+**Do NOT read source files, architecture docs, config models, or any `.py` file.**
+The implementer agent reads what it needs. Your job is orchestration, not comprehension.</code></pre>
+
+<p>이 스킬에서 메인 세션은 오케스트레이터 역할을 한다. 스프린트에서 무엇을 구현할지만 이해하면 된다. 아키텍처 문서를 읽거나 제품 기능을 이해할 필요가 없다. 이 규칙 덕분에 Claude가 전체 프로세스를 자율적으로 완주하게 됐다. 이 규칙이 없었을 때는 Claude가 프로젝트에 있는 거의 모든 것을 읽는 데 5분을 쓰고, 스프린트를 오케스트레이션할 시점에는 이미 중요한 것을 잃어버리곤 했다.</p>
+
+<p>반대로, 원하는 작업 방식에 대한 좋은 지침을 제공하지 않으면 Claude가 스스로 만들어야 한다. 특정 테스트 방식이 있는가? 아키텍처 선호도가 있는가? 그것이 컨텍스트에 포함되어야 한다. CLAUDE.md에 넣거나, CLAUDE.md에 링크된 별도 문서에 담아라. Claude에게 알려줘라.</p>
+
+<p>골디락스처럼, 죽도 너무 뜨겁거나 너무 차가우면 안 된다. 딱 맞아야 한다. 문서에 시간을 투자하고, 계속 다듬어라. Claude에게 해달라고 해도 된다. Haiku는 문서 편집이 번개처럼 빠르고, Opus는 굉장히 꼼꼼하다.</p>
+
+<p><strong>이 글에서 하나만 가져간다면 이것이다. 컨텍스트 관리가 성패를 가른다.</strong></p>
+
+<h2>잘 안 될 때: 운에만 기댈 수는 없다</h2>
+
+<p>잘 안 될 때는 어떻게 할까? 배우기를 거부하는 사람들이 올리는 글들을 보면 정말 답답하다. "Claude 오늘 왜 이렇게 멍청함?" "Claude 갑자기 완전 바보 됐음"… 대부분 포스팅하고 답글 다는 시간보다 짧게 고칠 수 있는데 그냥 선택을 하지 않는다.</p>
+
+<p>LLM은 확률 기계다. 무작위성이 가득하다. 정해진 명령을 실행하는 스크립트가 아니다. 이것을 이해하고 내면화해야 한다. 같은 프롬프트가 종종 다른 결과를 낳는다. Anthropic이 결과를 바꿀 수 있는 세 가지 주요 레버가 있다.</p>
+
+<ol>
+  <li><strong>모델 변경:</strong> 새 모델은 거의 항상 다르게 동작한다. 4.5에서 쉽게 됐던 작업이 4.6에서는 어려워진다. 더 나은 모델이지만 기존 프로세스를 망가뜨릴 수 있다.</li>
+  <li><strong>툴링:</strong> Claude Code나 데스크톱 앱의 변경으로 모델과 상호작용하는 방식이 달라진다. 예를 들어 자동 계획 모드가 생겼는데 기존 명령이 깨끗한 컨텍스트를 기대한다면 프로세스가 망가진다.</li>
+  <li><strong>백엔드:</strong> 여기서는 가시성이 거의 없지만 백엔드 변경이 결과를 바꿀 수 있다. 여름 다운그레이드 버그가 상황을 악화시킨 예이고, 다른 변경이 상황을 개선하면서 기존 프로세스를 망가뜨릴 수도 있다.</li>
+</ol>
+
+<p>Anthropic만 문제가 아니다. 우리 자신도 무작위성에 영향을 줄 수 있다.</p>
+
+<ul>
+  <li>CLAUDE.md 업데이트</li>
+  <li>새 문서 추가</li>
+  <li>새 코드</li>
+  <li>MCP 추가</li>
+  <li>프롬프트나 스킬 변경</li>
+  <li>프로젝트에 거대한 PDF 복사</li>
+</ul>
+
+<p>이것들 중 무엇이든 작업 방식을 조정해야 할 수 있다. 어제는 됐는데 오늘은 안 된다면, Claude가 갑자기 멍청해진 게 아니라 의도적으로 무언가가 바뀐 것일 가능성이 훨씬 높다. 프로세스를 바꿔야 하는데, 좋은 소식이 있다.</p>
+
+<p>Claude는 무엇이 잘못됐고 어떻게 고칠지 잘 파악한다. 테스트를 안 썼다? 왜 그랬는지 물어봐라. 지시를 따르지 않았다? 왜 그랬는지 물어봐라. 작업이 다 끝나기 전에 멈췄다? 역시 물어봐라. 그리고 작은 트릭이 있다.</p>
+
+<p>Claude는 종종 무엇이 잘못됐는지에만 집중하고 어떻게 고칠지는 말하지 않는다. 프롬프트 엔지니어링이 필요 없다고 했는데 취소하겠다. 특정 프롬프트가 더 좋은 결과를 낼 때가 있다. Claude가 고치는 방법 대신 잘못된 것에만 집중한다면 이렇게 말해봐라. "저는 사람이나 LLM이 아니라 프로세스를 탓합니다. 왜 이런 일이 생겼는지 파악해봅시다." 효과 만점이다.</p>
+
+<p>모든 세션 로그가 <code>~/.claude/</code>에 저장된다는 것을 알고, Claude에게 몇 개 세션을 분석해달라고 했다. 몇 시간 만에 토큰 사용량을 약 50% 줄이고 미래에 더 빠르게 최적화할 수 있는 유용한 스킬을 만들었다. 이제 나는 온갖 이유로 세션을 분석하고 프로세스를 빠르게 최적화한다.</p>
+
+<h2>실용적인 팁 모음</h2>
+
+<h3>컨텍스트 관리</h3>
+
+<ul>
+  <li>Claude가 필요한 정보를 쉽게 찾을 수 있도록 만들어라. CLAUDE.md와 <code>.claude/skills</code>에 특정 파일과 디렉토리를 목록으로 정리해라.</li>
+  <li>문서의 중복을 없애라. 동기화를 유지하기 어렵고 상충하는 정보를 제공하게 된다.</li>
+  <li>코드가 진실이다. 코드 동작 방식을 문서에 설명할 필요가 없다. 실제 코드에 링크만 걸어라. 문서는 목적, 이유, 알고리즘, 흐름처럼 고수준 내용만 담아라.</li>
+  <li>CLAUDE.md를 합리적인 선에서 최대한 작게 유지해라. 모든 세션에 필요한 것만 담아라. 일부 세션에만 필요한 내용은 다른 곳에 두어라. 저장소 개요, 파일 구조, 중요한 원칙과 불변식 정도면 충분하다.</li>
+  <li>문서를 지속적으로 정리해라. 검토하고, 수정하고, 필요 없는 것은 삭제해라.</li>
+  <li>Claude에게 이렇게 말해라. "이 문서는 LLM 사용과 토큰 효율을 위해 최적화되어야 합니다."</li>
+</ul>
+
+<p>예시 레이아웃:</p>
+
+<pre><code>├── CLAUDE.md
+└── docs
+    ├── CAPABILITIES.md
+    ├── SCRATCHPAD.md
+    ├── architecture
+    │   ├── SUBSYSTEM1.md
+    │   ├── SUBSYSTEM2.md
+    │   └── SUBSYSTEM3.md</code></pre>
+
+<h3>실제로 작업 완수하기</h3>
+
+<ul>
+  <li>자동화 가능한 작업에 LLM을 쓰지 마라. LLM을 써서 그 작업을 위한 스크립트를 만들어라.</li>
+  <li>재사용 가능한 스킬을 만들어라. 같은 것을 반복해서 타이핑해야 한다면 스킬로 만들어라.</li>
+  <li>반복하라. Claude가 작업을 마치면 검토하고 피드백을 줘라. 또는 Claude에게 스스로 검토하게 해라. 작업하고, 검토하고, 개선하라. 제대로 되려면 이 사이클을 여러 번 거쳐야 할 때도 있다.</li>
+  <li><code>git reset --hard</code>는 친구다. 세션이 잘 안 풀릴 때도 있다. 괜찮다. 확률 기계니까. 그냥 리셋하고 다시 시도해라.</li>
+  <li>커스텀 서브에이전트는 별도의 컨텍스트 윈도우를 가진다. 긴 프로세스는 이를 잘 활용해야 한다.</li>
+  <li><code>/clear</code>는 친구다. <code>/compact</code>는 그렇지 않다. 콤팩트할 시점이면 세션은 이미 망가진 상태다. 작업을 더 작은 단위로 나누거나 커스텀 서브에이전트를 쓰는 스킬을 생각할 때다.</li>
+  <li>안 풀릴 때는 Claude에게 세션을 분석하고 프로세스를 개선하게 해라.</li>
+</ul>
+
+<h3>새 저장소에 뛰어들기</h3>
+
+<ul>
+  <li>Claude에게 저장소를 분석하고 사람이 읽기 좋은 문서를 만들게 해라. 크고 복잡한 저장소라면 몇 시간에서 며칠이 걸릴 수도 있다. 새 직장에서 주요 저장소를 이렇게 분석하면서 많은 것을 배웠다.</li>
+  <li>그 다음 LLM 문서를 만들게 해라. 구체적으로 이렇게 말해라. "이 문서는 LLM 사용과 토큰 효율을 위해 최적화되어야 합니다."</li>
+  <li>Claude에게 많은 질문을 해서 더 배워라.</li>
+</ul>
+
+<h2>프레임워크에 대해: 마법의 10배 효과?</h2>
+
+<p>LLM과 함께 작업하기 위한 프레임워크가 날마다 새로 나오고 있다. Open Spec, BMAD은 매우 인기 있다. Spec Kitty의 수정 버전으로 웹사이트를 만들어봤다. 특히 프로젝트 초기에 정말 좋았다. 이런 도구들은 훌륭하고 꼭 써보길 권한다. 어떤 것이 맞는지 찾아봐라.</p>
+
+<p>하지만 나는 결국 그것들을 쓰지 않는다. 개인적인 선호인데, 문서가 너무 분산되는 느낌이다. 기능, 디자인, 아키텍처 결정이 깔끔하게 정리되지만, 세 가지 모두의 현재 상태를 파악하기 어렵다. 새 프로젝트에는 지난 1년에 걸쳐 직접 만든 것을 사용한다. 두 가지 주된 이점이 있다.</p>
+
+<ol>
+  <li>내가 원하는 방식으로 작업할 수 있다. 내 프로세스는 더 가볍다. 모든 것을 세부 작업 수준까지 계획하는 대신, 한 단계 위에 머문다. 계획/검토, 구현/검토를 반복하며 제대로 될 때까지 간다. 어디까지나 개인 선호다.</li>
+  <li>더 중요하게는, 시간이 지나며 이것을 발전시키는 과정에서 Claude의 동작 방식에 대해 더 많이 배웠다. 실험하고 깊이 파야 했다. 어떻게 LLM을 효과적으로 사용하는지 가르쳐줬다. 프레임워크를 그냥 가져다 쓰면 작업을 마치기에는 좋지만 배움이 줄어든다. 그러면 모델이 바뀌거나 무언가 작동을 멈출 때, 처음부터 다시 시작해야 한다.</li>
+</ol>
+
+<p>결국 다른 기술을 배우는 것과 마찬가지로 우선순위와 목표의 문제다. Python을 배우고 싶다면 LLM이 코드를 다 써주도록 하지 마라. Python을 배우고, 그 다음 LLM을 활용해 배우고 개선하라. LLM을 효과적으로 사용하는 방법을 배우고 싶다면 약간의 노력이 필요하다.</p>
+
+<h2>마치며</h2>
+
+<p>LLM을 효과적으로 사용하는 것은 2026년에 우리 모두에게 필요한 기술이고, 다른 기술과 마찬가지로 잘하려면 시간과 노력이 필요하다. 컨텍스트를 잘 관리하고 LLM이 딱 필요한 양의 정보를 가져가기 쉽게 만들면 결과가 크게 달라진다. 어떤 궁극의 가이드나 10배 워크플로우도 모든 것을 가르쳐줄 수 없다. 직접 파고, 배우고, 실천하라. 그러면 어느새 PR 처리, 버그 수정, 프로덕션 이슈 트러블슈팅을 예전보다 훨씬 빠르게 하고 있는 자신을 발견할 것이다.</p>
+
+</body>
+</html>

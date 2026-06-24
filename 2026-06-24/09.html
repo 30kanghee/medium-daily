@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM vs RAG vs MCP: I Finally Know When to Use Each One</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  table{width:100%;border-collapse:collapse;margin:1.5em 0;font-size:.92em;}
+  th{background:#f6f8fa;padding:10px 14px;text-align:left;border:1px solid #e1e4e8;}
+  td{padding:9px 14px;border:1px solid #e1e4e8;vertical-align:top;}
+  tr:nth-child(even) td{background:#fafafa;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>LLM vs RAG vs MCP: I Finally Know When to Use Each One</h1>
+<div class="meta">Pravash (@pravash-techie) · Level Up Coding · 8 min read · <a href="https://levelup.gitconnected.com/llm-vs-rag-vs-mcp-i-finally-know-when-to-use-each-one-77403510ba1d" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://levelup.gitconnected.com/llm-vs-rag-vs-mcp-i-finally-know-when-to-use-each-one-77403510ba1d" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">LLM, RAG, MCP는 경쟁 관계가 아니라 각기 다른 문제를 푸는 도구이며, "AI가 이 문제를 풀려면 실제로 무엇이 필요한가"를 물어야 올바른 선택을 할 수 있다.</p>
+  <p>저자는 데이터 파이프라인 문서 200여 개를 팀이 검색할 수 있게 해달라는 요구를 받고, 시스템 프롬프트에 전부 욱여넣는 것부터 RAG로 벡터 스토어를 구축하는 것까지 차례로 시도했다. 그러다 요구사항이 라이브 Postgres 쿼리와 Delta Lake 통계 실시간 확인으로 바뀌었을 때 RAG가 맞지 않는 도구라는 것을 깨달았고, MCP를 발견했다. LLM은 학습 시점에 동결된 내부 지식을 활용하며 외부 데이터가 불필요할 때 최적이다. RAG는 벡터 검색으로 외부 문서를 가져와 LLM에 맥락을 주입하는 방식으로 문서 기반 질의응답에 적합하다. MCP(Model Context Protocol)는 LLM이 외부 시스템과 실시간으로 상호작용하는 표준 통신 규약으로, 라이브 데이터가 필요하거나 실제 액션을 수행해야 할 때 사용한다. 세 접근은 함께 조합될 수도 있다.</p>
+</div>
+
+<h2>시작은 단순한 요청이었다</h2>
+
+<p>몇 달 전, 팀 내부 도구를 하나 만들어달라는 요청을 받았다. 데이터 파이프라인 문서 200여 개를 Markdown 파일로 저장해두고 있었는데, 팀원들이 자연어로 질문하면 원하는 문서를 찾아주는 도구였다.</p>
+
+<p>첫 번째 시도는 가장 단순했다. 문서를 전부 시스템 프롬프트에 욱여넣는 것. 결과는 명확했다. 토큰 한도에 즉시 걸렸다.</p>
+
+<p>그래서 두 번째 접근으로 넘어갔다. 문서를 임베딩하고, 리트리버를 구축하고, 벡터 스토어를 연결하는 RAG 파이프라인을 만들었다. 잘 작동했다. 문서를 찾아주는 데는 충분했다.</p>
+
+<p>그런데 요구사항이 바뀌었다. 라이브 Postgres 데이터베이스에 실제로 쿼리를 날리고, 실시간으로 Delta Lake 테이블 통계를 확인해야 한다는 것이었다. 그 순간 RAG가 완전히 다른 도구라는 것이 느껴졌다. 바로 그때 MCP를 알게 됐고, AI 시스템 설계에 대한 생각이 바뀌었다.</p>
+
+<h2>세 가지 아키텍처, 세 가지 서로 다른 역할</h2>
+
+<h3>LLM: 학습된 지식을 그대로 활용할 때</h3>
+
+<p>LLM(대규모 언어 모델)은 학습 시점에 방대한 데이터를 통해 습득한 지식을 내부에 고정시켜 가지고 있다. 외부 시스템 연결 없이, 추가적인 데이터 검색 없이, 모델이 이미 알고 있는 것을 기반으로 답변한다.</p>
+
+<p><strong>언제 LLM만으로 충분한가?</strong></p>
+<ul>
+  <li>요청이 모델의 학습 데이터 범위 안에 있을 때. 코드 작성, 글쓰기 도움, 일반적인 개념 설명이 이에 해당한다.</li>
+  <li>실시간 정보나 조직 내부 데이터가 필요 없을 때.</li>
+  <li>빠른 응답이 중요하고 외부 시스템 호출 지연을 감당할 수 없을 때.</li>
+  <li>컨텍스트 윈도우 안에 모든 필요 정보를 담을 수 있을 때.</li>
+</ul>
+
+<p><strong>언제 부족한가?</strong> 최신 정보가 필요하거나, 조직의 내부 문서·데이터베이스·시스템을 알아야 할 때. LLM은 학습 데이터 이후의 세상을 모른다.</p>
+
+<h3>RAG: 외부 문서를 검색해 맥락을 주입할 때</h3>
+
+<p>RAG(Retrieval-Augmented Generation)는 LLM의 지식 한계를 외부 문서로 보완하는 기법이다. 질문이 들어오면 벡터 데이터베이스에서 관련 문서를 검색하고, 그것을 LLM 프롬프트에 맥락으로 주입해 답변을 생성한다.</p>
+
+<p><strong>RAG가 빛나는 상황:</strong></p>
+<ul>
+  <li>정적이거나 변화가 느린 문서 컬렉션을 기반으로 질의응답을 해야 할 때.</li>
+  <li>내부 위키, 제품 문서, 기술 사양서처럼 특정 도메인 지식이 필요할 때.</li>
+  <li>어떤 문서가 답에 활용됐는지 출처를 제공해야 할 때.</li>
+  <li>컨텍스트 윈도우에 담기에는 너무 많은 문서가 있을 때.</li>
+</ul>
+
+<p><strong>RAG의 한계:</strong> RAG는 문서를 찾아서 읽는 데는 탁월하지만, 데이터베이스에서 실시간 쿼리를 실행하거나, 외부 API를 호출하거나, 파일을 작성하거나, 캘린더 이벤트를 생성하는 것은 할 수 없다. 정보를 가져오는 것과 실제로 무언가를 행하는 것은 완전히 다른 문제다.</p>
+
+<h3>MCP: AI가 외부 시스템과 실시간으로 상호작용할 때</h3>
+
+<p>MCP(Model Context Protocol)는 Anthropic이 2024년 11월 발표한 개방형 표준으로, AI 애플리케이션이 외부 도구와 데이터 소스를 어떻게 발견하고 사용하는지를 정의한다. 현재 Linux Foundation이 관리한다.</p>
+
+<p>RAG가 외부 정보를 가져와 모델에 제공하는 방법이라면, MCP는 모델이 외부 시스템과 직접 통신하는 표준 언어다. USB-C가 다양한 장치에 하나의 표준 인터페이스를 제공하듯, MCP는 AI 에이전트가 무엇이든 연결할 수 있는 표준 인터페이스를 제공한다.</p>
+
+<p><strong>MCP가 필요한 상황:</strong></p>
+<ul>
+  <li>라이브 데이터베이스에 쿼리를 실행해야 할 때. 문서에서 답을 찾는 게 아니라 실제 데이터를 조회해야 하는 경우다.</li>
+  <li>이메일 전송, 파일 생성, API 호출처럼 실제 액션을 수행해야 할 때.</li>
+  <li>계속 변하는 실시간 데이터가 필요할 때. 주식 가격, 센서 데이터, 라이브 시스템 상태가 이에 해당한다.</li>
+  <li>여러 외부 서비스를 오케스트레이션해야 할 때.</li>
+</ul>
+
+<p><strong>MCP의 특징:</strong> MCP는 LLM이 외부 도구를 호출하고 결과를 받아 후속 추론에 활용하는 표준화된 방식을 제공한다. 각 도구나 데이터 소스가 MCP 서버를 구현하면, AI 클라이언트는 동일한 프로토콜로 모든 서버와 통신할 수 있다.</p>
+
+<hr>
+
+<h2>실전 결정 기준: 무엇을 선택해야 하는가</h2>
+
+<p>핵심 질문은 하나다. <strong>"AI가 이 문제를 해결하려면 실제로 무엇이 필요한가?"</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>상황</th>
+      <th>적합한 선택</th>
+      <th>이유</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>코드 작성, 글쓰기, 일반 질문</td>
+      <td>LLM 단독</td>
+      <td>학습 지식만으로 충분, 외부 의존성 불필요</td>
+    </tr>
+    <tr>
+      <td>내부 문서 기반 질의응답</td>
+      <td>RAG</td>
+      <td>정적 문서 검색 + LLM 추론 조합이 최적</td>
+    </tr>
+    <tr>
+      <td>라이브 DB 쿼리, API 호출, 실제 액션</td>
+      <td>MCP</td>
+      <td>실시간 데이터 접근, 외부 시스템 조작 필요</td>
+    </tr>
+    <tr>
+      <td>문서 검색 + 실시간 데이터 조합</td>
+      <td>RAG + MCP</td>
+      <td>두 패턴을 함께 활용해 각각의 강점을 결합</td>
+    </tr>
+    <tr>
+      <td>전체 워크플로 자동화</td>
+      <td>LLM + RAG + MCP</td>
+      <td>에이전트가 지식, 문서, 외부 도구를 모두 활용</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>저자가 처음으로 겪은 실제 사례로 돌아와서</h2>
+
+<p>데이터 파이프라인 문서 검색 도구 요청으로 돌아가 보자. 처음 요구사항은 RAG가 정답이었다. 200개의 Markdown 문서를 임베딩하고 벡터 검색으로 관련 내용을 찾아주면 됐다.</p>
+
+<p>하지만 요구사항이 라이브 Postgres 쿼리와 Delta Lake 통계 확인으로 확장됐을 때, 정답은 MCP 서버로 바뀌었다. 데이터베이스에 연결하는 MCP 서버, Delta Lake 파일 시스템을 읽는 MCP 서버를 만들고, 에이전트가 필요에 따라 이 도구들을 호출하게 했다.</p>
+
+<p>그리고 최종 형태는 RAG와 MCP를 함께 쓰는 것이었다. 문서를 찾을 때는 RAG, 실제 데이터를 볼 때는 MCP. 두 패턴이 서로 보완했다.</p>
+
+<h2>각각을 단독으로 쓸 때의 함정</h2>
+
+<h3>LLM만 쓸 때의 함정</h3>
+
+<p>모델이 모른다는 사실을 모르는 채로 답할 수 있다. 학습 데이터 이후의 정보, 조직 내부 데이터, 실시간 정보가 필요한데 LLM만 사용하면 자신 있게 틀린 답을 내놓을 가능성이 높다. 환각(hallucination)의 가장 흔한 원인 중 하나다.</p>
+
+<h3>RAG를 잘못 적용할 때의 함정</h3>
+
+<p>RAG는 "문서에서 찾을 수 있는 답"에만 잘 작동한다. 실시간 데이터, 계산이 필요한 답, 시스템을 직접 조작해야 하는 경우에는 RAG가 정보를 가져와도 그것만으로는 답이 안 된다. 또한 임베딩 품질과 청킹(chunking) 전략이 검색 품질을 좌우하는데, 이를 소홀히 하면 관련 없는 문서가 맥락으로 주입되어 오히려 답변 품질이 떨어진다.</p>
+
+<h3>MCP를 무조건 선택할 때의 함정</h3>
+
+<p>MCP 서버를 만드는 것은 단순한 벡터 검색을 구축하는 것보다 훨씬 복잡하다. 외부 시스템 연결, 인증, 오류 처리, 응답 파싱을 모두 직접 다뤄야 한다. 정적 문서 검색이면 충분한 상황에 MCP를 도입하면 불필요한 복잡성만 늘어난다.</p>
+
+<h2>세 가지를 함께 쓰는 에이전트 아키텍처</h2>
+
+<p>현대 AI 에이전트 시스템에서 세 접근이 어떻게 함께 작동하는지 살펴보면 다음과 같다.</p>
+
+<ul>
+  <li><strong>LLM</strong>이 전체 추론의 중심에 있다. 사용자 의도를 파악하고, 어떤 도구를 써야 할지 결정하며, 최종 답변을 생성한다.</li>
+  <li><strong>RAG</strong>는 LLM에 관련 지식을 주입한다. 도메인 특화 문서, 과거 대화 기록, 정책 문서가 여기에 해당한다.</li>
+  <li><strong>MCP</strong>는 LLM이 외부 세계와 상호작용하는 채널이다. 데이터베이스, API, 파일 시스템, 외부 서비스가 MCP 서버를 통해 연결된다.</li>
+</ul>
+
+<p>에이전트는 질문을 받고, RAG로 관련 내부 지식을 찾고, MCP로 필요한 라이브 데이터를 가져오거나 액션을 실행하고, LLM이 이 모든 정보를 종합해 최종 답변을 만든다. 세 패턴이 각자의 역할을 하면서 하나의 시스템을 이룬다.</p>
+
+<h2>요약: 치트시트</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>LLM</th>
+      <th>RAG</th>
+      <th>MCP</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>핵심 역할</strong></td>
+      <td>추론 + 생성</td>
+      <td>문서 검색 + 맥락 주입</td>
+      <td>외부 시스템 통신</td>
+    </tr>
+    <tr>
+      <td><strong>데이터 소스</strong></td>
+      <td>학습 시점 내부 지식</td>
+      <td>벡터 DB의 정적 문서</td>
+      <td>라이브 외부 시스템</td>
+    </tr>
+    <tr>
+      <td><strong>실시간성</strong></td>
+      <td>없음 (학습 시점 동결)</td>
+      <td>제한적 (문서 업데이트 필요)</td>
+      <td>있음 (실시간 조회)</td>
+    </tr>
+    <tr>
+      <td><strong>액션 수행</strong></td>
+      <td>불가</td>
+      <td>불가</td>
+      <td>가능 (API 호출, DB 조작 등)</td>
+    </tr>
+    <tr>
+      <td><strong>복잡도</strong></td>
+      <td>낮음</td>
+      <td>중간</td>
+      <td>높음</td>
+    </tr>
+    <tr>
+      <td><strong>최적 사용 사례</strong></td>
+      <td>코드, 글쓰기, 일반 QA</td>
+      <td>내부 문서 QA, 지식 검색</td>
+      <td>라이브 데이터, 워크플로 자동화</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>마치며</h2>
+
+<p>LLM, RAG, MCP 중 무엇이 더 낫냐는 질문 자체가 잘못됐다. 세 가지는 경쟁 관계가 아니라 서로 다른 문제를 푸는 도구다.</p>
+
+<p>올바른 질문은 "이 도구가 좋은가, 저 도구가 좋은가?"가 아니라 "AI가 이 문제를 해결하려면 실제로 무엇이 필요한가?"다. 외부 데이터가 필요 없다면 LLM만으로 충분하다. 정적 문서를 검색해야 한다면 RAG를 더한다. 라이브 데이터나 실제 액션이 필요하다면 MCP를 연결한다.</p>
+
+<p>저자가 겪은 것처럼, 처음에는 가장 단순한 것부터 시작하고, 요구사항이 바뀌면서 적합한 도구를 추가하는 것이 실제 프로덕션에서 검증된 방식이다. 도구를 먼저 선택하지 말고, 문제를 먼저 이해하라.</p>
+
+</body>
+</html>
