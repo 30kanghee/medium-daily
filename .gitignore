@@ -1,0 +1,4 @@
+.netlify/
+deploy-*.zip
+_home.html
+_urls.txt
