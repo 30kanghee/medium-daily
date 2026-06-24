@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>"I Have a 10GB CSV File and Only 512MB RAM" — The Interview Question That Stumped Me</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-13/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>"나는 10GB CSV 파일이 있고 RAM은 512MB뿐입니다" — 나를 당황하게 만든 면접 질문</h1>
+<div class="meta">Sarvesh Khamkar · 5 min read · <a href="https://medium.com/@sarveshkhamkar321/i-have-a-10gb-csv-file-and-only-512mb-ram-the-interview-question-that-stumped-me-f5c5c0994d3a">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@sarveshkhamkar321/i-have-a-10gb-csv-file-and-only-512mb-ram-the-interview-question-that-stumped-me-f5c5c0994d3a">freedium</a></div>
+<div class="summary">
+<p class="oneline">메모리가 부족한 환경에서 10GB CSV 파일을 처리하라는 면접 질문에 당황했던 경험과, 그 후 연구를 통해 깨달은 스트리밍·청킹·체크포인팅 기반의 올바른 해법을 공유한다.</p>
+<p>저자는 Java 개발자 면접 중 512MB RAM과 단일 CPU 코어만으로 10GB CSV 파일을 처리하는 방법을 묻는 질문에 막혀, 즉흥적으로 Kafka와 Flink를 언급했다. 면접 후 연구를 통해 이 문제의 이상적인 해법은 대형 프레임워크가 아닌 스트리밍 CSV 리더로 한 줄씩 읽고, 소규모 배치 처리와 바이트 오프셋 기반 체크포인팅을 조합하는 것임을 깨달았다. 분산 환경이 아닌 단일 머신 문제에서 Kafka/Flink는 오히려 오버헤드가 된다. 이 경험을 통해 큰 프레임워크로 뛰어들기 전에 핵심 문제를 먼저 파악하고, 규모와 내결함성을 고려해야 함을 배웠다.</p>
+</div>
+
+<p>나는 Java 개발자 면접 중이었다. 스프링 부트, 마이크로서비스, 그리고 LeetCode 스타일의 문제들도 잘 풀어내며 순조롭게 진행되고 있었다. 그런데 면접관이 등을 기대며 이렇게 물었다.</p>
+
+<blockquote>"매우 큰 파일이 있다고 가정해봐요 — 예를 들어 10GB의 CSV 데이터. 계산 자원은 매우 제한적입니다 — RAM 512MB, CPU 코어 하나. 이 파일을 전처리하고 다른 형식으로 저장하려면 어떻게 하겠습니까?"</blockquote>
+
+<p>나는 잠시 멈췄다. 머릿속이 빠르게 돌아갔다. "그냥 한 줄씩 읽으면 되나?" — 너무 뻔하고, 아마도 틀릴 것 같다. "멀티스레딩을 쓸까?" — 하지만 자원이 제한적이다. "데이터베이스에 로드할까?" — 그러면 데이터베이스도 메모리가 필요하다. 뭔가 지능적인 말을 해야 한다고 느꼈다.</p>
+
+<h2>나의 첫 번째 답변 (결말 스포일러: 그다지 좋지 않았다)</h2>
+
+<p>나는 명확히 하려고 물었다. "어떤 종류의 데이터인가요? 구조화되어 있나요?"</p>
+
+<p>면접관: "CSV 파일입니다 — 행과 열이 있어요. 정제하고, 일부 열을 변환하여 JSON이나 Parquet 형식으로 저장해야 합니다."</p>
+
+<p>몇 초 생각한 후 나는 이렇게 답했다. "행을 청크(chunk)로 나눠서 반복적으로 처리할 수 있습니다. 각 청크의 바이트 오프셋을 추적합니다 — 예를 들어 한 번에 10,000행씩 읽고, 메모리에서 처리한 후, 결과를 새 파일에 기록하고 다음 오프셋으로 이동하는 방식입니다. 이렇게 하면 전체 파일을 한 번에 로드하지 않아도 됩니다."</p>
+
+<p>면접관은 천천히 고개를 끄덕였지만, 그의 표정은 말하고 있었다: "그건 여전히 너무 순진해요."</p>
+
+<p>그는 반박했다. "한 번에 10,000행을 읽는 것도 각 행이 크다면 무거울 수 있어요. 그리고 내결함성은요? 중간에 프로세스가 실패하면요? 어떻게 재개하겠습니까?"</p>
+
+<p>나는 막혔다. 내 답변이 불완전하다는 걸 알았다. 그러자 절박함에서 이렇게 말했다.</p>
+
+<p>"저수준 구현에 대해 100% 확신하지는 못하지만, 이런 종류의 문제는 보통 Apache Kafka나 Apache Flink 같은 스트림 처리 프레임워크로 해결된다는 걸 알고 있습니다. 이들은 정확히 한 번(exactly-once) 시맨틱, 파티셔닝, 내결함성을 기본으로 제공합니다."</p>
+
+<p>면접관의 눈썹이 약간 올라갔다. 틀렸다고 하지는 않았다. 그러나 옳다고도 하지 않았다. 면접실을 나오며 살아남긴 했지만 진정한 답변은 하지 못했다는 느낌이 들었다.</p>
+
+<h2>면접 후 내가 배운 것</h2>
+
+<p>면접 후 집에 돌아가 연구했다. 이 문제는 사실 고전적인 문제다: 제한된 메모리로 대용량 파일 처리하기. 이상적인 답변은 Kafka나 Flink에 관한 것이 아니었다 — 단일 머신의 단일 파일 문제에서 그것들은 오버킬이다. 진짜 해법은 훨씬 더 단순하고 우아하다. 내가 말했어야 할 것은 이것이다.</p>
+
+<h2>이상적인 답변: 스트리밍 + 청킹 + 오프셋 추적</h2>
+
+<h3>1단계: 절대로 전체 파일을 메모리에 로드하지 말 것</h3>
+
+<p>한 번에 한 행을 읽는 스트리밍 CSV 리더를 사용한다. Java에서는 OpenCSV나 Super CSV 같은 라이브러리가 이를 지원한다. 간단한 경우에는 <code>String.split(",")</code>을 사용한 일반 <code>BufferedReader</code>도 잘 작동한다.</p>
+
+<pre><code>try (BufferedReader reader = new BufferedReader(new FileReader("large.csv"))) {
+    String line;
+    while ((line = reader.readLine()) != null) {
+        processLine(line);  // 변환, 검증 등
+        writeToOutput(line); // 새 파일에 추가
+    }
+}</code></pre>
+
+<p>이 방법은 메모리를 거의 사용하지 않는다 — 한 줄을 처리하기에 충분한 양만 사용된다.</p>
+
+<h3>2단계: 성능을 위해 배치 처리가 필요하다면, 스마트하게 할 것</h3>
+
+<p>CSV 파싱 자체가 비용이 많이 드는 경우(예: 복잡한 유효성 검사), 한 번에 1,000~5,000행씩 배치로 처리할 수 있다. 하지만 RAM의 작은 부분 이상은 절대 사용하지 말아야 한다.</p>
+
+<pre><code>List&lt;String&gt; batch = new ArrayList&lt;&gt;(5000);
+while ((line = reader.readLine()) != null) {
+    batch.add(line);
+    if (batch.size() == 5000) {
+        processBatch(batch);
+        batch.clear(); // 메모리 해제
+    }
+}</code></pre>
+
+<h3>3단계: 내결함성을 위한 진행 상황 추적</h3>
+
+<p>프로세스가 실패하면 처음부터 다시 시작하고 싶지 않을 것이다. 마지막으로 처리한 줄 번호나 바이트 오프셋의 기록을 유지한다. 작은 체크포인트 파일을 기록할 수 있다.</p>
+
+<pre><code>offset = 1048576  # 지금까지 처리한 바이트 수</code></pre>
+
+<p>프로그램이 충돌하면 체크포인트를 읽고, 해당 오프셋으로 이동한 후 재개한다. Java에서는 <code>RandomAccessFile</code>을 사용하여 특정 바이트 위치로 이동할 수 있다.</p>
+
+<pre><code>RandomAccessFile raf = new RandomAccessFile("large.csv", "r");
+raf.seek(lastKnownOffset); // 여기서부터 재개</code></pre>
+
+<h3>4단계: 생산자-소비자 패턴 사용 (선택 사항)</h3>
+
+<p>단일 CPU가 있지만 I/O와 처리를 겹치게 하고 싶다면, 두 개의 스레드를 사용한다.</p>
+
+<ul>
+  <li><strong>스레드 1 (생산자)</strong> — 파일에서 줄을 읽어 작은 큐에 넣는다.</li>
+  <li><strong>스레드 2 (소비자)</strong> — 큐에서 줄을 가져와 처리한다.</li>
+</ul>
+
+<p>이렇게 하면 CPU가 작업하는 동안 디스크를 계속 바쁘게 유지할 수 있다. 하지만 자원이 매우 제한적인 경우, 이것도 오버킬일 수 있다.</p>
+
+<h2>잠깐 — Kafka나 Flink가 맞는 답일 수도 있을까?</h2>
+
+<p>그렇다, 하지만 문제가 분산된 경우에만. "제한된 계산 자원"이 단일 소형 머신을 의미한다면, Kafka와 Flink는 답이 아니다 — 오버헤드를 추가할 뿐이다.</p>
+
+<p>하지만 파일이 분산 파일 시스템(HDFS)에 있고 소형 노드 클러스터가 있다면, Kafka + Flink(또는 Spark Streaming)는 완벽하게 맞는다. 데이터를 파티셔닝하고, 병렬로 처리하며, 정확히 한 번 보장을 제공한다.</p>
+
+<p>면접관은 특정 도구가 아닌 스트림 처리의 개념을 암시했을 수 있다. 내 실수는 원칙을 설명하지 않고 도구를 언급한 것이었다:</p>
+<ul>
+  <li>파티셔닝(Partitioning)</li>
+  <li>체크포인팅(Checkpointing)</li>
+  <li>정확히 한 번 시맨틱(Exactly-once semantics)</li>
+</ul>
+
+<h2>올바른 한 문장 답변</h2>
+
+<p>돌아갈 수 있다면 이렇게 말할 것이다:</p>
+
+<blockquote>"스트리밍 CSV 리더를 사용하여 파일을 한 줄씩 처리하고, 메모리 과부하를 피하기 위해 한 번에 수천 행씩만 배치 처리하겠습니다. 또한 프로세스가 실패할 경우 처음부터 시작하지 않고 중단된 지점부터 재개할 수 있도록 바이트 오프셋을 주기적으로 저장하는 체크포인팅을 구현하겠습니다."</blockquote>
+
+<p>면접관이 분산 시스템에 대해 물어봤다면:</p>
+
+<blockquote>"파일이 여러 머신에 분산되어 있다면, Kafka + Flink 같은 스트림 처리 프레임워크를 사용하여 데이터를 파티셔닝하고 각 파티션을 독립적으로 처리하며 내결함성을 위해 체크포인팅을 사용하겠습니다."</blockquote>
+
+<h2>이 경험이 가르쳐 준 것</h2>
+
+<ul>
+  <li>핵심 문제를 이해하기 전에 대형 프레임워크로 뛰어들지 말 것.</li>
+  <li>항상 규모를 물어볼 것 — 이것이 단일 머신에서의 일회성 작업인지, 클러스터에서의 지속적인 파이프라인인지?</li>
+  <li>내결함성과 재개 가능성은 종종 원시 속도보다 더 중요하다.</li>
+  <li>틀린 답변도 가치 있을 수 있다 — 그것이 나를 올바른 답변을 배우도록 밀어붙였다.</li>
+</ul>
+
+<h2>당신의 차례: 어떻게 답변하겠습니까?</h2>
+
+<p>"대용량 파일, 적은 메모리" 질문에 직면한 적이 있는가? 당신의 답변은 무엇이었는가? 댓글로 남겨주세요 — 여러분의 접근법을 듣고 싶습니다.</p>
+
+<p>이 글이 도움이 됐다면 👏 박수를 치고, 더 많은 실제 면접 이야기를 위해 팔로우해주세요.</p>
+</body>
+</html>

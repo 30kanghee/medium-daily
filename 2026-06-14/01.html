@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How to Build Production-Ready AI Agents: MCP, CLI, and Skills — the Right Tool for the Right Job</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+
+</head><body>
+<a href='/2026-06-14/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>How to Build Production-Ready AI Agents: MCP, CLI, and Skills — the Right Tool for the Right Job</h1>
+<div class="meta">Ana Bildea, PhD · Agentic Builders · 7 min read · <a href="https://medium.com/agentic-builders/how-to-build-production-ready-ai-agents-mcp-cli-and-skills-the-right-tool-for-the-right-job-701dc102863f">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/agentic-builders/how-to-build-production-ready-ai-agents-mcp-cli-and-skills-the-right-tool-for-the-right-job-701dc102863f">freedium</a></div>
+<div class="summary"><p class="oneline">2026년 엔터프라이즈 AI 에이전트를 구축할 때 MCP(모델 컨텍스트 프로토콜), CLI 도구, Skills를 각각 언제 어떻게 조합해야 하는지를 단계별로 설명하는 실전 가이드다.</p><h3>요약</h3><p>AI 에이전트 개발에서 가장 흔한 실수는 MCP, Skills, CLI 중 하나만 선택해 모든 문제를 해결하려는 것이다. 실제로 엔터프라이즈급 에이전트는 이 세 가지 레이어를 동시에 조합해 사용한다. MCP는 데이터베이스·SaaS·API 등 다양한 시스템에 표준화된 방식으로 연결하는 ‘연결 레이어’이고, CLI 도구는 git·docker·kubectl 같이 이미 검증된 시스템 명령을 그대로 활용하는 ‘실행 레이어’이며, Skills는 코드 리뷰나 보안 감사체림 재사용 가능한 사고 패턴을 정의하는 ‘전문성 레이어’다. 프로덕션 AI 시스템은 각 레이어의 책임을 명확히 분리함으로써 신뢰성·유지보수성·확장성을 동시에 확보할 수 있다.</p></div>
+
+<h2>AI 에이전트 산업의 새로운 문제</h2>
+<p>AI 에이전트를 구축하는 사람은 많아졌지만, 제대로 구축하는 사람은 드물다. MCP를 발견하면 모든 것을 MCP로 해결하려 하고, Skills를 발견하면 모든 워크플로를 Skills로 만들려 한다. 그 결과는? 복잡성, 취약성, 유지보수 악몸이다. 프로덕션 수준의 AI 시스템은 단 하나의 접근법을 선택해서 만들어지지 않는다. 각 접근법을 언제 사용해야 하는지 이해해야 한다.</p>
+<p>2026년 에이전트 엔지니어링을 지배하는 세 가지 개념: <strong>MCP(모델 컨텍스트 프로토콜)</strong>, <strong>CLI 도구</strong>, <strong>Skills</strong>. 최고의 AI 엔지니어들은 이 세 가지를 어떻게 조합하는지 알고 있다.</p>
+
+<h2>MCP 이해하기</h2>
+<p>MCP(모델 컨텍스트 프로토콜)는 AI 분야에서 가장 중요한 표준 중 하나가 되었다. AI 시스템을 위한 USB-C라고 생각하면 된다. MCP 이전에는 모든 도구 통합에 커스텀 코드가 필요했다. MCP 이후로는 AI 모델이 표준화된 인터페이스를 통해 도구에 연결할 수 있다.</p>
+<p>MCP는 다음과 같은 상황에서 빛을 발한다:</p>
+<ul>
+<li>데이터베이스, Git 리포지터리, 파일 시스템</li>
+<li>엔터프라이즈 애플리케이션 (Salesforce, Jira, Slack 등)</li>
+<li>내부 도구, API, 클라우드 인프라</li>
+</ul>
+<p>MCP는 근본적으로 <strong>연결성</strong>에 관한 것이다. 워크플로 로직에 관한 것이 아니다. 이 구분이 중요하다.</p>
+
+<h2>CLI 도구 이해하기</h2>
+<p>때로는 개발자들이 과도하게 복잡하게 만든다. 모든 것이 MCP를 필요로 하지는 않는다. 많은 작업은 이미 커맨드라인 도구로 해결되어 있다. <code>git status</code>, <code>docker ps</code>, <code>npm install</code>, <code>kubectl get pods</code>, <code>terraform apply</code>와 같은 도구들은 이미 검증되어 있고, 신뢰할 수 있으며, 빠르고, 프로덕션 준비가 된 상태다.</p>
+<p>나쁜 접근법: 커스텀 Git 구현 만들기. 좋은 접근법: 에이전트가 <code>git diff</code>, <code>git log</code>, <code>git checkout</code>를 실행하도록 허용하기. 수청 시간의 엔지니어링이 이미 이런 문제들을 해결해 놀았다. 이를 활용하면 된다.</p>
+
+<h2>Skills 이해하기</h2>
+<p>Skills는 다르다. Skills는 통합이 아니다. Skills는 도구도 아니다. Skills는 <strong>재사용 가능한 전문성</strong>이다. AI를 위한 표준 운영 절차(SOP)라고 생각하면 된다.</p>
+<p>코드 리뷰 Skill 예시:</p>
+<ol>
+<li>아키텍처 분석</li>
+<li>보안 점검</li>
+<li>성능 검토</li>
+<li>유지보수성 검토</li>
+<li>권장사항 생성</li>
+</ol>
+<p>이 Skill은 액션을 수행하지 않는다. <strong>행동 방식</strong>을 정의한다. Skills는 반복 가능한 사고 패턴을 포잘한다. MCP는 접근을 제공하지, 전문성을 제공하지 않는다. Skills는 추론을 제공하지, 연결성을 제공하지 않는다.</p>
+
+<h2>올바른 아키텍처</h2>
+<p>프로덕션 시스템은 종종 다음과 같은 구조를 갖는다:</p>
+<pre>사용자
+  ↓
+에이전트
+  ↓
+Skill 선택 → 추론
+  ↓
+MCP 도구 → 연결
+  ↓
+CLI 도구 → 실행
+  ↓
+응답</pre>
+<p>5개의 레이어로 구성된 프로덕션 아키텍처:</p>
+<ul>
+<li>Layer 1: 추론 (LLM)</li>
+<li>Layer 2: Skills (전문성)</li>
+<li>Layer 3: MCP (연결성)</li>
+<li>Layer 4: CLI (실행)</li>
+<li>Layer 5: 관찰가능성 (모니터링, 평가, 로깅)</li>
+</ul>
+<p>이 아키텍처는 모놀리식 에이전트보다 훨씬 잘 확장된다.</p>
+
+<h2>실제 사례: AI 소프트웨어 엔지니어링 에이전트</h2>
+<p><strong>MCP 담당:</strong> GitHub, Jira, PostgreSQL, 문서에 접근<br>
+<strong>CLI 담당:</strong> <code>git checkout</code>, <code>npm test</code>, <code>docker compose up</code> 실행<br>
+<strong>Skills 담당:</strong> 코드 리뷰, 아키텍처 분석, 보안 감사 수행</p>
+<p>각 컴포넌트는 자신이 가장 잘하는 일에 집중한다. 이것이 프로덕션 수준 에이전트가 동작하는 방식이다.</p>
+
+<h2>마무리</h2>
+<p>AI 엔지니어링의 미래는 하나의 마법 같은 프레임워크를 찾는 것이 아니다. 명확한 책임을 가진 시스템을 구축하는 것이다. MCP는 연결하고, CLI는 실행하고, Skills는 전문성을 제공하고, 에이전트는 조율한다. 이 조각들이 함께 작동할 때, AI 시스템은 극적으로 더 신뢰할 수 있고, 유지보수하기 쉽고, 확장 가능해진다. 프로덕션 수준의 에이전트는 AI에게 더 많은 권한을 부여해서 만들어지는 것이 아니다. AI에게 \ec62c바른 작업에 맞는 \ec62c바른 도구를 제공함으로써 만들어진다.</p>
+
+</body></html>

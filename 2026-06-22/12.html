@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Value Objects in .NET 10: Stop Passing Strings Around Your Domain</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-22/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Value Objects in .NET 10: Stop Passing Strings Around Your Domain</h1>
+<div class="meta">Michael Maurice · 13 min read · <a href="https://medium.com/@michaelmaurice410/how-to-use-value-objects-to-solve-primitive-obsession-92e44ea285d3" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@michaelmaurice410/how-to-use-value-objects-to-solve-primitive-obsession-92e44ea285d3" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">.NET에서 원시 타입(특히 string) 과도 의존을 Value Object 패턴으로 해결하여 타입 안전하고 자기 검증하는 도메인 모델을 만드는 방법을 실전 코드로 안내한다.</p>
+<p>원시 타입 집착(Primitive Obsession)은 개발자가 이메일, 금액, 주소 같은 복잡한 도메인 개념을 string, int, decimal로 표현할 때 발생하는 코드 악취다. 이로 인해 파라미터 순서 오입력, 유효성 검사 로직 중복, 컴파일 타임 보호 부재 같은 문제가 생긴다. Value Object는 불변성, 값 동등성, 자기 검증의 세 가지 특성으로 이 문제를 해결한다. 이 글은 추상 기반 클래스부터 이메일, 이름, 금액, 주소 같은 구체적인 Value Object 구현까지, 그리고 Entity Framework Core와의 통합 방법까지 .NET 코드 예제로 상세히 설명한다. 도메인 모델이 자기 문서화되고 런타임 오류가 컴파일 타임 오류로 전환되는 효과를 실제로 느낄 수 있다.</p>
+</div>
+
+<p>원시 타입 집착(Primitive Obsession)은 소프트웨어 개발에서 가장 만연한 코드 악취 중 하나다. 개발자가 복잡한 도메인 개념을 표현하기 위해 내장 원시 타입(문자열, 정수, 소수)에 과도하게 의존할 때 발생하며, 불명확한 코드, 분산된 유효성 검사 로직, 그리고 버그 위험 증가로 이어진다. Value Object는 이 문제에 대한 우아한 해결책으로, 타입 안전성, 캡슐화, 표현력을 제공한다.</p>
+
+<h2>원시 타입 집착 이해하기</h2>
+
+<h3>원시 타입 집착이란?</h3>
+<p>원시 타입 집착은 복잡한 도메인 개념을 표현하기 위해 원시 데이터 타입을 과도하게 사용하는 것이다. 의미 있는 추상화를 만드는 대신 개발자들이 비즈니스 엔티티를 모델링하는 데 <code>string</code>, <code>int</code>, <code>decimal</code>같은 기본 타입에 의존한다.</p>
+
+<p>원시 타입 집착의 흔한 예시:</p>
+<ul>
+  <li>이메일 주소, 전화번호, 우편번호에 <code>string</code> 사용</li>
+  <li>통화 정보 없이 금액을 <code>decimal</code>로 표현</li>
+  <li>상태 코드에 열거형 대신 <code>int</code> 상수 사용</li>
+  <li>주소를 별도의 <code>string</code> 속성들로 모델링</li>
+  <li>시간대나 비즈니스 맥락 없이 <code>DateTime</code> 사용</li>
+</ul>
+
+<h3>원시 타입 집착이 유발하는 문제</h3>
+<p>원시 타입 집착이 해로운 이유:</p>
+<ul>
+  <li><strong>표현력 부족:</strong> <code>string</code>은 이메일일 수도 있고, 이름일 수도 있고, 주소일 수도 있다 — 아무런 의미론적 의미를 제공하지 않는다</li>
+  <li><strong>오류 위험 증가:</strong> 잘못된 파라미터를 전달하거나 유사한 원시 타입을 혼동하기 쉽다</li>
+  <li><strong>분산된 유효성 검사:</strong> 코드베이스 전체에 유효성 검사 로직이 중복된다</li>
+  <li><strong>약한 타입 안전성:</strong> 잘못된 연산에 대한 컴파일 타임 보호가 없다</li>
+  <li><strong>어려운 리팩토링:</strong> 비즈니스 규칙 변경이 코드베이스 전체에 걸친 수정을 요구한다</li>
+</ul>
+
+<pre><code>// 나쁜 예: 원시 타입 집착
+public class User
+{
+    public string FirstName { get; set; } = string.Empty;  // 규칙이 뭔가요?
+    public string LastName { get; set; } = string.Empty;   // 비어있을 수 있나요?
+    public string Email { get; set; } = string.Empty;      // 검증됐나요?
+    public decimal Salary { get; set; }                    // 어떤 통화?
+    public int Status { get; set; }                        // 숫자들의 의미는?
+}
+
+// 위험한 사용법 - 컴파일되지만 잘못됨
+var user = new User
+{
+    FirstName = "user@example.com",  // 이메일이 이름 필드에!
+    Email = "John",                   // 이름이 이메일 필드에!
+    Salary = -50000,                  // 음수 급여?
+    Status = 99                       // 유효하지 않은 상태 코드
+};</code></pre>
+
+<h2>Value Object 소개</h2>
+
+<h3>Value Object란?</h3>
+<p>Value Object는 고유한 정체성 없이 도메인의 서술적 측면을 표현하는 불변 객체다. 속성만으로 정의되며 그것을 사용하는 엔티티와 독립적인 생명주기가 없다.</p>
+
+<p>Value Object의 핵심 특성:</p>
+<ul>
+  <li><strong>불변성:</strong> 생성 후 변경 불가</li>
+  <li><strong>값 동등성:</strong> 모든 속성이 같으면 두 객체는 동등</li>
+  <li><strong>자기 검증:</strong> 항상 유효한 상태</li>
+  <li><strong>정체성 없음:</strong> 고유 식별자가 아닌 값으로 정의됨</li>
+  <li><strong>교체 가능:</strong> 수정보다는 전체 교체</li>
+</ul>
+
+<h2>.NET에서 Value Object 구현하기</h2>
+
+<h3>기본 Value Object 구현</h3>
+<p>모든 Value Object의 기반을 만든다:</p>
+
+<pre><code>// Domain/Common/ValueObject.cs
+namespace Domain.Common;
+
+public abstract class ValueObject : IEquatable&lt;ValueObject&gt;
+{
+    protected abstract IEnumerable&lt;object?&gt; GetEqualityComponents();
+
+    public override bool Equals(object? obj)
+    {
+        return obj is ValueObject other &amp;&amp; Equals(other);
+    }
+
+    public bool Equals(ValueObject? other)
+    {
+        return other is not null &amp;&amp;
+               GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
+    }
+
+    public override int GetHashCode()
+    {
+        return GetEqualityComponents()
+            .Where(x => x != null)
+            .Aggregate(1, (current, obj) => current * 23 + obj!.GetHashCode());
+    }
+
+    public static bool operator ==(ValueObject? left, ValueObject? right)
+        => Equals(left, right);
+
+    public static bool operator !=(ValueObject? left, ValueObject? right)
+        => !Equals(left, right);
+}</code></pre>
+
+<h3>EmailAddress Value Object</h3>
+
+<pre><code>// Domain/ValueObjects/EmailAddress.cs
+namespace Domain.ValueObjects;
+
+public sealed class EmailAddress : ValueObject
+{
+    public string Value { get; }
+
+    private EmailAddress(string value) => Value = value;
+
+    public static Result&lt;EmailAddress&gt; Create(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return Result.Failure&lt;EmailAddress&gt;("이메일은 비어 있을 수 없습니다.");
+
+        email = email.Trim().ToLowerInvariant();
+
+        if (email.Length > 254)
+            return Result.Failure&lt;EmailAddress&gt;("이메일이 너무 깁니다.");
+
+        if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            return Result.Failure&lt;EmailAddress&gt;($"'{email}'은 유효하지 않은 이메일 형식입니다.");
+
+        return Result.Success(new EmailAddress(email));
+    }
+
+    protected override IEnumerable&lt;object?&gt; GetEqualityComponents()
+    {
+        yield return Value;
+    }
+
+    public override string ToString() => Value;
+    public static implicit operator string(EmailAddress email) => email.Value;
+}</code></pre>
+
+<h3>Money Value Object</h3>
+
+<pre><code>// Domain/ValueObjects/Money.cs
+namespace Domain.ValueObjects;
+
+public sealed class Money : ValueObject
+{
+    public decimal Amount { get; }
+    public string Currency { get; }
+
+    private static readonly HashSet&lt;string&gt; ValidCurrencies =
+        new() { "USD", "EUR", "GBP", "KRW", "JPY" };
+
+    private Money(decimal amount, string currency)
+    {
+        Amount = amount;
+        Currency = currency;
+    }
+
+    public static Result&lt;Money&gt; Create(decimal amount, string? currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+            return Result.Failure&lt;Money&gt;("통화는 비어 있을 수 없습니다.");
+
+        currency = currency.Trim().ToUpperInvariant();
+
+        if (!ValidCurrencies.Contains(currency))
+            return Result.Failure&lt;Money&gt;($"'{currency}'은 지원되지 않는 통화입니다.");
+
+        if (amount &lt; 0)
+            return Result.Failure&lt;Money&gt;("금액은 음수일 수 없습니다.");
+
+        if (decimal.Round(amount, 2) != amount)
+            return Result.Failure&lt;Money&gt;("금액은 소수점 2자리까지만 가능합니다.");
+
+        return Result.Success(new Money(amount, currency));
+    }
+
+    public Money Add(Money other)
+    {
+        if (Currency != other.Currency)
+            throw new InvalidOperationException($"다른 통화는 더할 수 없습니다: {Currency} vs {other.Currency}");
+        return new Money(Amount + other.Amount, Currency);
+    }
+
+    protected override IEnumerable&lt;object?&gt; GetEqualityComponents()
+    {
+        yield return Amount;
+        yield return Currency;
+    }
+
+    public override string ToString() => $"{Amount:F2} {Currency}";
+}</code></pre>
+
+<h3>Address Value Object</h3>
+
+<pre><code>// Domain/ValueObjects/Address.cs
+namespace Domain.ValueObjects;
+
+public sealed class Address : ValueObject
+{
+    public string Street { get; }
+    public string City { get; }
+    public string PostalCode { get; }
+    public string Country { get; }
+
+    private Address(string street, string city, string postalCode, string country)
+    {
+        Street = street;
+        City = city;
+        PostalCode = postalCode;
+        Country = country;
+    }
+
+    public static Result&lt;Address&gt; Create(
+        string? street, string? city,
+        string? postalCode, string? country)
+    {
+        var errors = new List&lt;string&gt;();
+
+        if (string.IsNullOrWhiteSpace(street)) errors.Add("거리는 필수입니다.");
+        if (string.IsNullOrWhiteSpace(city)) errors.Add("도시는 필수입니다.");
+        if (string.IsNullOrWhiteSpace(postalCode)) errors.Add("우편번호는 필수입니다.");
+        if (string.IsNullOrWhiteSpace(country)) errors.Add("국가는 필수입니다.");
+
+        if (errors.Any())
+            return Result.Failure&lt;Address&gt;(string.Join(", ", errors));
+
+        return Result.Success(new Address(
+            street!.Trim(), city!.Trim(),
+            postalCode!.Trim(), country!.Trim()));
+    }
+
+    protected override IEnumerable&lt;object?&gt; GetEqualityComponents()
+    {
+        yield return Street;
+        yield return City;
+        yield return PostalCode;
+        yield return Country;
+    }
+
+    public override string ToString() =>
+        $"{Street}, {City}, {PostalCode}, {Country}";
+}</code></pre>
+
+<h2>Value Object를 활용한 도메인 모델 개선</h2>
+
+<h3>개선 전후 비교</h3>
+
+<pre><code>// 개선 전: 원시 타입 집착
+public class Employee
+{
+    public string Email { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public decimal SalaryAmount { get; set; }
+    public string SalaryCurrency { get; set; } = string.Empty;
+    public string Street { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    // ... 아무 검증도, 아무 의미도 없음
+}
+
+// 개선 후: Value Object 활용
+public class Employee
+{
+    public Guid Id { get; private set; }
+    public EmailAddress Email { get; private set; }
+    public PersonName Name { get; private set; }
+    public Money Salary { get; private set; }
+    public Address HomeAddress { get; private set; }
+
+    private Employee(Guid id, EmailAddress email,
+        PersonName name, Money salary, Address homeAddress)
+    {
+        Id = id;
+        Email = email;
+        Name = name;
+        Salary = salary;
+        HomeAddress = homeAddress;
+    }
+
+    public static Result&lt;Employee&gt; Create(
+        string email, string firstName, string lastName,
+        decimal salaryAmount, string currency, /* ... */)
+    {
+        var emailResult = EmailAddress.Create(email);
+        var nameResult = PersonName.Create(firstName, lastName);
+        var salaryResult = Money.Create(salaryAmount, currency);
+        // ... 각 Value Object가 자신을 검증함
+    }
+}</code></pre>
+
+<h2>Entity Framework Core와의 통합</h2>
+<p>EF Core에서 Value Object는 소유(Owned) 타입으로 매핑한다:</p>
+
+<pre><code>// Infrastructure/Persistence/Configurations/EmployeeConfiguration.cs
+public class EmployeeConfiguration : IEntityTypeConfiguration&lt;Employee&gt;
+{
+    public void Configure(EntityTypeBuilder&lt;Employee&gt; builder)
+    {
+        builder.HasKey(e =&gt; e.Id);
+
+        // EmailAddress Value Object 매핑
+        builder.OwnsOne(e =&gt; e.Email, email =&gt;
+        {
+            email.Property(e =&gt; e.Value)
+                .HasColumnName("Email")
+                .HasMaxLength(254)
+                .IsRequired();
+            email.HasIndex(e =&gt; e.Value).IsUnique();
+        });
+
+        // Money Value Object 매핑
+        builder.OwnsOne(e =&gt; e.Salary, salary =&gt;
+        {
+            salary.Property(s =&gt; s.Amount)
+                .HasColumnName("SalaryAmount")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            salary.Property(s =&gt; s.Currency)
+                .HasColumnName("SalaryCurrency")
+                .HasMaxLength(3)
+                .IsRequired();
+        });
+
+        // Address Value Object 매핑
+        builder.OwnsOne(e =&gt; e.HomeAddress, addr =&gt;
+        {
+            addr.Property(a =&gt; a.Street).HasColumnName("Street");
+            addr.Property(a =&gt; a.City).HasColumnName("City");
+            addr.Property(a =&gt; a.PostalCode).HasColumnName("PostalCode");
+            addr.Property(a =&gt; a.Country).HasColumnName("Country");
+        });
+    }
+}</code></pre>
+
+<h2>Value Object 구현 모범 사례</h2>
+
+<h3>1. 항상 private 생성자 사용</h3>
+<p>팩토리 메서드를 통해서만 생성하여 유효하지 않은 객체가 만들어지는 것을 방지한다.</p>
+
+<h3>2. 모든 검증을 Value Object 내부에</h3>
+<p>검증 로직이 도메인 전체에 분산되는 것을 방지한다. 유효하지 않은 Value Object가 존재할 수 없어야 한다.</p>
+
+<h3>3. 불변성 강제</h3>
+<p>모든 속성을 <code>{ get; private set; }</code> 또는 <code>{ get; init; }</code>으로 선언한다. 내부 컬렉션의 경우 <code>IReadOnlyList</code> 사용을 고려한다.</p>
+
+<h3>4. 의미 있는 연산 제공</h3>
+<p>도메인과 관련된 메서드를 Value Object에 추가한다. 예: <code>Money.Add()</code>, <code>EmailAddress.GetDomain()</code>.</p>
+
+<h3>5. 암묵적 변환 고려</h3>
+<p>기존 코드와의 통합을 위해 <code>implicit operator</code>를 활용하면 점진적 마이그레이션이 쉬워진다.</p>
+
+<h2>마치며</h2>
+
+<p>Value Object는 단순한 패턴이 아니다. 그것은 코드가 하는 말을 도메인 언어로 바꾸는 방법이다. <code>string</code>을 <code>EmailAddress</code>로, <code>decimal</code>을 <code>Money</code>로 바꾸는 순간 세 가지 일이 동시에 일어난다:</p>
+
+<ul>
+  <li><strong>런타임 오류가 컴파일 타임 오류가 된다</strong> — 이메일 필드에 이름을 넣으면 컴파일러가 잡는다</li>
+  <li><strong>코드가 자기 문서화된다</strong> — <code>Employee(EmailAddress, PersonName, Money)</code>는 <code>Employee(string, string, string, decimal, string)</code>보다 훨씬 명확하다</li>
+  <li><strong>비즈니스 규칙이 한 곳에 모인다</strong> — 이메일 검증 로직이 여러 서비스에 흩어지지 않고 <code>EmailAddress.Create()</code> 안에 있다</li>
+</ul>
+
+<p>처음에는 보일러플레이트처럼 느껴질 수 있다. 하지만 새 팀원이 잘못된 파라미터 순서로 버그를 만들거나, 검증 없는 빈 이메일이 데이터베이스에 들어가거나, 통화가 다른 금액끼리 더해지는 사고가 일어난 후에는 — 보일러플레이트가 보험처럼 느껴진다.</p>
+
+<p>도메인이 자신의 언어로 말하게 하라. <code>string</code>을 넘기는 것을 멈추고, 의미를 넘겨라.</p>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>20 Most Important AI Concepts Explained in Just 20 Minutes</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-15/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>20 Most Important AI Concepts Explained in Just 20 Minutes</h1>
+<div class="meta">Deep concept · Let's Code Future · 22분 · <a href="https://medium.com/lets-code-future/20-most-important-ai-concepts-explained-in-just-20-minute-b7dd3ad2b506">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/lets-code-future/20-most-important-ai-concepts-explained-in-just-20-minute-b7dd3ad2b506">freedium</a></div>
+<div class="summary">
+  <p class="oneline">LLM부터 에이전틱 AI까지, 현대 AI 시스템을 구성하는 20가지 핵심 개념을 전문 용어 없이 명쾌하게 정리했다.</p>
+  <h3>요약</h3>
+  <p>AI는 빠르게 발전하지만 기본 개념은 비교적 소수의 핵심 아이디어로 구성되어 있다. 이 글은 LLM, 프롬프트, 임베딩, 벡터 데이터베이스, RAG, 파인튜닝, 함수 호출, AI 에이전트, MCP 등 20가지 핵심 개념을 입문자도 이해할 수 있도록 명확하게 설명한다. 각 개념이 어떻게 서로 연결되어 하나의 흐름을 이루는지 보여주며, 이 흐름을 이해하면 대부분의 현대 AI 시스템 구조가 한눈에 보인다. 저자는 프레임워크보다 개념 자체를 먼저 익힐 것을 권고하며, AI의 미래는 그것에 대해 말하는 사람이 아니라 실제로 작동 원리를 이해하는 사람에게 속한다고 강조한다.</p>
+</div>
+
+<p>인공지능은 너무 빠르게 움직여서 많은 개발자들이 시작도 전에 압도당한다.</p>
+
+<p>매주 새로운 용어들이 등장한다:</p>
+
+<ul>
+  <li>에이전트 (Agents)</li>
+  <li>RAG</li>
+  <li>파인튜닝 (Fine-Tuning)</li>
+  <li>임베딩 (Embeddings)</li>
+  <li>MCP</li>
+  <li>벡터 데이터베이스 (Vector Databases)</li>
+  <li>함수 호출 (Function Calling)</li>
+</ul>
+
+<p>갑자기 모든 사람이 당신이 이해하지 못하는 언어로 말하는 것처럼 느껴진다.</p>
+
+<p>좋은 소식이 있다. 기본 개념을 이해하는 데 몇 달의 공부가 필요하지 않다.</p>
+
+<p>이 20가지 개념을 배우면, 대부분의 현대 AI 애플리케이션이 어떻게 구축되는지 이해하게 될 것이다.</p>
+
+<p>시작하자.</p>
+
+<hr>
+
+<h2>1. LLM (대규모 언어 모델)</h2>
+
+<p>현대 AI 시스템의 두뇌다.</p>
+
+<p>예시:</p>
+<ul>
+  <li>ChatGPT</li>
+  <li>Claude</li>
+  <li>Gemini</li>
+  <li>Llama</li>
+</ul>
+
+<p>LLM은 맥락을 기반으로 다음 토큰(단어 조각)을 예측한다.</p>
+
+<p>모든 것이 여기서 시작된다.</p>
+
+<hr>
+
+<h2>2. 프롬프트 (Prompt)</h2>
+
+<p>AI에게 주는 지시다.</p>
+
+<p>예시:</p>
+<blockquote>FastAPI를 사용해서 REST API를 만들어줘.</blockquote>
+
+<p>더 나은 프롬프트는 보통 더 나은 결과를 만들어낸다.</p>
+
+<hr>
+
+<h2>3. 프롬프트 엔지니어링 (Prompt Engineering)</h2>
+
+<p>더 나은 결과를 생성하는 프롬프트를 설계하는 기술이다.</p>
+
+<p>포함 요소:</p>
+<ul>
+  <li>맥락 (Context)</li>
+  <li>제약 조건 (Constraints)</li>
+  <li>예시 (Examples)</li>
+  <li>출력 형식 지정 (Output formatting)</li>
+</ul>
+
+<p>여전히 AI 분야에서 가장 높은 레버리지를 가진 기술 중 하나다.</p>
+
+<hr>
+
+<h2>4. 토큰 (Tokens)</h2>
+
+<p>AI 모델은 단어를 보지 않는다.</p>
+
+<p>토큰을 본다.</p>
+
+<p>토큰은 처리와 과금에 사용되는 텍스트의 작은 조각이다.</p>
+
+<p>토큰을 더 많이 사용할수록 비용과 컨텍스트 소비가 늘어난다.</p>
+
+<hr>
+
+<h2>5. 컨텍스트 윈도우 (Context Window)</h2>
+
+<p>모델이 대화 중에 기억할 수 있는 정보의 양이다.</p>
+
+<p>AI의 단기 기억이라고 생각하면 된다.</p>
+
+<p>컨텍스트 윈도우가 클수록 더 복잡한 워크플로우가 가능하다.</p>
+
+<hr>
+
+<h2>6. 임베딩 (Embeddings)</h2>
+
+<p>임베딩은 텍스트를 숫자 벡터로 변환한다.</p>
+
+<p>이를 통해 AI 시스템이 의미적 뜻을 이해할 수 있다.</p>
+
+<p>예를 들어:</p>
+
+<p>"자동차"</p>
+<p>와</p>
+<p>"승용차"</p>
+
+<p>는 비슷한 임베딩을 생성한다.</p>
+
+<hr>
+
+<h2>7. 벡터 데이터베이스 (Vector Database)</h2>
+
+<p>임베딩을 저장하기에 최적화된 데이터베이스다.</p>
+
+<p>인기 있는 예시:</p>
+<ul>
+  <li>Pinecone</li>
+  <li>Weaviate</li>
+  <li>Chroma</li>
+  <li>Qdrant</li>
+</ul>
+
+<p>이것이 시맨틱 검색 시스템을 구동한다.</p>
+
+<hr>
+
+<h2>8. RAG (검색 증강 생성, Retrieval-Augmented Generation)</h2>
+
+<p>AI에서 가장 중요한 개념 중 하나다.</p>
+
+<p>RAG는 모델이 응답을 생성하기 전에 외부 정보를 검색할 수 있게 한다.</p>
+
+<p>학습 데이터에만 의존하는 대신, 모델이 다음에 접근할 수 있다:</p>
+<ul>
+  <li>PDF</li>
+  <li>문서</li>
+  <li>데이터베이스</li>
+  <li>내부 지식</li>
+</ul>
+
+<p>대부분의 기업용 AI 시스템은 RAG를 사용한다.</p>
+
+<hr>
+
+<h2>9. 파인튜닝 (Fine-Tuning)</h2>
+
+<p>특화된 데이터로 기존 모델을 추가 학습하는 것이다.</p>
+
+<p>다음이 필요할 때 유용하다:</p>
+<ul>
+  <li>도메인 전문성</li>
+  <li>일관된 행동</li>
+  <li>산업별 지식</li>
+</ul>
+
+<p>모든 AI 애플리케이션에 파인튜닝이 필요한 것은 아니다.</p>
+
+<hr>
+
+<h2>10. 함수 호출 (Function Calling)</h2>
+
+<p>AI 모델이 소프트웨어 함수를 트리거할 수 있게 한다.</p>
+
+<p>예시:</p>
+
+<p>사용자가 물어본다:</p>
+<blockquote>날씨가 어때?</blockquote>
+
+<p>AI가 날씨 API를 호출한다.</p>
+
+<p>실시간 데이터를 반환한다.</p>
+
+<p>이것이 AI가 외부 시스템과 상호작용하는 방식이다.</p>
+
+<hr>
+
+<h2>11. 도구 (Tools)</h2>
+
+<p>도구는 AI에게 대화를 넘어서는 능력을 준다.</p>
+
+<p>예시:</p>
+<ul>
+  <li>검색</li>
+  <li>이메일</li>
+  <li>데이터베이스 접근</li>
+  <li>계산기</li>
+  <li>API</li>
+</ul>
+
+<p>도구 없이 AI는 말할 수만 있다. 도구가 있으면 AI는 일할 수 있다.</p>
+
+<hr>
+
+<h2>12. AI 에이전트 (AI Agents)</h2>
+
+<p>AI 에이전트는 단순히 질문에 답하지 않는다.</p>
+
+<p>다음을 할 수 있다:</p>
+<ul>
+  <li>계획 수립</li>
+  <li>추론</li>
+  <li>도구 사용</li>
+  <li>작업 실행</li>
+</ul>
+
+<p>에이전트를 LLM으로 구동되는 자율 작업자로 생각하면 된다.</p>
+
+<hr>
+
+<h2>13. 멀티 에이전트 시스템 (Multi-Agent Systems)</h2>
+
+<p>여러 에이전트가 함께 작동하는 시스템이다.</p>
+
+<p>예시:</p>
+
+<p>리서치 에이전트 → 분석 에이전트 → 작성 에이전트</p>
+
+<p>각 에이전트가 서로 다른 작업을 전문으로 한다.</p>
+
+<hr>
+
+<h2>14. MCP (모델 컨텍스트 프로토콜, Model Context Protocol)</h2>
+
+<p>AI 모델이 도구 및 데이터 소스와 연결하는 표준화된 방식이다.</p>
+
+<p>MCP를 AI의 USB-C라고 생각하면 된다.</p>
+
+<p>하나의 프로토콜. 수많은 통합.</p>
+
+<hr>
+
+<h2>15. 환각 (Hallucinations)</h2>
+
+<p>AI가 자신 있게 잘못된 정보를 생성하는 현상이다.</p>
+
+<p>모든 모델은 가끔 환각을 일으킨다.</p>
+
+<p>그래서 검증이 중요하다. 항상 중요한 정보를 확인하라.</p>
+
+<hr>
+
+<h2>16. 온도 (Temperature)</h2>
+
+<p>창의성을 제어한다.</p>
+
+<p>낮은 온도:</p>
+<ul>
+  <li>더 예측 가능함</li>
+  <li>더 결정론적임</li>
+</ul>
+
+<p>높은 온도:</p>
+<ul>
+  <li>더 창의적임</li>
+  <li>더 다양함</li>
+</ul>
+
+<p>작업에 따라 유용하게 활용할 수 있다.</p>
+
+<hr>
+
+<h2>17. 추론 (Inference)</h2>
+
+<p>학습된 모델에서 출력을 생성하는 과정이다.</p>
+
+<p>학습(Training)은 가르친다. 추론(Inference)은 수행한다.</p>
+
+<p>대부분의 개발자는 주로 추론과 상호작용한다.</p>
+
+<hr>
+
+<h2>18. 에이전트 메모리 (Agent Memory)</h2>
+
+<p>AI 에이전트가 시간이 지남에 따라 정보를 기억할 수 있게 한다.</p>
+
+<p>예시:</p>
+<ul>
+  <li>사용자 선호도</li>
+  <li>이전 대화</li>
+  <li>진행 중인 작업</li>
+</ul>
+
+<p>메모리는 더 개인화된 경험을 만든다.</p>
+
+<hr>
+
+<h2>19. AI 워크플로우 (AI Workflows)</h2>
+
+<p>AI 행동의 구조화된 시퀀스다.</p>
+
+<p>예시:</p>
+
+<p>입력 → 리서치 → 분석 → 작성 → 검토</p>
+
+<p>많은 성공적인 AI 제품은 완전 자율 에이전트가 아닌 워크플로우다.</p>
+
+<hr>
+
+<h2>20. 에이전틱 AI (Agentic AI)</h2>
+
+<p>AI 시스템의 다음 진화다.</p>
+
+<p>에이전틱 AI는 다음을 결합한다:</p>
+<ul>
+  <li>추론 (Reasoning)</li>
+  <li>계획 (Planning)</li>
+  <li>도구 (Tools)</li>
+  <li>메모리 (Memory)</li>
+  <li>자율성 (Autonomy)</li>
+</ul>
+
+<p>단순히 질문에 답하는 대신, 이 시스템들은 목표를 달성한다.</p>
+
+<p>이것이 업계의 상당 부분이 향하는 방향이다.</p>
+
+<hr>
+
+<h2>이 개념들이 어떻게 연결되는가</h2>
+
+<p>간략한 전체 그림:</p>
+
+<blockquote>
+사용자 프롬프트<br>
+↓<br>
+LLM<br>
+↓<br>
+도구 + 함수 호출<br>
+↓<br>
+RAG + 벡터 데이터베이스<br>
+↓<br>
+메모리<br>
+↓<br>
+에이전트<br>
+↓<br>
+완료된 작업
+</blockquote>
+
+<p>이 흐름을 이해하면, 현대 AI 시스템을 이해하기가 훨씬 쉬워진다.</p>
+
+<hr>
+
+<h2>개발자가 먼저 배워야 할 것</h2>
+
+<p>오늘 시작한다면, 이 순서로 개념에 집중하라:</p>
+
+<ol>
+  <li>LLM</li>
+  <li>프롬프트</li>
+  <li>API</li>
+  <li>임베딩</li>
+  <li>RAG</li>
+  <li>함수 호출</li>
+  <li>에이전트</li>
+  <li>MCP</li>
+</ol>
+
+<p>새로운 프레임워크를 쫓기 전에 이 기본 개념들을 마스터하라.</p>
+
+<p>도구는 바뀔 것이다. 개념은 바뀌지 않는다.</p>
+
+<hr>
+
+<h2>마치며</h2>
+
+<p>AI는 수십 개의 연결되지 않은 유행어로 볼 때 믿을 수 없을 만큼 복잡해 보일 수 있다.</p>
+
+<p>하지만 대부분의 현대 AI 시스템은 비교적 작은 핵심 아이디어들로 구축된다.</p>
+
+<p>이 20가지 개념을 배워라.</p>
+
+<p>어떻게 연결되는지 이해하라.</p>
+
+<p>몇 가지 작은 프로젝트를 만들어 봐라.</p>
+
+<p>그러면 온라인에서 AI에 대해 이야기하는 대다수의 사람들보다 AI에 대해 더 많이 알게 될 것이다.</p>
+
+<p>왜냐하면 미래는 AI에 대해 말하는 사람들에게 속하지 않기 때문이다.</p>
+
+<p>AI가 실제로 어떻게 작동하는지 이해하는 사람들에게 속한다.</p>
+
+</body>
+</html>

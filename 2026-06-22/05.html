@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>100,000 GitHub Stars in Weeks: Why Developers Can't Stop Talking About GStack</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-22/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>100,000 GitHub Stars in Weeks: Why Developers Can't Stop Talking About GStack</h1>
+<div class="meta">The Latency Gambler · 3분 읽기 · <a href="https://medium.com/@kanishks772/100-000-github-stars-in-weeks-why-developers-cant-stop-talking-about-gstack-f00c1b189447" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@kanishks772/100-000-github-stars-in-weeks-why-developers-cant-stop-talking-about-gstack-f00c1b189447" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">Y Combinator CEO 개리 탄이 오픈소스로 공개한 AI 코딩 워크플로 도구 GStack이 수 주 만에 GitHub 별 10만 개를 돌파하며 개발자 커뮤니티를 강타했다.</p>
+<p>2026년 3월 12일, 개리 탄(Garry Tan)이 자신의 전체 AI 코딩 셋업을 담은 저장소 'gstack'을 GitHub에 공개했고, 개발자들은 즉시 열광적으로 반응했다. GStack은 프레임워크나 라이브러리가 아니라 Claude Code가 자동으로 불러오는 23개의 슬래시 커맨드 스킬 모음으로, 가상의 소프트웨어 팀 구성원을 시뮬레이션한다. 아이디어 검토부터 설계, 코딩, 코드 리뷰, QA 테스트, 배포, 회고까지 개발 전 주기를 하나의 일관된 프로세스로 엮어준다. 특히 Bun과 Playwright 기반의 지속적 브라우저 데몬을 활용한 <code>/qa</code> 스킬이 기술적으로 돋보이며, 60초 내에 앱 상태를 진단한다. 이 도구는 더 좋은 AI 모델이나 더 많은 컴퓨팅이 아닌, 더 좋은 프로세스가 개발자의 생산성을 결정짓는다는 것을 시사한다.</p>
+</div>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*IZZVOwwvvoSd2aDhOAQD5Q.png"><figcaption>AI 생성 이미지 - GStack 개요</figcaption></figure>
+
+<h3>YC CEO가 자신의 AI 코딩 셋업 전체를 오픈소스로 공개했다. 개발자 커뮤니티가 즉각 반응했다.</h3>
+
+<p>2026년 3월 12일, Y Combinator 대표이자 CEO인 개리 탄은 GitHub에 <code>gstack</code>이라는 저장소를 공개했다. 48시간 내에 별 1만 개를 달성했다. 수 주 만에 10만 개에 근접했다.</p>
+<p>이런 속도는 우연히 일어나지 않는다. 사람들이 조용히 씨름해왔지만 깔끔하게 해결된 적 없던 문제를 도구가 해결할 때 일어난다.</p>
+<p>그 문제: Claude Code(그리고 AI 코딩 에이전트 전반)는 단독으로는 강력하지만 프로세스를 제공하지 않는다. 계획하고, 검토하고, 테스트하고, 배포하는 구조가 없다. 모든 개발자가 매 프로젝트, 매번 처음부터 그 비계를 다시 쌓는다.</p>
+<p>GStack은 23개의 의견이 담긴 슬래시 커맨드 스킬로 코드화된 그 비계다.</p>
+<p><strong>→ 저장소:</strong> <a href="https://github.com/garrytan/gstack">github.com/garrytan/gstack</a></p>
+
+<h3>GStack이 실제로 무엇인가</h3>
+<p>GStack은 프레임워크도, 라이브러리도, 새로운 AI 모델도 아니다. Claude Code가 <code>.claude/skills/gstack/</code>에서 자동으로 불러와 역할 정의로 취급하는 SKILL.md 파일 모음이다.</p>
+<p>각 스킬은 소프트웨어 팀의 구성원을 시뮬레이션한다:</p>
+
+<pre><code>GStack 가상 팀 구조:
+─────────────────────────────────────────────────
+/office-hours       ──►  제품 사고방식, 코드 한 줄 작성 전에
+                         약한 아이디어를 밀어붙임
+
+/plan-ceo-review    ──►  까다로운 CEO처럼 행동
+                         (브라이언 체스키를 모델로)
+                         지루한 기능 만들기를 막아줌
+
+/plan-eng-review    ──►  코딩 전에 시퀀스 다이어그램과
+                         상태 머신을 그림. 아키텍처 확정.
+
+/review             ──►  N+1 쿼리, 스테일 읽기,
+                         보안 이슈(XSS 등)를 스캔하는
+                         코드 리뷰어
+
+/qa                 ──►  Bun + Playwright로 실제 브라우저 열기.
+                         스테이징에 로그인, 클릭,
+                         스크린샷 찍고, 60초 내에
+                         앱 상태 점수 제공.
+
+/ship               ──►  릴리스 엔지니어. 커밋,
+                         PR 열기, 체인지로그 처리.
+
+/retro              ──►  엔지니어링 회고.
+                         LOC, 커밋, 배포 내용,
+                         버그 내용.</code></pre>
+
+<p>역할들은 전체 개발 주기를 포괄한다: 구상 → 계획 → 빌드 → 리뷰 → 테스트 → 배포 → 회고.</p>
+
+<h3>30초 내 설치</h3>
+
+<pre><code>git clone --single-branch --depth 1 \
+  https://github.com/garrytan/gstack.git \
+  ~/.claude/skills/gstack \
+  && cd ~/.claude/skills/gstack && ./setup</code></pre>
+
+<p>그 후 Claude Code에서 아무 프로젝트나 열면 스킬들이 슬래시 커맨드로 사용 가능하다. 시스템 PATH를 건드리지 않는다. 백그라운드에서 지속적으로 실행되는 것이 없다. 모든 것이 <code>.claude/</code> 안에 존재한다.</p>
+
+<h3>QA 도구가 기술적으로 가장 두드러진다</h3>
+<p>GStack의 대부분은 좋은 프롬프팅으로 근사치를 낼 수 있다. <code>/qa</code> 스킬은 다르다.</p>
+<p>Bun과 Playwright 기반으로 구축되었으며, 스테이징 환경에 로그인하고, 앱을 탐색하고, 스크린샷을 찍고, 상태 보고서를 생성하는 지속적인 브라우저 데몬이다. 명령 사이에 페이지를 다시 로드하지 않는다. 브라우저가 보고 있는 것을 재설명하는 컨텍스트 부풀림이 없다.</p>
+<p>아키텍처가 주목할 만하다:</p>
+
+<pre><code>표준 Claude Chrome MCP:
+──────────────────────────────
+Claude ──► MCP 호출 ──► Chrome (매번 새 컨텍스트)
+                              │
+                    호출 사이에 상태 손실.
+                    컨텍스트 윈도우 빠르게 채워짐.
+
+GStack /qa (Bun + Playwright 데몬):
+──────────────────────────────────────
+Claude ──► /qa 스킬 ──► 지속적인 브라우저 데몬
+                              │
+                    같은 세션, 같은 탭.
+                    스크린샷이 컨텍스트로 전달됨.
+                    20배 적은 컨텍스트 오버헤드.
+                    ~60초 내에 상태 점수 도출.</code></pre>
+
+<p>호출마다 새 브라우저 컨텍스트를 생성하는 대신 지속적인 데몬을 실행하는 것은 작은 아키텍처 결정이지만 의미 있는 성능 차이를 가져온다. 이것이 <code>/qa</code> 스킬이 1분 내에 전체 앱 상태 점수를 생성하는 반면 네이티브 Chrome MCP 세션은 비대해지는 경향이 있는 이유다.</p>
+
+<h3>실제 생산 수치</h3>
+<p>탄은 README에 자신의 처리량 지표를 포함했고, 이것이 논쟁을 불러일으켰다.</p>
+<p>그는 GStack을 사용하여 60일 동안 60만 줄의 프로덕션 코드를, Y Combinator를 풀타임으로 운영하면서 하루 평균 1만~2만 줄을 달성했다고 보고했다. 2026년 현재까지 GitHub 기여량이 2013년 전체 기여량의 240배를 이미 초과했다.</p>
+<p>예상대로 "하지만 그건 그냥 AI가 코드를 쓴 것"이라는 비판이 이어졌다. 그의 답변은 직접적이었다: 핵심은 누가 타이핑했는지가 아니라, 무엇이 배포되었는지다. 인플레이션을 감안하면, 산출물은 이전보다 더 높은 품질이었고 더 빨랐다.</p>
+<p>수치를 받아들이든 아니든, 저장소 구조가 같은 이야기를 전한다. GStack 자체가 주로 Claude Opus와 공동 작성되었으며, 커밋 히스토리가 이를 보여준다. 이것이 코드베이스에 내재된 개념 증명이다: 자체 워크플로를 사용하여 구축된 도구.</p>
+
+<h3>빠른 채택이 실제로 의미하는 것</h3>
+<p>10만 개의 별은 라이브러리가 아닌 워크플로 도구에는 의미가 있다. 아무도 GStack을 의존성으로 추가하지 않는다. 그들은 일하는 방식을 바꾸고 있다.</p>
+<p>그것이 나타내는 패턴이 명확해지고 있다: AI 코딩 에이전트로 가장 앞서가는 개발자들은 더 좋은 모델이나 더 많은 컴퓨팅을 사용하지 않는다. 더 좋은 프로세스를 사용한다. 그들은 개발 철학—계획 기준, 리뷰 기준, 테스트 기대치—을 매번 일관되게 실행되는 명령 집합으로 인코딩했다.</p>
+<p>GStack은 한 개발자의 완전한 철학이 23개의 스킬로 인코딩된 것이다. 별 수는 다른 많은 개발자들이 그 철학을 공유하거나, 빌려올 버전을 찾고 있었음을 시사한다.</p>
+<p>그것이 가리키는 전환:</p>
+
+<pre><code>기존 모델:
+  개발자가 코드 작성
+  개발자가 (선택적으로) 코드 리뷰
+  개발자가 배포
+
+GStack 모델:
+  /office-hours  아이디어 검증
+  /plan-ceo-review  범위 압박 테스트
+  /plan-eng-review  아키텍처 확정
+  개발자가 코드 작성  (또는 에이전트가)
+  /review  프로덕션 이슈 발견
+  /qa  실제 브라우저에서 검증
+  /ship  PR 열기
+  /retro  결과 측정</code></pre>
+
+<p>8개의 체크포인트. 한 명의 개발자. 얼마나 늦은 시간인지, 얼마나 피곤한지와 무관하게 일관된 프로세스.</p>
+
+<h3>GStack이 하지 않는 것</h3>
+<p>GStack은 의견이 강하고 워크플로가 무겁다. 한 사람이 여러 역할을 맡는 솔로 개발자나 소규모 팀에 가장 잘 맞는다. 전담 QA, 디자인, 엔지니어링 관리자가 있는 더 큰 팀에서는 대부분의 스킬이 중복이 된다. 그 역할들을 채울 실제 사람들이 있기 때문이다.</p>
+<p>또한 초기 투자가 필요하다. CLAUDE.md 설정, 프로젝트 컨텍스트, 스프린트 구조에 익숙해지기. GStack을 사용한 첫 번째 프로젝트는 없을 때보다 느리다. 복리 효과는 이후에 온다.</p>
+
+<h3>저장소</h3>
+<p><a href="https://github.com/garrytan/gstack">github.com/garrytan/gstack</a> MIT 라이선스, 무료, Claude Code, Codex CLI, Cursor, 7개의 다른 AI 코딩 런타임에서 작동한다.</p>
+<p>수 주 만에 별 10만 개. 개발자들이 답을 냈다.</p>
+<p><em>gstack README, Augment Code 분석(2026년 4월), 2026년 3~6월 커뮤니티 보고를 기반으로 작성.</em></p>
+</body>
+</html>

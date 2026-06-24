@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top 9 Claude Skills for Finance and Quantitative Developers (Including One That Connects to Live Market Data)</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head><body>
+<a href='/2026-06-17/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Top 9 Claude Skills for Finance and Quantitative Developers (Including One That Connects to Live Market Data)</h1>
+<div class="meta">Kevin Meneses González · in DataDrivenInvestor · 10 min read<br><a href="https://medium.datadriveninvestor.com/top-9-claude-skills-for-finance-and-quantitative-developers-including-one-that-connects-to-live-98580e91b847" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.datadriveninvestor.com/top-9-claude-skills-for-finance-and-quantitative-developers-including-one-that-connects-to-live-98580e91b847" target="_blank">freedium</a></div>
+<div class="summary">
+<h3>요약</h3>
+<p class="oneline">금융 및 퀀트 개발자를 위한 9가지 Claude Skills를 소개하며, EODHD MCP를 통해 실시간 시장 데이터에 연결되는 커스텀 스킬을 포함해 터미널을 Bloomberg급 분석 환경으로 전환하는 방법을 설명한다.</p>
+<p>이 글은 금융 및 정량 개발자를 위해 선별된 9가지 Claude Skills를 소개한다. 필자가 직접 제작한 EODHD MCP 기반 스킬은 Claude Code 터미널에서 실시간 기술적 분석(RSI, MACD, 볼린저 밴드)과 기본적 분석(P/E, ROE, FCF 수익률)을 동시에 실행할 수 있게 한다. 그 외에도 Anthropic의 공식 DCF·몬테카를로 금융 모델링 스위트, K-Dense AI의 기관급 GARCH·ARIMA 통계 분석 스킬, 알고리즘 전략 백테스팅 스킬, 터미널에서 Excel 재무 모델을 생성하는 오피스 스킬 등이 포함된다. 글은 Claude Skills와 MCP 서버의 차이를 명확히 설명하고, 스킬 설치 전 SKILL.md 전체를 읽고 Bash 액세스 권한을 점검하는 등 보안 주의 사항도 강조한다.</p>
+</div>
+<hr>
+<p><em>대부분의 Claude Skills 목록은 정적 모델에서 멈춘다. 이 글에는 터미널에서 실시간 기술적·기본적 분석을 실행하는 라이브 EODHD MCP 스킬이 포함되어 있다.</em></p>
+<p>대부분의 개발자들은 Claude Skills를 잘못된 방법으로 발견한다.</p>
+<p>하나를 설치하고, Claude에게 금융 질문을 하면 평소보다 약간 나은 답변을 받는다. 그러고는 넘어간다.</p>
+<p>그들은 핵심을 놓쳤다.</p>
+<p>Claude Skills는 프롬프트 래퍼가 아니다. 지속적이고 조합 가능한 명령 집합으로, Claude Code를 도메인 특화 분석가로 변환시킨다. 올바른 조합은 터미널을 Bloomberg에 가까운 워크플로우로 만든다 — 연간 24,000달러 구독료 없이.</p>
+<p>다음에 해당하는 경우라면:</p>
+<ul>
+<li>알고리즘 트레이딩 시스템 구축,</li>
+<li>주식 리서치 또는 정량 분석,</li>
+<li>Python과 API로 금융 워크플로우 자동화,</li>
+</ul>
+<p>이 내용이 중요하다.</p>
+<p>금융 스택에 포함시켜야 할 9가지 Claude Skills를 소개한다 — EODHD MCP 커넥터를 통해 Claude를 실시간 시장 데이터에 직접 연결하는 커스텀 스킬 하나를 포함해서.</p>
+
+<h2>Claude Skills가 실제로 무엇인가 (간단한 설명)</h2>
+<p>목록에 앞서, 나중에 혼란을 방지하기 위한 설명이 필요하다.</p>
+<p>Claude 에코시스템에는 혼동하기 쉬운 여러 확장 메커니즘이 있다:</p>
+<p><strong>CLAUDE.md 파일</strong>은 지속적인 프로젝트 메모리다. 항상 켜져 있는 컨텍스트이지, 기능이 아니다.</p>
+<p><strong>MCP 서버</strong>는 라이브 도구와 데이터 소스 — API, 데이터베이스, 외부 서비스 — 를 노출하는 실행 중인 프로세스다. 서버 프로세스가 필요하다.</p>
+<p><strong>Claude Skills</strong>는 YAML 프론트매터와 구조화된 지침이 담긴 <code>SKILL.md</code> 파일을 포함하는 디렉토리다. 스크립트, 참조 문서, 템플릿을 번들로 묶을 수 있다. MCP 서버와 달리 프로세스를 실행하지 않고 — Claude의 컨텍스트에 구조화된 추론 프로토콜을 주입하며, 작업이 스킬의 설명과 일치할 때 자동으로 활성화된다.</p>
+<p>핵심 설계: 시작 시 Claude는 각 스킬의 <code>name</code>과 <code>description</code>만 로드한다 (약 100 토큰). 작업이 일치하면 전체 지침을 로드한다. 지원 파일은 필요할 때만 로드된다. 세 계층. 효율적인 컨텍스트 창.</p>
+<p>Skills는 <a href="https://agentskills.io/specification">Agent Skills 사양</a>을 따르며, Claude Code, OpenAI Codex, Cursor, Gemini CLI 전반에서 이식 가능하다.</p>
+
+<h2>금융 및 퀀트 개발자를 위한 9가지 Claude Skills</h2>
+
+<h3>1. EODHD 금융 분석 스킬 (커스텀 MCP 스킬)</h3>
+<p>필자가 직접 만들어 자신의 워크플로우에서 사용하는 스킬이다. 아직 GitHub에는 없으며 — 이 글 끝에서 설치 방법을 설명한다.</p>
+<p>전제: 정적 금융 모델을 실행하는 대신, 이 스킬은 <a href="https://eodhd.com/">EODHD MCP 커넥터</a>를 통해 Claude를 실시간 시장 데이터에 직접 연결한다. EODHD는 70개 이상의 거래소, 30년 이상의 역사 데이터, REST API를 통한 완전한 기술적 지표 및 기본적 분석 제품군을 제공한다.</p>
+<p>스킬은 질문에 따라 Claude를 구조화된 분석 프로토콜로 라우팅한다:</p>
+<p><strong>기술적 모드</strong> — RSI(14), SMA50, SMA200, MACD, 볼린저 밴드를 가져온다. 숫자뿐 아니라 신호를 해석한다. RSI 70 이상은 과매수로 플래그된다. MACD 강세 크로스오버는 해당 레이블이 붙는다. 피벗 계산의 지지/저항 수준이 자동으로 추가된다.</p>
+<p><strong>기본적 모드</strong> — P/E, EV/EBITDA, 순이익률, ROE, FCF 수익률, 전년 대비 매출 성장률, 배당 수익률을 가져온다. 가능한 경우 섹터 비교와 함께 구조화된 테이블로 제공한다.</p>
+<p><strong>통합 모드</strong> — 두 가지를 순서대로 실행한 후 단일 투자 등급 보고서를 생성한다. <code>analyze AAPL</code> 또는 <code>research report for NVDA</code>를 입력할 때 실행된다.</p>
+<p>일반적인 통합 분석의 예시:</p>
+<pre><code>/eodhd-financial-analysis NVDA
+## Technical Analysis -- NVDA.US (2026-05-30)
+Price: $1,092.40 | 52-week range: $455.00 -- $1,148.00
+Trend
+- SMA50: $1,021.30 | SMA200: $798.55
+- Position: Above long-term trend (SMA200) ✓
+- Trend: Strong uptrend
+Momentum
+- RSI (14): 64 -- Neutral (approaching overbought)
+- MACD: Bullish crossover confirmed May 22
+Volatility
+- Bollinger Bands: Price at upper band
+- Signal: Breakout continuation or short-term pullback zone
+Key Levels
+- Support: $1,008.00 | Resistance: $1,148.00 (52-week high)
+## Fundamental Analysis -- NVDA.US
+Sector: Technology | Market Cap: $2.67T
+Valuation
+| Metric    | Value  |
+|-----------|--------|
+| P/E       | 38.4   |
+| EV/EBITDA | 31.2   |
+| FCF Yield | 2.1%   |
+Profitability
+- Net margin: 55.0% | ROE: 115%
+- Free Cash Flow: $44.9B
+Growth (YoY)
+- Revenue: +122% | EPS: +288%</code></pre>
+<p>실제 숫자. 실제 신호. 터미널에서.</p>
+<p><strong>대상:</strong> 별도의 리서치 플랫폼으로 전환하지 않고 Claude Code 내에서 라이브 데이터를 원하는 개발자 및 분석가.</p>
+<p><strong>설치:</strong> 글 끝에서 공유하는 저장소에서 클론한 후:</p>
+<pre><code>cp -r eodhd-financial-analysis ~/.claude/skills/</code></pre>
+<p>필요 사항: Claude Code에 구성된 EODHD MCP 커넥터 + 유료 EODHD API 키.</p>
+
+<h3>2. K-Dense AI 과학 스킬 — 기관급 통계 분석</h3>
+<p><strong>출처:</strong> K-Dense-AI/claude-scientific-skills | <strong>별점:</strong> 8,241 | <strong>라이선스:</strong> MIT</p>
+<p>140가지 스킬. 28개 과학 데이터베이스. 55개 Python 패키지. 원래 연구 실험실을 위해 설계되었으나, 정량 금융에 완전히 적용 가능하다.</p>
+<p>여기서 중요한 것은 시계열 분석 커버리지다. ARIMA, GARCH, 계량경제학 모델이 부가 기능이 아닌 핵심 기능이다. pandas, NumPy, statsmodels, PyTorch Lightning ML 워크플로우를 추가하면, 단일 플러그인 설치로 완전한 퀀트 리서치 스택을 갖출 수 있다.</p>
+<p><strong>금융 최적 워크플로우:</strong></p>
+<ul>
+<li>포트폴리오 수익률의 롤링 샤프 비율 및 낙폭 계산</li>
+<li>리스크 분석을 위한 GARCH 변동성 모델링</li>
+<li>팩터 모델의 특성 중요도 분석</li>
+<li>옵션 포트폴리오의 몬테카를로 시뮬레이션</li>
+</ul>
+<p><strong>설치:</strong></p>
+<pre><code>/plugin marketplace add K-Dense-AI/claude-scientific-skills</code></pre>
+<p><strong>장점</strong></p>
+<ul>
+<li>가장 포괄적인 과학 컬렉션; 활성 유지보수</li>
+<li>전처리부터 모델 검증까지 전체 ML 파이프라인 처리</li>
+</ul>
+<p><strong>단점</strong></p>
+<ul>
+<li>Python 3.12+ 및 <code>uv</code> 패키지 매니저 필요</li>
+<li>기본 분석만 필요한 경우 과도</li>
+</ul>
+<p><strong>최적 대상:</strong> ML 파이프라인을 구축하는 퀀트 연구원 및 데이터 과학자.</p>
+
+<h3>3. Anthropic 금융 모델링 스위트 — DCF, 몬테카를로, 시나리오 계획</h3>
+<p><strong>출처:</strong> anthropics/claude-cookbooks | <strong>별점:</strong> 32,682 | <strong>라이선스:</strong> Apache-2.0</p>
+<p>Anthropic의 자체 금융 모델링 스킬. 네 가지 핵심 워크플로우를 인코딩하는 거의 20,000자의 지침: DCF 가치평가, 민감도 분석, 몬테카를로 시뮬레이션, 시나리오 계획.</p>
+<p>장난이 아니다. DCF 모듈은 여러 성장 시나리오, 영구 성장 및 출구 배수 방법을 통한 터미널 가치 계산, WACC 결정, 기업/자기자본 가치 출력을 처리한다. 몬테카를로 모듈은 상관된 변수 분포로 수천 번 반복하며 VaR 신뢰 구간을 생성한다.</p>
+<p><strong>설치:</strong></p>
+<pre><code>git clone https://github.com/anthropics/claude-cookbooks.git
+ln -s ~/claude-cookbooks/skills/custom_skills/creating-financial-models ~/.claude/skills/</code></pre>
+<p><strong>사용법:</strong></p>
+<pre><code>Build a DCF model for this SaaS company using the attached financials
+Run a Monte Carlo simulation on this acquisition model with 5,000 iterations</code></pre>
+<p><strong>장점</strong></p>
+<ul>
+<li>공식 Anthropic 스킬 — 가장 철저하게 문서화됨</li>
+<li>정적 데이터가 아닌 작동하는 수식이 있는 완전한 Excel 워크북 생성</li>
+</ul>
+<p><strong>단점</strong></p>
+<ul>
+<li>기업 가치평가에 초점; 시장/트레이딩 사용 사례에는 제한적</li>
+</ul>
+<p><strong>최적 대상:</strong> 투자 분석가, 기업 개발팀, 사모펀드 워크플로우.</p>
+
+<h3>4. Claude 주식 리서치 — 터미널에서 골드만삭스 스타일 분석</h3>
+<p><strong>출처:</strong> quant-sentiment-ai/claude-equity-research | <strong>별점:</strong> 290 | <strong>라이선스:</strong> MIT</p>
+<p>Claude Code를 주식 리서치 분석가로 만드는 플러그인. 티커와 함께 호출하면 기본적 분석, 가치평가(확률 가중치가 있는 강세/기본/약세), 리스크 평가, 기술적 진입/청산 수준을 포함하는 기관급 투자 보고서를 생성한다.</p>
+<p>눈에 띄는 점: 비정상적 활동을 추적하는 옵션 플로우 분석, SEC 제출 서류의 내부자 거래 모니터링, ESG 거버넌스 평가가 모두 기본 출력에 포함된다.</p>
+<p>포지션 크기 권장 사항(리스크 프로파일에 따라 1~5%)이 포함된다. "교육 목적으로만" 설계되었지만 — 방법론은 실제다.</p>
+<p><strong>설치:</strong></p>
+<pre><code>/plugin marketplace add quant-sentiment-ai/claude-equity-research</code></pre>
+<p><strong>사용법:</strong></p>
+<pre><code>/trading-ideas AAPL
+/trading-ideas NVDA --detailed</code></pre>
+<p><strong>장점</strong></p>
+<ul>
+<li>기본 출력에 옵션 플로우 + 내부자 거래</li>
+<li>이미 포함된 확률 가중치가 있는 시나리오 분석</li>
+</ul>
+<p><strong>단점</strong></p>
+<ul>
+<li>Claude Code CLI v2.0.11+ 및 유료 구독 필요</li>
+<li>낮은 별점은 커뮤니티 검증이 적음을 의미</li>
+</ul>
+<p><strong>최적 대상:</strong> 기본적 리서치를 하는 개인 투자자 및 포트폴리오 매니저.</p>
+
+<h3>5. Claude Code Plugins Plus — 백테스팅 및 체계적 전략 개발</h3>
+<p><strong>출처:</strong> jeremylongshore/claude-code-plugins-plus-skills | <strong>별점:</strong> 1,312 | <strong>라이선스:</strong> MIT</p>
+<p>DevOps, 보안, ML, 데이터, API를 아우르는 1,537개의 프로덕션 준비 스킬. 금융 특화 측면: 현실적인 인프라를 갖춘 잘 개발된 암호화폐 트레이딩 전략 백테스터.</p>
+<p>백테스팅 프레임워크는 여러 자산 클래스, 포지션 크기, 적절한 성과 지표(샤프 비율, 최대 낙폭, 승률)를 처리한다. 전략 템플릿은 평균 회귀, 모멘텀, 브레이크아웃, 차익거래를 다룬다. 슬리피지 및 수수료 모델링이 포함되어 있다 — 이것들 없이 백테스트는 허구다.</p>
+<p><strong>설치:</strong></p>
+<pre><code>/plugin marketplace add jeremylongshore/claude-code-plugins-plus-skills</code></pre>
+<p><strong>사용법:</strong></p>
+<pre><code>Backtest this mean reversion strategy on BTC/USD historical data
+Build a momentum strategy using 20/50 EMA crossover with ATR stops</code></pre>
+<p><strong>장점</strong></p>
+<ul>
+<li>이 목록에서 가장 완전한 백테스팅 인프라</li>
+<li>리스크 관리 모듈에 낙폭 보호 로직 포함</li>
+</ul>
+<p><strong>단점</strong></p>
+<ul>
+<li>1,537개의 스킬은 대용량 설치; 컨텍스트 로딩 관리 필요</li>
+</ul>
+<p><strong>최적 대상:</strong> 자본 배치 전에 엄격한 백테스팅이 필요한 체계적 전략을 구축하는 알고리즘 트레이더.</p>
+
+<h3>6. Claude 오피스 스킬 — 오류 없는 Excel 금융 모델</h3>
+<p><strong>출처:</strong> tfriedel/claude-office-skills | <strong>별점:</strong> 244 | <strong>라이선스:</strong> MIT</p>
+<p>이 스킬이 채우는 공백: Claude Desktop은 기본적으로 Excel 파일을 생성할 수 있지만, Claude Code CLI는 할 수 없다 — 이 스킬이 생기기 전까지는. 제로 오류 적용 정책으로 터미널에 완전한 Excel 생성을 가져온다.</p>
+<p>전문 포맷팅 표준이 자동으로 적용된다: 입력값에 파란색 셀, 수식에 검은색, 적절한 검증 규칙, 의도적이지 않은 순환 참조 없음. NPV, IRR, XIRR, VLOOKUP, INDEX/MATCH, 배열 수식을 지원한다.</p>
+<p><strong>설치:</strong></p>
+<pre><code>git clone https://github.com/tfriedel/claude-office-skills.git
+cd claude-office-skills &amp;&amp; pip install -r requirements.txt
+ln -s $(pwd)/skills/* ~/.claude/skills/</code></pre>
+<p><strong>사용법:</strong></p>
+<pre><code>Build a three-statement financial model for this company
+Create an LBO model with sensitivity table for purchase price and exit multiple</code></pre>
+<p><strong>장점</strong></p>
+<ul>
+<li>Claude Code CLI에 프로덕션 수준의 Excel 생성을 가져오는 유일한 스킬</li>
+<li>금융 모델링 표준 적용 (가정/계산/결과 분리)</li>
+</ul>
+<p><strong>단점</strong></p>
+<ul>
+<li>LibreOffice, Node.js, Poppler, Pandoc을 의존성으로 필요</li>
+</ul>
+<p><strong>최적 대상:</strong> Claude Code에서 Excel 모델을 생성하는 금융 분석가 및 뱅커.</p>
+
+<h3>7. Claude 데이터 분석 어시스턴트 — 6개 서브 에이전트를 활용한 엔드투엔드 분석</h3>
+<p><strong>출처:</strong> liangdabiao/claude-data-analysis | <strong>별점:</strong> 318 | <strong>라이선스:</strong> MIT</p>
+<p>각각 정량 워크플로우의 다른 부분을 처리하는 6개의 전문 서브 에이전트:</p>
+<ol>
+<li><strong>data-explorer</strong> — EDA, 요약 통계, 상관 행렬, 이상값 감지</li>
+<li><strong>visualization-specialist</strong> — 시계열 플롯, 히트맵, 분포 차트</li>
+<li><strong>code-generator</strong> — 분석 작업을 위한 프로덕션 Python, R, SQL</li>
+<li><strong>report-writer</strong> — 통계적 증거가 있는 경영 요약</li>
+<li><strong>quality-assurance</strong> — 누락 데이터 검증, 가정 확인</li>
+<li><strong>hypothesis-generator</strong> — 통계 검정 제안, 패턴 식별, 후속 질문 제안</li>
+</ol>
+<p>포트폴리오 수익률 CSV를 업로드하면, 스킬이 자동으로 품질 검사를 실행하고 일반 언어로 질문할 수 있다.</p>
+<p><strong>설치:</strong></p>
+<pre><code>git clone https://github.com/liangdabiao/claude-data-analysis.git
+cp -r claude-data-analysis/.claude/skills/* ~/.claude/skills/</code></pre>
+<p><strong>사용법:</strong></p>
+<pre><code>/analyze      # 종합 분석
+/visualize    # 차트 및 그래프
+/hypothesis   # 통계 검정 제안</code></pre>
+<p><strong>장점</strong></p>
+<ul>
+<li>서브 에이전트 아키텍처가 프롬프트 체이닝 없이 전체 분석 수명주기를 처리</li>
+<li>가설 생성기는 드물다 — 묻지 않아도 인사이트를 발굴</li>
+</ul>
+<p><strong>단점</strong></p>
+<ul>
+<li>6개의 서브 에이전트는 긴 세션에서 컨텍스트 관리 필요</li>
+</ul>
+<p><strong>최적 대상:</strong> 데이터 검증부터 인사이트 생성까지 전체 리서치 워크플로우를 실행하는 퀀트 분석가.</p>
+
+<h3>8. CSV 데이터 요약기 — 자동화된 금융 데이터 탐색</h3>
+<p><strong>출처:</strong> coffeefuelbump/csv-data-summarizer-claude-skill | <strong>별점:</strong> 229 | <strong>라이선스:</strong> MIT</p>
+<p>이 목록에서 가장 단순한 스킬. 가장 즉시 유용한 스킬.</p>
+<p>모든 CSV를 업로드하면 스킬이 자동으로 활성화되고, 데이터 유형(트레이딩 데이터, 가격 시계열, 포트폴리오 보유, 재무제표)을 식별하며, 요약 통계, 상관 분석, 분포 차트, 품질 평가를 생성한다 — 단 하나의 프롬프트 없이.</p>
+<p>지루한 부분을 처리한다: 누락 데이터 포인트 식별, 통계적 방법으로 이상값 감지, 시간 열에서 시간 기반 패턴 인식. 파일을 업로드하는 시간 안에 분석을 얻는다.</p>
+<p><strong>설치:</strong></p>
+<pre><code>git clone https://github.com/coffeefuelbump/csv-data-summarizer-claude-skill.git
+cp -r csv-data-summarizer-claude-skill/csv-analyzer ~/.claude/skills/</code></pre>
+<p><strong>최적 대상:</strong> 빠른 탐색적 분석이 필요한 시장 데이터 내보내기를 다루는 포트폴리오 매니저 및 리스크 분석가.</p>
+
+<h3>9. Awesome Agent Skills — 퀀트 분석가 툴킷 카탈로그</h3>
+<p><strong>출처:</strong> VoltAgent/awesome-agent-skills | <strong>별점:</strong> 6,532 | <strong>라이선스:</strong> MIT</p>
+<p>단일 스킬이 아니다. Claude Code, Codex, Gemini CLI, Cursor와 호환되는 공식 개발팀과 커뮤니티 기여자의 300개 이상 스킬 카탈로그다.</p>
+<p>이 목록에 속하는 이유: 전략 개발, 리스크 분석(VaR, CVaR, 최대 낙폭, 베타), 레짐 분석 및 워크포워드 최적화를 포함한 성과 분석을 다루는 전용 정량 분석가 에이전트가 포함되어 있다.</p>
+<p>더 중요한 것은, 존재하는지 몰랐던 스킬을 발견하는 방법이라는 점이다. 카테고리별로 탐색하고, 유사한 스킬을 비교하고, 워크플로우의 공백을 찾을 수 있다.</p>
+<p><strong>설치:</strong></p>
+<pre><code>git clone https://github.com/VoltAgent/awesome-agent-skills.git</code></pre>
+<p><strong>최적 대상:</strong> 퀀트 작업을 위한 개인화된 Claude Skills 스택을 구축하는 모든 사람. 단일 설치가 아닌 스킬 발견 레이어로 사용하라.</p>
+
+<h2>EODHD 금융 분석 스킬 설치 방법</h2>
+<p>#1의 커스텀 스킬은 여기서 사용 가능하다:<br>
+👉 <a href="https://github.com/Kevinelectronics/claude-skill-eodhd-.git">https://github.com/Kevinelectronics/claude-skill-eodhd-.git</a></p>
+<p><strong>사전 요구 사항:</strong></p>
+<ol>
+<li>Claude Code CLI 설치</li>
+<li>EODHD MCP 커넥터 구성:</li>
+</ol>
+<pre><code># claude_desktop_config.json 또는 CLI를 통해
+claude mcp add eodhd --url https://mcpv2.eodhd.dev/v2/mcp</code></pre>
+<ol start="3">
+<li>유효한 EODHD API 키 (<code>EODHD_API_KEY</code> 환경 변수로 설정)</li>
+</ol>
+<p><strong>스킬 설치:</strong></p>
+<pre><code>git clone https://github.com/Kevinelectronics/finance_risk_model.git
+cp -r finance_risk_model/skills/eodhd-financial-analysis ~/.claude/skills/</code></pre>
+<p><strong>테스트:</strong></p>
+<pre><code>/eodhd-financial-analysis AAPL
+analyze TSLA fundamentals
+run technical analysis on SPY</code></pre>
+<p>EODHD는 70개 이상의 거래소에서 주식, ETF, 지수, 암호화폐, 외환을 다룬다. All-In-One 플랜에는 MCP 커넥터 액세스, 1980년대까지 거슬러 올라가는 역사 데이터, 실시간 시세(스탠다드 플랜의 경우 15분 지연), 전체 기본적 데이터베이스가 포함된다.</p>
+
+<h2>보안에 관한 참고 사항</h2>
+<p>Snyk의 ToxicSkills 연구에 따르면 생태계 전반에서 테스트한 스킬의 36%에서 프롬프트 인젝션이 발견되었다. 금융 워크플로우는 대상이다 — 독점 알고리즘, API 키, 고객 데이터.</p>
+<p>스킬을 설치하기 전에:</p>
+<ul>
+<li><code>SKILL.md</code>와 번들 스크립트의 모든 줄을 읽어라. 평문 텍스트다.</li>
+<li><code>allowed-tools</code> 프론트매터 필드를 확인하라. <code>Bash</code> 액세스를 요청하는 스킬은 면밀한 검토가 필요하다.</li>
+<li>API 키를 환경 변수에 보관하고, 스킬 파일이나 프로젝트 디렉토리에는 절대 보관하지 마라.</li>
+</ul>
+<p>이 목록의 모든 스킬은 명확한 MIT 또는 Apache-2.0 라이선스를 갖춘 신뢰할 수 있는 출처에서 나왔다.</p>
+
+<h2>자주 묻는 질문</h2>
+<p>❓ <strong>Claude Skills는 Claude Code 없이도 작동하는가?</strong><br>
+✅ 이 목록의 대부분의 스킬은 Claude Code CLI를 위해 만들어졌다. 일부 기본적 분석 워크플로우는 파일 도구가 있는 Claude.ai에 맞게 조정할 수 있지만, MCP 기반 스킬(EODHD 스킬 포함)은 Claude Code가 필요하다.</p>
+<p>❓ <strong>EODHD는 무료인가?</strong><br>
+✅ EODHD는 제한된 API 호출이 있는 무료 티어를 제공한다. MCP 커넥터 액세스와 전체 기본적 데이터를 포함하는 All-In-One 플랜은 월 $19.99부터 시작한다. 이 글에서 설명한 워크플로우에는 최소한 All-In-One 플랜이 필요하다.</p>
+<p>❓ <strong>동일한 세션에서 여러 스킬을 결합할 수 있는가?</strong><br>
+✅ 그렇다. 스킬은 작업 설명에 따라 맥락적으로 활성화된다. 라이브 데이터를 위해 EODHD 스킬을 실행한 다음 동일한 세션에서 DCF 모델을 위해 금융 모델링 스위트로 전환할 수 있다. Claude는 스킬 활성화당 컨텍스트를 관리한다.</p>
+<p>❓ <strong>Claude Skill과 MCP 서버의 차이점은 무엇인가?</strong><br>
+✅ MCP 서버는 라이브 도구와 데이터를 노출하는 실행 중인 프로세스다. Claude Skill은 Claude가 추론하고 행동하는 방법을 알려주는 구조화된 명령 집합이다. 이 글의 EODHD 스킬은 둘 다 사용한다: 스킬은 추론 프로토콜을 제공하고, MCP 서버는 라이브 데이터를 제공한다.</p>
+<p>퀀트 커뮤니티의 AI 도구 수용은 금융적 판단을 대체하는 것에 관한 것이 아니다.</p>
+<p>수학은 여전히 중요하다. 도메인 지식은 여전히 대체 불가능하다.</p>
+<p>이 스킬들이 제거하는 것은 어떤 분석을 실행해야 하는지 알고 실제로 실행하는 것 사이의 마찰이다. 두 시간 걸리던 DCF 모델이 이제 5분이면 된다. 세 가지 별도 도구가 필요했던 기술적 분석이 이제 하나의 명령으로 실행된다.</p>
+<p>이것이 복리 효과 우위다.</p>
+</body></html>

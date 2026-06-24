@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Databricks Just Changed Data Engineering Forever</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-21/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Databricks Just Changed Data Engineering Forever</h1>
+<div class="meta">Cloud With Azeem · 6 min read · <a href="https://cloudwithazeem.medium.com/databricks-just-changed-data-engineering-forever-44e23d3f0204">원문</a> · <a href="https://freedium-mirror.cfd/https://cloudwithazeem.medium.com/databricks-just-changed-data-engineering-forever-44e23d3f0204">freedium</a></div>
+<div class="summary">
+<p class="oneline">Databricks의 최신 발표들(Agent Bricks, Lakeflow, AI Gateway, ABAC, MCP)은 데이터 엔지니어링을 파이프라인 구축에서 지능 오케스트레이션으로 근본적으로 전환시키고 있다.</p>
+<h3>요약</h3>
+<p>저자는 Databricks의 최신 발표들을 분석하며 데이터 엔지니어링이 'AI 네이티브' 시대로 접어들고 있다고 주장한다. Agent Bricks는 코드 생성이 아닌 목표 이해 수준으로 AI를 발전시키고, Lakeflow는 수작업 파이프라인 구축을 자동화하며, AI Gateway는 다중 AI 모델 사용의 거버넌스 문제를 해결한다. 속성 기반 접근 제어(ABAC)는 사용자가 아닌 데이터 속성에 따라 정책을 적용하는 새로운 거버넌스 패러다임이며, MCP는 AI 에이전트가 외부 시스템과 표준화된 방식으로 연결될 수 있게 한다. 저자는 반복적인 구현 작업은 자동화되겠지만, 시스템 설계·아키텍처·거버넌스를 이해하는 엔지니어의 가치는 오히려 높아질 것이라고 전망한다.</p>
+</div>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/0*501xIcA2FNgOw0an.png" alt="Databricks 데이터 엔지니어링 변화">
+<figcaption>Databricks의 새로운 발표들</figcaption>
+</figure>
+
+<p>파이프라인을 구축하는 일은 한때 설명서 없이 가구를 조립하는 것 같은 느낌이었다. 데이터베이스를 수동으로 연결하고, 맞춤형 수집 스크립트를 작성하고, CDC(변경 데이터 캡처) 프로세스가 잘 작동하기를 기도했다. 그리고 예상대로 문제가 생기면 로그를 보면서 3년 전 어느 엔지니어가 왜 이것을 좋은 아이디어라고 생각했는지 의아해했다.</p>
+
+<p>오랫동안 그게 그냥 이 일이었다.</p>
+
+<p>데이터 엔지니어로서 우리는 배관 작업에 능했다. 데이터를 A 지점에서 B 지점으로 옮기고, 그 과정에서 폭발하지 않도록 하는 데 많은 시간을 보냈다.</p>
+
+<p>하지만 Databricks의 최신 발표들을 자세히 살펴보고 나서 깨달은 것이 있다:</p>
+
+<blockquote>
+<p><strong>데이터 엔지니어링의 미래는 파이프라인 구축이 아니다. 지능 오케스트레이션이다.</strong></p>
+</blockquote>
+
+<p>극적으로 들릴 수 있지만, Agent Bricks, Lakeflow, AI Gateway, ABAC, MCP를 함께 보면 매우 다른 그림이 나온다.</p>
+
+<p>솔직히 말하면, 대부분의 사람들이 일어나고 있는 일을 과소평가하고 있다고 생각한다.</p>
+
+<h2>업계의 미래</h2>
+
+<p>데이터 엔지니어링에 경험이 있다면 몇 차례 큰 변화를 목격했을 것이다.</p>
+
+<p>먼저 전통적인 ETL 도구가 있었다.</p>
+<ul>
+<li>그 다음 Hadoop이 왔다.</li>
+<li>그 다음 Spark가 모든 것을 바꿨다.</li>
+<li>그 다음 클라우드 네이티브 아키텍처가 등장했다.</li>
+<li>그 다음 레이크하우스 아키텍처가 나왔다.</li>
+</ul>
+
+<p>이제 우리는 다음 시대로 진입하고 있다:</p>
+
+<p><strong>AI 네이티브 데이터 엔지니어링.</strong></p>
+
+<p>수년간 업계는 데이터 처리를 더 빠르게 만드는 데 집중해왔다. 오늘날 초점은 데이터 엔지니어링 자체를 사라지게 만드는 쪽으로 이동하고 있다.</p>
+
+<p>데이터 엔지니어가 무관해지기 때문이 아니다. 반복적인 작업이 자동화되기 때문이다. 그리고 그것이 바로 이 Databricks 발표들이 가리키는 방향이다.</p>
+
+<h2>Agent Bricks</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/0*8pD8LjBJWw_AUaQ9.png" alt="Agent Bricks">
+<figcaption>Agent Bricks 개요</figcaption>
+</figure>
+
+<p>대부분의 사람들이 "개발자를 위한 AI"라는 말을 들으면 즉시 코드 생성을 떠올린다.</p>
+<ul>
+<li>Copilot.</li>
+<li>ChatGPT.</li>
+<li>자동 완성.</li>
+</ul>
+
+<p>Agent Bricks는 훨씬 더 큰 것을 겨냥하고 있다.</p>
+
+<p>기존 방식:</p>
+<blockquote>
+<p><em>"Spark 작업 코드 작성해 줘."</em></p>
+</blockquote>
+
+<p>새로운 방식:</p>
+<blockquote>
+<p><em>"고객 데이터를 수집하고, 품질을 검증하고, 이상값을 식별하고, 분석 테이블에 로드하는 파이프라인을 만들어."</em></p>
+</blockquote>
+
+<p>그 차이가 중요하다:</p>
+<ul>
+<li>하나는 코드를 요청한다.</li>
+<li>다른 하나는 결과를 요청한다.</li>
+</ul>
+
+<p>그리고 결과가 비즈니스가 실제로 관심을 갖는 것이다. 가장 흥미로운 부분은 AI가 코드를 생성할 수 있다는 것이 아니다.</p>
+
+<p>그것은 이미 봤다.</p>
+
+<p>흥미로운 부분은 AI가 목표를 이해하기 시작했다는 것이다. 엄청난 변화다. 주니어 엔지니어를 채용하면서 이렇게 말하는 것을 상상해보라:</p>
+
+<blockquote>
+<p>"목표는 이것이다. 구현 방법은 네가 파악해."</p>
+</blockquote>
+
+<p>그것이 본질적으로 이 시스템들이 나아가는 방향이다. 이것들이 내일 엔지니어를 대체할까?</p>
+
+<p>아니다.</p>
+
+<p>반복적인 엔지니어링 작업의 상당 부분을 제거할까?</p>
+
+<p>거의 확실하다.</p>
+
+<p>솔직히 말해서, 나는 47번째 거의 동일한 수집 프레임워크를 작성하는 것을 그리워하지 않을 것이다.</p>
+
+<h2>Lakeflow</h2>
+
+<p>내 눈길을 끈 발표 중 하나는 Lakeflow의 지속적인 확장이었다.</p>
+
+<p>처음에는 많은 사람들이 Lakeflow를 단순히 Delta Live Tables의 진화로 본다.</p>
+
+<p>나는 그것이 과소평가라고 생각한다.</p>
+
+<p>Databricks가 하려는 것은 전통적으로 전담 데이터 엔지니어링 노력이 필요했던 많은 작업을 추상화하는 것이다. Lakeflow Designer는 시각적 파이프라인 생성을 도입한다.</p>
+
+<p>Lakeflow Connect는 Oracle, SQL Server, Teradata 같은 시스템으로부터의 수집을 단순화한다. 명백한 이점은 생산성이다. 하지만 더 큰 함의는 아키텍처적이라고 생각한다.</p>
+
+<p>수년간 조직들은 수집과 오케스트레이션 주변에 엄청난 양의 맞춤형 인프라를 구축했다.</p>
+
+<p>많은 팀이 유지하는 데 몇 달, 심지어 수년이 필요한 내부 프레임워크를 만들었다.</p>
+
+<p>나는 그런 프레임워크 일부를 만드는 것을 도운 경험이 있어서 안다.</p>
+
+<p>솔직히 말하면, 그 프레임워크들 중 많은 것이 전략적 우위가 아니었다. 그냥 필요한 배관 작업이었다. 업계는 점점 수동으로 관리되는 워크플로우보다 지능적인 오케스트레이션으로 이동하고 있다.</p>
+
+<p>Lakeflow는 그 방향으로의 또 다른 발걸음처럼 느껴진다.</p>
+
+<p>문제는 엔지니어들이 이 시스템들을 직접 만들 수 있느냐가 아니다.</p>
+
+<p>문제는:</p>
+
+<p><strong>그래야 하는가?</strong></p>
+
+<h2>AI Gateway: 문제를 해결하다</h2>
+
+<p>현재 많은 조직은 여전히 AI 도입 실험 단계에 있다.</p>
+<ul>
+<li>한 팀은 GPT를 사용한다.</li>
+<li>다른 팀은 Claude를 사용한다.</li>
+</ul>
+
+<p>어딘가에서는 오픈소스 모델을 테스트하고 있다.</p>
+
+<p>그리고 어딘가에서 한 관리자가 AI 예산이 갑자기 두 배가 된 이유를 궁금해하고 있다.</p>
+
+<p>AI 사용이 확대됨에 따라 거버넌스는 매우 빠르게 복잡해진다. 그것이 AI Gateway가 흥미로운 이유다.</p>
+
+<p>AI에 관한 대부분의 논의는 역량에 초점을 맞춘다. 관리에 초점을 맞추는 것은 매우 드물다.</p>
+
+<p>하지만 수백, 수천 명의 직원이 여러 기반 모델과 상호작용하기 시작하면 관리가 핵심이 된다.</p>
+
+<p>질문들이 생긴다:</p>
+<ul>
+<li>어떤 모델이 승인되었는가?</li>
+<li>누가 접근할 수 있는가?</li>
+<li>우리는 얼마를 쓰고 있는가?</li>
+<li>어떤 데이터가 공유되고 있는가?</li>
+<li>규정 준수 요건을 충족하고 있는가?</li>
+</ul>
+
+<p>이것은 화려한 질문들이 아니다. 하지만 기업 질문들이다. 그리고 기업 질문들은 보통 돈이 있는 곳이다.</p>
+
+<p>AI Gateway는 화려한 혁신이라기보다는 대규모 AI 도입을 위한 필수 기반처럼 느껴진다.</p>
+
+<h2>가장 과소평가된 발표</h2>
+
+<p>대규모 권한 관리를 해본 적이 있다면, 얼마나 빨리 고통스러워지는지 안다.</p>
+
+<p>처음에는 역할 기반 접근 제어(RBAC)가 간단하게 느껴진다.</p>
+
+<p>그런 다음 회사가 성장한다.</p>
+<ul>
+<li>새로운 팀들이 생긴다.</li>
+<li>규정이 늘어난다.</li>
+<li>데이터 분류가 다양해진다.</li>
+</ul>
+
+<p>갑자기, 수면 부족 아키텍트들의 위원회가 설계한 것 같은 권한 매트릭스를 유지하게 된다. 그것이 속성 기반 접근 제어(ABAC)가 강력해지는 이유다.</p>
+
+<p>사용자가 누구인지에만 초점을 맞추는 대신, 정책이 데이터 자체의 속성에 초점을 맞출 수 있다.</p>
+
+<p>미묘하게 들린다.</p>
+
+<p>미묘하지 않다.</p>
+
+<p>거버넌스에 대해 생각하는 근본적으로 다른 방식이다. 규칙이 더 이상 사람을 따르지 않는다.</p>
+
+<p>규칙이 데이터를 따른다.</p>
+
+<p>의료, 금융, 보험 또는 정부 규정을 다루는 업계의 경우, 이것이 거버넌스 전략을 크게 단순화할 수 있다.</p>
+
+<p>솔직히 말하자:</p>
+<ul>
+<li>아무도 거버넌스에 흥미를 느끼지 않는다.</li>
+<li>감사가 발생할 때까지.</li>
+</ul>
+
+<p>그 때는 거버넌스가 모두의 가장 좋아하는 주제가 된다.</p>
+
+<h2>MCP가 가장 큰 발표일 수 있다</h2>
+
+<p>Agent Bricks가 대부분의 주목을 받겠지만, MCP가 장기적으로 가장 큰 영향을 미칠 수 있다.</p>
+
+<p>이유가 있다.</p>
+
+<p>AI 시스템은 추론에 점점 능숙해지고 있다. 하지만 추론만으로는 충분하지 않다. 회사 시스템에 접근할 수 없는 뛰어난 직원은 그다지 유용하지 않다.</p>
+
+<p>같은 원칙이 AI 에이전트에도 적용된다. 의미 있는 가치를 만들려면, 에이전트는 도구에 접근해야 한다. 다음과 상호작용해야 한다:</p>
+<ul>
+<li>Jira</li>
+<li>GitHub</li>
+<li>Slack</li>
+<li>내부 비즈니스 애플리케이션</li>
+<li>문서 시스템</li>
+<li>기업 워크플로우</li>
+</ul>
+
+<p>역사적으로 통합은 복잡했다. 모든 새로운 도구는 맞춤형 개발이 필요했다. 모든 연결은 추가적인 유지보수 부담을 만들었다.</p>
+
+<p>MCP는 그 공식을 바꾼다.</p>
+
+<p>에이전트가 외부 시스템과 연결하는 방법을 표준화함으로써, Databricks는 AI가 질문에 답하는 것을 넘어 실제 업무에 참여할 수 있는 생태계 조성에 기여하고 있다.</p>
+
+<p>그 구별이 중요하다.</p>
+
+<p>우리는 이렇게 이동하고 있다:</p>
+<blockquote>
+<p>"답을 알려줘."</p>
+</blockquote>
+
+<p>에서:</p>
+<blockquote>
+<p>"행동해."</p>
+</blockquote>
+
+<p>로. 그리고 행동에서 변혁이 일어난다.</p>
+
+<h2>실제로 나를 두렵게 하는 부분</h2>
+
+<p>충분한 사람들이 이야기하지 않는 측면이 하나 있다. 많은 엔트리 레벨 엔지니어링 작업이 점점 자동화되고 있다. 모든 엔지니어링 작업이 아니다. 하지만 특정 범주의 작업들이.</p>
+<ul>
+<li>보일러플레이트 코드.</li>
+<li>단순한 변환.</li>
+<li>기본적인 파이프라인 생성.</li>
+<li>일상적인 트러블슈팅.</li>
+</ul>
+
+<p>이러한 활동들이 AI 시스템이 다루기 더 쉬워지고 있다. 그것이 엔지니어가 사라진다는 의미가 아니다.</p>
+
+<p>가치가 이동한다는 의미다.</p>
+
+<p>다음 10년 동안 번성할 엔지니어들은 반드시 가장 많은 코드를 쓰는 사람들이 아닐 것이다.</p>
+
+<p>그들은 다음을 하는 사람들이 될 것이다:</p>
+<ul>
+<li>시스템 설계</li>
+<li>아키텍처 정의</li>
+<li>거버넌스 이해</li>
+<li>복잡성 관리</li>
+<li>기술을 비즈니스 성과와 연결</li>
+</ul>
+
+<p>이 일은 구현보다 의사결정에 관한 것이 된다. 아이러니하게도, 그것이 엔지니어링을 더 흥미롭게 만들 수 있다. 왜냐하면 가장 가치 있는 일은 결코 코드를 타이핑하는 것이 아니었기 때문이다. 가장 가치 있는 일은 문제를 이해하는 것이었다.</p>
+
+<h2>마이크로서비스 논쟁이 생각나는 이유</h2>
+
+<p>몇 년 전, 모두가 마이크로서비스를 원했다.</p>
+
+<p>그 다음, 많은 조직이 실수로 분산된 혼돈을 만들었다는 것을 발견했다.</p>
+
+<p>교훈은 간단했다:</p>
+<ul>
+<li>기술은 복잡성을 제거하지 않는다.</li>
+<li>복잡성을 이동시킨다.</li>
+</ul>
+
+<p>같은 원칙이 여기에도 적용된다. AI가 마법처럼 엔지니어링 도전을 제거하지 않을 것이다.</p>
+
+<p>이동시킬 것이다.</p>
+
+<p>파이프라인 작성에 시간을 덜 쓰고 지능형 시스템 거버넌스에 더 많은 시간을 쓸 것이다. 통합 구축에 시간을 덜 쓰고 정책 정의에 더 많은 시간을 쓸 것이다. 데이터 이동에 시간을 덜 쓰고 데이터에 어떤 일이 일어나야 하는지 결정하는 데 더 많은 시간을 쓸 것이다.</p>
+
+<h2>어떻게 생각하는가?</h2>
+
+<p>어떤 발표가 장기적으로 가장 큰 영향을 미칠까:</p>
+<ul>
+<li><strong>Agent Bricks</strong></li>
+<li><strong>Lakeflow</strong></li>
+<li><strong>AI Gateway</strong></li>
+<li><strong>ABAC</strong></li>
+<li><strong>MCP?</strong></li>
+</ul>
+
+<p>데이터 엔지니어링이 다음에 어디로 향할 것이라고 생각하는지 의견을 들어보고 싶다.</p>
+</body>
+</html>

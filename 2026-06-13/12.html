@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Databricks가 한 단계 도약했다 — 당신이 꼭 알아야 할 것들</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-13/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Databricks가 한 단계 도약했다 — 당신이 꼭 알아야 할 것들</h1>
+<div class="meta">Bryan Kopf · 4 min read · <a href="https://medium.com/@sherradi06/databricks-just-leveled-up-heres-what-you-need-to-know-f6ec14e7baee">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@sherradi06/databricks-just-leveled-up-heres-what-you-need-to-know-f6ec14e7baee">freedium</a></div>
+<div class="summary">
+<p class="oneline">Databricks가 Agent Bricks, Lakeflow, AI Gateway, Unity Catalog ABAC, MCP 지원 등 5가지 주요 업데이트를 통해 단순한 빅데이터 플랫폼을 넘어 완전한 데이터 및 AI 운영 체제로 진화하고 있다.</p>
+<p>Databricks는 더 이상 Apache Spark를 쉽게 사용하게 해주는 플랫폼에 그치지 않는다. AI 에이전트가 코드를 생성하는 것을 넘어 실제 업무를 실행하는 Agent Bricks, 비주얼 파이프라인 설계와 간소화된 데이터 수집을 포함하는 Lakeflow, 여러 AI 모델 사용을 거버넌스하는 AI Gateway, 데이터 속성 기반의 동적 접근 제어를 도입한 Unity Catalog ABAC, 그리고 Jira나 Slack 같은 외부 시스템과 에이전트를 연결하는 MCP 지원까지 — 이 다섯 가지 업데이트는 데이터 엔지니어의 역할이 수동 배관 작업에서 지능형 시스템과의 협업으로 빠르게 이동하고 있음을 보여준다.</p>
+</div>
+
+<p>시스템을 연결하고, 수집 프레임워크를 만들고, 새벽 2시에 장애를 디버깅하고, 데이터를 한 곳에서 다른 곳으로 이동하기 위해 수십 개의 스크립트를 유지보수하는 데 수 시간을 쏟았을 것이다.</p>
+
+<p>오랫동안 그것은 그냥 일의 일부였다.</p>
+
+<p>하지만 최신 Databricks 발표와 제품 릴리스를 추적한 결과, 한 가지가 명확해졌다:</p>
+
+<p><strong>데이터 엔지니어의 역할이 그 어느 때보다 빠르게 진화하고 있다.</strong></p>
+
+<p>Databricks는 더 이상 빅데이터 처리와 Spark 워크로드만을 위한 플랫폼이 아니다. 자동화, 거버넌스, AI 기반 개발이 1등 시민으로 자리잡는 완전한 데이터 및 AI 운영 체제로 꾸준히 변화하고 있다.</p>
+
+<p>내가 가장 주목한 다섯 가지 업데이트를 소개한다.</p>
+
+<h2>1. Agent Bricks: 코드 생성을 넘어서는 AI</h2>
+
+<p>오늘날 대부분의 AI 어시스턴트는 코드 스니펫 작성을 도와줄 수 있다. Agent Bricks는 그 개념을 훨씬 더 발전시킨다.</p>
+
+<p>코드를 요청하는 대신 원하는 결과를 일반 영어로 설명한다. 에이전트가 목표를 이해하고, 관련 데이터를 식별하고, 필요한 로직을 생성하고, 작업을 실행하고, 문제를 해결하고, 결과를 생성할 수 있다.</p>
+
+<p>여기서 흥미로운 변화는 AI 지원 코딩에서 AI 지원 실행으로의 전환이다.</p>
+
+<p>도구로 행동하는 것이 아니라 팀원처럼 행동하는 AI로 점점 더 나아가고 있다.</p>
+
+<h2>2. Lakeflow: 데이터 엔지니어링의 새로운 표준</h2>
+
+<p>많은 사람들이 Delta Live Tables을 파이프라인 개발을 단순화하는 방법으로 알게 되었다.</p>
+
+<p>이제 Databricks는 Lakeflow라는 우산 아래에서 그 비전을 확장하고 있다.</p>
+
+<p>특히 주목할 만한 두 가지 구성 요소가 있다:</p>
+
+<p><strong>Lakeflow Designer:</strong> 팀이 광범위한 코드 작성 없이 파이프라인을 구축할 수 있게 해주는 비주얼 드래그앤드롭 경험.</p>
+
+<p><strong>Lakeflow Connect:</strong> Oracle, SQL Server, Teradata 같은 시스템에서 데이터를 가져올 수 있고, 전통적으로 변경 데이터 캡처(CDC) 구현과 관련된 복잡성을 줄여주는 간소화된 수집 프레임워크.</p>
+
+<p>데이터 전달을 가속화하려는 조직에게 이것은 엔지니어링 오버헤드를 크게 줄일 수 있다.</p>
+
+<h2>3. AI Gateway: AI 소비에 거버넌스를 도입</h2>
+
+<p>기업들이 여러 기반 모델을 채택함에 따라 거버넌스가 점점 더 어려워지고 있다. 한 팀은 GPT를 사용하고, 다른 팀은 Claude를 사용하며, 세 번째 팀은 오픈소스 모델을 실험한다.</p>
+
+<p>AI Gateway는 이 혼잡한 상황에 중앙 집중식 거버넌스 레이어를 가져온다. 조직이 모델 사용을 추적하고, 비용을 모니터링하고, 정책을 시행하는 것을 가능하게 한다 — 여러 AI 제공자에 걸쳐 단일 제어 지점에서.</p>
+
+<h2>4. Unity Catalog ABAC: 더 지능적인 거버넌스</h2>
+
+<p>데이터 거버넌스는 항상 현대 데이터 플랫폼에서 가장 큰 도전 과제 중 하나였다.</p>
+
+<p>전통적으로 접근 제어는 주로 사용자, 그룹, 또는 역할을 기반으로 했다. 효과적이지만, 데이터 볼륨, 팀, 규정 준수 요구사항이 증가함에 따라 관리하기 어려워지는 경우가 많다.</p>
+
+<p>Unity Catalog에서 <strong>속성 기반 접근 제어(ABAC)</strong>의 일반 가용성과 함께 Databricks는 더 동적인 접근 방식을 도입하고 있다.</p>
+
+<p>사용자가 누구인지에만 집중하는 것이 아니라, 이제 정책이 데이터 자체와 관련된 속성을 고려할 수 있다.</p>
+
+<p>실제로 이는 거버넌스가 데이터가 어디로 이동하든 따라가기 때문에 보안 규칙이 더 확장 가능하고 유지 관리하기 쉬워진다는 것을 의미한다.</p>
+
+<p>고도로 규제된 산업에서 운영하는 조직에게 이것은 접근성과 규정 준수 사이의 균형을 맞추는 데 있어 중요한 진전이다.</p>
+
+<h2>5. MCP 지원: 연결된 AI 에이전트의 문을 열다</h2>
+
+<p>AI 에이전트의 가장 큰 한계 중 하나는 통합이었다. 에이전트가 효과적으로 추론할 수 있더라도, 실제 업무가 이루어지는 도구에 대한 접근이 여전히 필요하다.</p>
+
+<p>이것이 바로 <strong>Model Context Protocol(MCP)</strong>에 대한 지원이 특히 흥미로운 지점이다.</p>
+
+<p>MCP는 Databricks 에이전트가 외부 시스템 및 비즈니스 도구와 상호작용할 수 있게 해주는 범용 연결 레이어 역할을 한다.</p>
+
+<p>모든 애플리케이션에 대한 사용자 정의 통합을 구축하고 유지관리하는 대신, 조직은 표준화된 방식을 통해 에이전트를 Jira, Slack, GitHub, 내부 기업 시스템 같은 플랫폼에 연결할 수 있다.</p>
+
+<p>그 결과는 질문에 답하는 것을 넘어 실제 비즈니스 워크플로에 참여하기 시작할 수 있는 AI 생태계다.</p>
+
+<h2>마치며: AI가 깊이 내재된 미래</h2>
+
+<p>수년간 Databricks는 주로 대규모에서 Apache Spark를 더 쉽게 사용할 수 있게 해주는 플랫폼으로 알려졌다. 오늘날 그 설명은 불완전하게 느껴진다.</p>
+
+<p>이 회사는 AI가 데이터 라이프사이클의 모든 레이어에 깊이 내재된 포괄적인 데이터 인텔리전스 플랫폼으로 자리매김하고 있다.</p>
+
+<p>이러한 혁신들이 일상적인 데이터 엔지니어링을 완전히 변화시킬지는 아직 두고 봐야 한다.</p>
+
+<p>하지만 한 가지는 확실하다: 데이터 엔지니어링의 미래는 훨씬 적은 수동 배관 작업과 훨씬 더 많은 지능형 시스템과의 협업을 포함할 것이다.</p>
+
+<p>그리고 Databricks는 이 미래가 많은 사람들이 예상하는 것보다 더 빨리 도래할 것이라는 데 분명히 베팅하고 있다.</p>
+
+<p>어떤 기능이 가장 기대되는가 — Agent Bricks, Lakeflow, AI Gateway, ABAC, 아니면 MCP? 당신의 팀이 이러한 변화에 대해 어떻게 생각하는지 듣고 싶다.</p>
+</body>
+</html>

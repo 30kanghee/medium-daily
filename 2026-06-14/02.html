@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Power BI June 2026: The Update That Turns Your Semantic Model Into an API for Everyone</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+
+</head><body>
+<a href='/2026-06-14/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Power BI June 2026: The Update That Turns Your Semantic Model Into an API for Everyone</h1>
+<div class="meta">Tomas Kutac · Microsoft Power BI · 25 min read · <a href="https://medium.com/microsoft-power-bi/power-bi-june-2026-the-update-that-turns-your-semantic-model-into-an-api-for-agents-2f7d267f9781">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/microsoft-power-bi/power-bi-june-2026-the-update-that-turns-your-semantic-model-into-an-api-for-agents-2f7d267f9781">freedium</a></div>
+<div class="summary"><p class="oneline">2026년 6월 Power BI 업데이트는 시맨틱 모델을 AI 에이전트와 M365 Copilot, 커스텀 웹앱 모두가 활용할 수 있는 거버넌스 기반 API로 전환하며, DAX 사용자 정의 함수 GA·PBIR 기본 활성화·에이전트 리포트 스킬 등 굵직한 변화를 담고 있다.</p><h3>요약</h3><p>Power BI 2026년 6월 업데이트의 핵심은 시맨틱 모델이 Power BI 내부에만 머물지 않고 Microsoft 365 Copilot, Fabric 앱, 커스텀 웹 애플리케이션 등 다양한 외부 플랫폼에서 신뢰할 수 있는 데이터 소스로 활용될 수 있도록 변신한다는 점이다. DAX 사용자 정의 함수(UDF)가 정식 출시(GA)되어 측정값·계산 열·시각적 계산에 걸쳐 로직을 재사용할 수 있게 됐고, PBIR(Power BI Enhanced Report Format)이 서비스에서 기본 활성화를 재개한다. AI 에이전트 스킬을 이용해 자연어만으로 리포트 설계·제작·검증·게시까지 완료하는 에이전트 리포팅 워크플로도 프리뷰로 공개됐으며, Copilot 웹 모델링과 Fabric IQ 등 다양한 AI 기반 기능이 함께 선보였다.</p></div>
+
+<h2>6월 Power BI 업데이트에 오신 것을 환영합니다</h2>
+<p>이번 달에는 리포트 빌드, 데이터 모델링, 더 빠른 인사이트 도출 등 일상 업무를 조금 더 쉽게 만드는 데 계속 집중했습니다. Copilot과 최신 AI 기반 경험 전반에 걸쳐 진전이 있었으며, 반복 작업을 줄이는 실용적인 리포팅 업데이트도 포함되어 있습니다.</p>
+
+<h2>이벤트 및 공지</h2>
+<h3>Power BI 데이터비즈 월드 챔피언십</h3>
+<p>Power BI Dataviz World Championships가 돌아왔습니다! 최고의 Power BI 시각화를 만들어 세계 무대에 도전하세요. 상위 입상자는 9월 바르셀로나 FabCon / SQLCon에서 열리는 라이브 결선에 진출합니다. 6월 16일 킥오프에 참가 등록하세요.</p>
+<h3>FabCon Europe 바르셀로나</h3>
+<p>유럽 Microsoft Fabric 및 SQL 커뮤니티 컨퍼런스가 9월 28일~10월 1일 스페인 바르셀로나에서 열립니다. Fabric, Azure AI, 데이터베이스, Power BI, Microsoft Purview를 아우르는 130개 이상의 세션이 마련됩니다. 코드 <code>FABCMTY200</code>으로 €200 할인 혜택을 받으세요.</p>
+
+<h2>Copilot 및 AI</h2>
+<h3>시맨틱 모델용 Fabric 앱 (프리뷰)</h3>
+<p>Build에서 발표된 Fabric 앱은 Microsoft Fabric을 백엔드로 활용하는 커스텀 웹 앱을 AI 중심으로 구축하는 새로운 방식을 제시합니다. 개발자와 AI 코딩 에이전트는 이제 시맨틱 모델 위에 엔터프라이즈급 데이터 앱을 구축하는 가속화된 경로를 확보하게 됩니다. 재무 계획, 재고 관리, 가격 최적화 등 어떤 앱이든 코딩 에이전트가 몇 번의 프롬프트만으로 맞춤형 앱을 구축할 수 있습니다.</p>
+<h3>Copilot 웹 모델링 (프리뷰)</h3>
+<p>Power BI 서비스의 웹 모델링에서 자연어로 시맨틱 모델을 분석하고 개선하는 AI 어시스턴트가 이번 달 출시됩니다. Copilot 웹 모델링으로 할 수 있는 것들:</p>
+<ul>
+<li>모델 분석 및 개선 영역 파악 (불일치 명명, 불명확한 구조 등)</li>
+<li>테이블·열 이름 변경, 관계 생성, DAX 측정값 생성 등 스키마 업데이트</li>
+</ul>
+<h3>에이전트 스킬로 Power BI 리포트 자동 제작 (프리뷰)</h3>
+<p>Power BI 리포트 저작 에이전트 스킬이 Microsoft Fabric용 스킬 카탈로그의 일부로 제공됩니다. 사용자는 자연어로 Power BI 리포트를 설계, 빌드, 검증, 게시할 수 있으며 수동 파일 편집이나 반복적인 클릭 작업 없이 전체 에이전트 리포팅 경험을 제공합니다.</p>
+<p>엔드-투-엔드 리포팅 워크플로는 5단계로 구성됩니다:</p>
+<ol>
+<li><strong>계획</strong> — 요구사항 수집, 대상 독자 정의, 리포트 스펙 확정</li>
+<li><strong>설계</strong> — 페이지 아키타입, 차트 유형, 색상 팔레트, 접근성 기준 선택</li>
+<li><strong>저작</strong> — 리포트 정의 파일(페이지, 시각화, 필터, 테마) 생성</li>
+<li><strong>검증</strong> — Power BI Desktop 재로드 및 시각적 검토를 위한 스크린샷 캡처</li>
+<li><strong>게시</strong> — Fabric 워크스페이스에 완성된 리포트 배포</li>
+</ol>
+<h3>Fabric IQ 및 M365 Copilot 데이터 응답 (Frontier)</h3>
+<p>Fabric IQ의 핵심 비전은 사용자가 이미 작업하는 플랫폼 안에서 데이터 인사이트를 제공하는 것입니다. 새로운 Fabric IQ 스킬은 Power BI 리포트 및 시맨틱 모델의 데이터 질문에 답변하는 중앙화된 방식을 제공합니다. M365 Copilot Chat에도 통합되어 Frontier 사용자는 즉시 이용 가능합니다.</p>
+
+<h2>리포팅</h2>
+<h3>셰이프 맵 (정식 출시)</h3>
+<p>내장 지도, 커스텀 TopoJSON/GeoJSON 파일 업로드, URL을 통한 지도 참조가 가능합니다. 커스텀 지도를 업로드한 경우 나중에 다시 다운로드하여 편집하고 재업로드할 수 있습니다.</p>
+<h3>슬라이서 날짜 선택기 (프리뷰)</h3>
+<p>새로운 날짜 선택기 옵션으로 매 보고 기간마다 슬라이서를 수동으로 업데이트하는 반복 작업을 없앨 수 있습니다. 상대 날짜 선택을 설정하면 데이터가 새로 고침될 때 자동으로 롤포워드됩니다.</p>
+<h3>매트릭스 행/열 헤더 자동 확장 (정식 출시)</h3>
+<p>매트릭스 시각화에 이제 행 및 열 헤더에 대한 자동 확장 설정이 포함되어, 새 계층 수준이 기본 확장 또는 축소 상태로 표시될지 제어할 수 있습니다.</p>
+<h3>분산형 차트: 마커 자동 맞춤</h3>
+<p>분산형 차트에 이제 플롯 영역을 자동으로 조정해 가장자리의 마커와 버블이 완전히 표시되도록 하는 자동 맞춤 마커 옵션이 포함됩니다.</p>
+<h3>막대/열 차트의 축 개선 (정식 출시)</h3>
+<p>새로운 반올림 범위 옵션으로 추가 축 여백을 제거할 수 있으며, 데이터 레이블 추가 시 더 이상 축 범위가 변경되지 않습니다.</p>
+<h3>카드 시각화 이미지 호버 상태 옵션 (정식 출시)</h3>
+<p>카드 시각화에서 이미지 요소의 호버 상태를 지원하여 사용자 상호작용에 따라 리포트 반응 방식을 더 세밀하게 제어할 수 있습니다.</p>
+<h3>슬라이서 선택 아이콘 색상 서식 (정식 출시)</h3>
+<p>슬라이서 시각화에서 이제 선택 아이콘 색상을 사용자 지정할 수 있어 어두운 배경에서도 잘 보이는 슬라이서를 만들 수 있습니다.</p>
+<h3>매트릭스/테이블 고정 너비 조건부 서식 (정식 출시)</h3>
+<p>테이블 및 매트릭스 시각화에서 이제 사용자 지정 열 너비에 대한 조건부 서식을 지원하여 열 크기를 동적으로 제어할 수 있습니다.</p>
+<h3>Azure 맵 선택 기본 활성화 (정식 출시)</h3>
+<p>Azure Maps 시각화에서 이제 선택 컨트롤이 기본으로 활성화되어 원, 사각형, 다각형(올가미) 도구, 이동 시간/거리 기반 선택 등 다양한 방식으로 지리 영역을 선택할 수 있습니다.</p>
+<h3>Power BI 시각화 툴팁 옵션 (정식 출시)</h3>
+<p>DAX 측정값 없이도 툴팁이 데이터 값뿐만 아니라 설명을 표시하도록 구성할 수 있습니다. 문장 모드로 툴팁 필드를 참조하는 문장을 작성할 수 있습니다.</p>
+
+<h2>모델링</h2>
+<h3>DAX 사용자 정의 함수 (정식 출시)</h3>
+<p>UDF는 계산 로직을 한 번 정의하고 측정값, 계산 열, 시각적 계산 전반에서 재사용할 수 있게 해줍니다. 타입이 지정된 시그니처를 가진 일급 모델 객체로서 DAX 로직에 구조와 일관성을 부여합니다.</p>
+<p>UDF 문법 예시:</p>
+<pre>FUNCTION AddNum = (x : NUMERIC = 1, y : NUMERIC = 2) = x + y</pre>
+<p>주요 기능:</p>
+<ul>
+<li>웹 모델링에서 DAX UDF 보기 및 편집</li>
+<li>선택적 매개변수: 기본값 지정으로 매개변수를 선택 사항으로 만들기</li>
+<li>새로운 TABLEOF 및 향상된 NAMEOF DAX 함수로 UDF 작성 간소화</li>
+<li>INFO.USERDEFINEDFUNCTIONS DMV로 시맨틱 모델의 각 UDF 세부 정보 조회</li>
+<li>SQL Server Management Studio(SSMS) 22.5 버전부터 지원</li>
+</ul>
+<h3>DAX 쿼리 뷰 결과 그리드 필터링 및 정렬 (정식 출시)</h3>
+<p>DAX 쿼리 뷰 결과 그리드에 이제 정렬 및 필터 컨트롤이 포함되어 DAX 코드를 수정하지 않고도 쿼리 결과를 쉽게 탐색할 수 있습니다.</p>
+
+<h2>개발자 및 API</h2>
+<h3>Power BI Enhanced Report Format(PBIR) 기본 활성화 업데이트</h3>
+<p>2026년 1월에 PBIR이 Power BI 기본 리포트 형식이 될 것이라고 발표했습니다. 더 광범위한 리포트로의 기본 활성화 롤아웃을 확장하는 과정에서 문제가 발생해 롤아웃을 일시 중지했으며, 이로 인해 서비스에서 PBIR이 기본 활성화되지 않았습니다.</p>
+<p>PBIR은 Power BI 리포트 코드 형식의 미래입니다. 일정:</p>
+<ul>
+<li>6월 — Power BI 서비스에서 PBIR 기본 활성화 롤아웃 재개</li>
+<li>7월/8월 — 서비스 롤아웃이 원활히 진행될 경우 Power BI Desktop에서도 PBIR 기본 활성화</li>
+<li>정식 출시 — 기본 활성화 롤아웃이 여름 동안 순조롭게 진행된다는 전제 하에 PBIR 및 PBIP의 GA 예정</li>
+</ul>
+<p>PBIR은 PBIX를 대체하지 않습니다. PBIX는 Power BI 개발자를 위한 기본 파일 형식으로 유지됩니다. 변경 사항은 내부적인 것입니다: PBIX 파일이 이제 PBIR-Legacy 대신 PBIR을 사용하여 리포트를 저장하게 됩니다.</p>
+<h3>새로운 Desktop Bridge (프리뷰)</h3>
+<p>Power BI Desktop Bridge는 에이전트와 외부 도구가 실행 중인 Power BI Desktop 세션에 직접 연결할 수 있는 새로운 기능입니다. 리포트 스킬은 Desktop Bridge를 사용하여 연속적인 편집-검증 루프에서 리포트를 읽고, 업데이트하고, 검증합니다.</p>
+
+<h2>기타</h2>
+<h3>Teams의 Power BI: 비공개 및 공유 채널 지원</h3>
+<p>Microsoft Teams의 비공개 및 공유 채널에서 Power BI 탭을 추가하여 대화와 함께 리포트를 직접 보고 상호작용할 수 있습니다.</p>
+<h3>Powerviz의 네트워크 그래프</h3>
+<p>노드 병합, 방향성 링크, 다단계 관계, 노드 확장/축소, 순위 지정, 링크 툴팁, 노드 모양, 조건부 서식, 클러스터 등 강화된 기능을 갖춘 네트워크 시각화 도구입니다.</p>
+<h3>accoMASTERDATA v1.1.16.2</h3>
+<p>Power BI 내에서 직접 자체 데이터베이스로의 쓰기(create, update, delete)를 지원하는 강화된 마스터 데이터 거버넌스 기능입니다. 서식 있는 텍스트 지원, 트랜잭션 키 지원, 멀티라인 텍스트 입력 지원 등 다양한 신기능이 추가되었습니다.</p>
+
+<h2>마무리</h2>
+<p>이것으로 6월 업데이트를 마칩니다! 질문을 던지는 것과 유용하고 신뢰할 수 있는 답변을 얻는 것 사이의 격차를 줄이기 위해 계속 투자하고 있습니다. 이는 Copilot, 에이전트 기반 워크플로, 또는 일상적인 리포트 개발에서 마찰을 제거하는 점진적 개선을 통해 이루어집니다. 특히 최신 AI 및 Fabric 통합 경험에 대한 여러분의 피드백을 기다립니다.</p>
+
+</body></html>

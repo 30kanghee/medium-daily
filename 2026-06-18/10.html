@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stop Using ROW_NUMBER() for Deduplication in Spark — Use max_by() Instead</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head><body>
+<a href='/2026-06-18/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Stop Using ROW_NUMBER() for Deduplication in Spark — Use max_by() Instead</h1>
+<div class="meta">Dh Soni · 6 min read · <a href="https://medium.com/@dhsoni2510/stop-using-row-number-for-deduplication-in-spark-use-max-by-instead-a69bc13c3dd0">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@dhsoni2510/stop-using-row-number-for-deduplication-in-spark-use-max-by-instead-a69bc13c3dd0">freedium</a></div>
+<div class="summary"><h3>요약</h3><p class="oneline">Spark에서 중복 제거 시 <code>ROW_NUMBER()</code> 윈도우 함수 대신 <code>max_by()</code> 집계 함수를 사용하면 셔플·정렬 비용을 획기적으로 줄이고 성능을 크게 개선할 수 있다.</p><p><code>ROW_NUMBER() OVER (PARTITION BY ... ORDER BY ...)</code> 패턴은 Spark에서 전체 셔플과 정렬을 강제하여 5단계 실행 과정을 거쳐야 하며, 처리된 행의 대부분이 버려지는 비효율적인 구조다. 반면 Spark 3.0+에서 도입된 <code>max_by(값, 정렬기준)</code>은 집계 함수이므로 맵 사이드 부분 집계가 가능하여 셔플 전에 각 실행기가 로컬에서 데이터를 크게 줄일 수 있다. 이 함수는 교환법칙·결합법칙·점진적 계산 특성을 가져 분산 처리와 스트리밍 파이프라인에서 특히 강력하다. 다만 Top-N(N>1) 조회, 복합 정렬 기준 타이브레이킹, 또는 순위값 자체가 필요한 경우에는 여전히 윈도우 함수가 필요하다.</p></div>
+
+<p><em>단순한 집계 함수 하나가 어떻게 비용이 많이 드는 셔플+정렬 윈도우 연산을 대체할 수 있는지, 그리고 왜 그 대수적 특성이 당신이 생각하는 것보다 훨씬 강력한지 알아봅니다.</em></p>
+
+<p>Spark를 어느 정도 규모 이상에서 다뤄봤다면 이런 패턴을 수백 번은 작성해봤을 것입니다: "고객별로 가장 최신 레코드를 가져와라." 그리고 아마 매번 같은 무기를 집어들었을 겁니다 — <code>ROW_NUMBER()</code>에 윈도우 파티션을 걸고 <code>rn = 1</code>로 필터링하는 방법이죠.</p>
+
+<p>이 방법은 맞습니다. 그러나 Spark에게 요청할 수 있는 가장 비싼 작업 중 하나이기도 합니다. 이 글에서는 <code>max_by()</code>가 거의 항상 더 나은 선택인 이유, 내부 동작 방식, 그리고 <strong>교환법칙(commutative)</strong>, <strong>결합법칙(associative)</strong>, <strong>누적 특성(cumulative)</strong>이 어떻게 이 함수를 분산 연산의 일급 시민으로 만드는지 보여드리겠습니다.</p>
+
+<hr>
+
+<h2>고전적인 패턴: 윈도우 + ROW_NUMBER</h2>
+
+<p>수백만 행이 있는 <code>orders</code> 테이블에서 고객별 가장 최근 주문을 원한다고 가정해봅시다. 교과서적인 접근법은 다음과 같습니다.</p>
+
+<pre><code>-- ROW_NUMBER() 패턴: 비용이 많이 드는 셔플 + 정렬
+SELECT *
+FROM (
+  SELECT *,
+    ROW_NUMBER() OVER (
+      PARTITION BY customer_id
+      ORDER BY order_date DESC
+    ) AS rn
+  FROM orders
+)
+WHERE rn = 1</code></pre>
+
+<p>이 방법은 정확합니다. 하지만 Spark가 실제로 이를 실행하기 위해 무엇을 해야 하는지 분석해봅시다.</p>
+
+<p><em>ROW_NUMBER() 접근법은 전체 셔플 + 정렬을 강제하며, 5단계를 거쳐 모든 단일 행을 처리하지만 그룹당 하나만 남깁니다. 전체 작업의 99.6%가 낭비됩니다.</em></p>
+
+<p>이것은 <strong>5단계</strong>이며, 그 중 셔플과 정렬 두 단계는 분산 컴퓨팅에서 가장 비용이 많이 드는 연산입니다. 모든 단일 행이 네트워크를 통해 이동하고, 정렬되고, 행 번호가 부여된 다음… 99.6%가 버려집니다.</p>
+
+<blockquote>
+<strong>데이터 스큐의 숨겨진 비용</strong>
+<br><br>
+한 고객에게 1,000만 개의 주문이 있고 대부분의 고객에게는 5개만 있다면, 윈도우 함수는 단일 파티션에서 1,000만 행을 모두 정렬해야 합니다. 이는 고전적인 <strong>데이터 스큐</strong> 문제를 일으킵니다 — 하나의 실행기가 모든 작업을 하는 동안 나머지는 유휴 상태입니다. Spark는 윈도우 함수를 부분적으로 집계할 수 없습니다.
+</blockquote>
+
+<p><em>윈도우 함수는 부분 집계가 불가능하므로 스큐된 파티션 전체를 단일 실행기에서 정렬해야 합니다. 이것이 중복 제거 작업에서 OOM(메모리 부족)의 1위 원인입니다.</em></p>
+
+<hr>
+
+<h2>더 나은 방법: max_by()</h2>
+
+<p>Spark 3.0+는 <code>max_by(값, 정렬기준)</code>을 도입했습니다 — 최대 <code>정렬기준</code>에 해당하는 <code>값</code>을 반환하는 집계 함수입니다. 같은 쿼리를 다시 작성하면:</p>
+
+<pre><code>-- max_by() 패턴: 부분 집계, 정렬 없음
+SELECT
+  customer_id,
+  max_by(order_id,    order_date) AS order_id,
+  max_by(product,     order_date) AS product,
+  max_by(amount,      order_date) AS amount,
+  max(order_date)                 AS order_date
+FROM orders
+GROUP BY customer_id</code></pre>
+
+<p>끝입니다. 서브쿼리도, 윈도우도, 필터도 없습니다.</p>
+
+<p><em>집계 함수인 <code>max_by()</code>는 맵 사이드 부분 집계의 혜택을 받아 5억 행을 네트워크를 통해 전송하기 전에 약 600만 행으로 줄입니다. 셔플 I/O가 27배 감소합니다.</em></p>
+
+<p>핵심 차이점: <code>max_by()</code>는 윈도우 함수가 아니라 <strong>집계 함수</strong>이므로, Spark는 맵 사이드에서 <strong>부분 집계</strong>를 적용할 수 있습니다. 즉, 각 실행기는 데이터가 네트워크를 통해 전송되기 <em>전에</em> 로컬 데이터를 고객당 한 행으로 줄입니다.</p>
+
+<hr>
+
+<h2>max_by()가 데이터를 처리하는 방법 — 단계별</h2>
+
+<p><strong>ROW_NUMBER() 윈도우:</strong></p>
+<ul>
+  <li>모든 행의 전체 셔플</li>
+  <li>O(n log n) 정렬 필요</li>
+  <li>부분 집계 불가</li>
+  <li>스큐 시 OOM 발생</li>
+  <li>5단계 실행</li>
+  <li>결합 불가</li>
+</ul>
+
+<p><strong>max_by() 집계:</strong></p>
+<ul>
+  <li>부분 결과만 셔플</li>
+  <li>O(n) — 최대값만 추적</li>
+  <li>맵 사이드 부분 집계</li>
+  <li>스큐를 우아하게 처리</li>
+  <li>3단계 실행</li>
+  <li>교환법칙 + 결합법칙 성립</li>
+</ul>
+
+<hr>
+
+<h2>벤치마크: "더 빠르다"는 것이 실제로 무엇을 의미하는가</h2>
+
+<p>약 200만 명의 고유 고객이 있는 5억 행 이벤트 테이블에서 Databricks 클러스터를 실행한 대표적인 성능 수치입니다.</p>
+
+<p>셔플 감소가 핵심 수치입니다. 48GB의 셔플에서 2GB 미만으로 이동할 때, 단순히 더 빠른 것이 아닙니다 — 다른 작업을 위한 클러스터 리소스를 확보하고, 클라우드 비용을 줄이며, 파이프라인에서 OOM 실패의 주요 원인을 제거합니다.</p>
+
+<hr>
+
+<h2>max_by()를 특별하게 만드는 대수적 특성</h2>
+
+<p>이제 흥미로운 부분입니다. <code>max_by()</code>가 부분 집계와 병렬화를 이렇게 효과적으로 수행할 수 있는 이유는 세 가지 수학적 특성 덕분입니다. 이것들은 단순한 학문적 개념이 아닙니다 — Spark의 Catalyst 옵티마이저가 실행 계획을 어떻게 재배열하고 최적화할 수 있는지를 직접 결정합니다.</p>
+
+<h3>1. 교환법칙 — f(A, B) = f(B, A)</h3>
+
+<p>레코드를 처리하는 순서가 결과에 영향을 미치지 않습니다. 행 A와 행 B를 먼저 비교하든, 행 B와 행 A를 먼저 비교하든 같은 승자를 얻습니다.</p>
+
+<p><strong>왜 중요한가:</strong> Spark는 실행기 간 조율 없이 임의의 순서로 파티션을 읽을 수 있습니다.</p>
+
+<h3>2. 결합법칙 — f(A∪B) = merge(f(A), f(B))</h3>
+
+<p>원하는 방식으로 계산을 그룹화하고 하위 그룹화할 수 있습니다. 이것이 <strong>부분 집계</strong>를 가능하게 하는 특성입니다 — Spark는 각 실행기에서 로컬 승자를 계산한 다음 실행기 간에 승자를 병합할 수 있습니다.</p>
+
+<p><em><code>max_by()</code>는 결합법칙이 성립하므로 Spark는 먼저 로컬 승자를 계산한 다음 8행 대신 3행만 셔플할 수 있습니다. 규모에서는 10억 행과 100만 행을 셔플하는 차이입니다.</em></p>
+
+<p>형식적으로: <code>max_by(A ∪ B, ord) = merge(max_by(A, ord), max_by(B, ord))</code>. 데이터를 원하는 방식으로 분할하고 부분 결과를 독립적으로 계산한 다음 병합할 수 있습니다. 이것이 바로 Spark가 <strong>맵 사이드 결합 → 셔플 → 리듀스</strong> 파이프라인에서 사용하는 패턴입니다.</p>
+
+<h3>3. 누적 특성(점진적 계산) — f(old ∪ new) = merge(f(old), f(new))</h3>
+
+<p><strong>스트리밍</strong>과 <strong>Delta Lake 증분 파이프라인</strong>에서 중요해지는 특성입니다: 처음부터 다시 계산하지 않고 <code>max_by()</code> 결과를 점진적으로 업데이트할 수 있습니다.</p>
+
+<p>새 데이터가 도착하면 전체 테이블을 다시 스캔할 필요가 없습니다. 새 배치의 <code>max_by()</code> 결과를 기존 저장된 결과와 비교하고 승자를 유지하기만 하면 됩니다. 이것이 <code>max_by()</code>를 <strong>Structured Streaming</strong>과 <strong>Delta Live Tables</strong>에 자연스럽게 적합하게 만듭니다.</p>
+
+<blockquote>
+<strong>ROW_NUMBER()가 이를 할 수 없는 이유</strong>
+<br><br>
+윈도우 함수는 <strong>결합법칙이 성립하지 않습니다</strong>. 일부에 대해 <code>ROW_NUMBER()</code>를 계산하고 다른 부분과 병합할 수 없습니다 — 번호 매기기는 전체 정렬된 파티션이 있어야 합니다. 즉, 모든 증분 업데이트는 전체 윈도우를 완전히 재계산해야 합니다.
+</blockquote>
+
+<hr>
+
+<h2>Databricks에서의 완전한 실용 예제</h2>
+
+<pre><code>-- 구방식 — 윈도우 (비용이 많이 드는 셔플 + 정렬)
+WITH ranked AS (
+  SELECT *,
+    ROW_NUMBER() OVER (
+      PARTITION BY customer_id
+      ORDER BY event_timestamp DESC
+    ) AS rn
+  FROM catalog.schema.customer_events
+)
+SELECT
+  customer_id, event_type, event_timestamp,
+  page_url, device, session_id, geo_region
+FROM ranked
+WHERE rn = 1
+
+-- 신방식 — max_by (부분 집계, 정렬 없음)
+SELECT
+  customer_id,
+  max_by(event_type,      event_timestamp) AS event_type,
+  max(event_timestamp)                     AS event_timestamp,
+  max_by(page_url,        event_timestamp) AS page_url,
+  max_by(device,          event_timestamp) AS device,
+  max_by(session_id,      event_timestamp) AS session_id,
+  max_by(geo_region,      event_timestamp) AS geo_region
+FROM catalog.schema.customer_events
+GROUP BY customer_id</code></pre>
+
+<h3>PySpark 동등 코드</h3>
+
+<pre><code>from pyspark.sql import functions as F
+df = spark.table("catalog.schema.customer_events")
+result = (
+    df.groupBy("customer_id")
+    .agg(
+        F.max_by("event_type",  "event_timestamp").alias("event_type"),
+        F.max("event_timestamp").alias("event_timestamp"),
+        F.max_by("page_url",    "event_timestamp").alias("page_url"),
+        F.max_by("device",      "event_timestamp").alias("device"),
+        F.max_by("session_id",  "event_timestamp").alias("session_id"),
+        F.max_by("geo_region",  "event_timestamp").alias("geo_region"),
+    )
+)
+result.display()</code></pre>
+
+<hr>
+
+<h2>여전히 ROW_NUMBER()가 필요한 경우</h2>
+
+<p>공정하게 말씀드리면, <code>max_by()</code>가 작동하지 않는 경우가 있습니다.</p>
+
+<p><strong>그룹당 Top-N (N > 1):</strong> 고객별로 가장 최근 주문 3개가 필요하다면, <code>max_by()</code>는 단 하나의 최고 결과만 제공합니다. 윈도우 함수 또는 <code>LATERAL VIEW explode</code>와 <code>slice(sort_array(collect_list(...)))</code>를 조합해야 합니다.</p>
+
+<p><strong>보조 정렬이 있는 타이브레이킹:</strong> 정렬 기준 컬럼에 타이가 있고 결정론적 타이브레이커가 필요한 경우(예: <code>ORDER BY event_timestamp DESC, event_id DESC</code>), 복합 정렬 기준을 구성해야 합니다 — Spark는 필드 단위로 struct를 비교하므로 <code>struct(event_timestamp, event_id)</code>를 정렬 인자로 사용하는 방식으로 처리할 수 있습니다.</p>
+
+<p><strong>순위값 자체에 대한 접근:</strong> 다운스트림 로직에 실제 행 번호 값이 필요한 경우, 윈도우 함수가 유일한 옵션입니다.</p>
+
+<blockquote>
+<strong>타이브레이킹을 위한 struct 트릭</strong>
+<br><br>
+<code>max_by()</code>에서 정렬 인자로 <code>struct</code>를 전달하여 다중 컬럼 정렬을 처리할 수 있습니다:
+<br><br>
+<code>max_by(value_col, struct(timestamp_col, id_col))</code>
+<br><br>
+Spark는 struct를 사전식으로 비교하므로 정렬 연산 없이 <code>ORDER BY timestamp DESC, id DESC</code> 의미론을 제공합니다.
+</blockquote>
+
+<hr>
+
+<h2>TL;DR — 의사결정 프레임워크</h2>
+
+<p><em>대부분의 중복 제거 시나리오(N=1)에서는 <code>max_by()</code>가 올바른 선택입니다. <code>ROW_NUMBER()</code>는 Top-N 및 순위 접근 사용 사례를 위해 남겨두세요.</em></p>
+
+<hr>
+
+<h2>마치며</h2>
+
+<p><code>ROW_NUMBER() WHERE rn = 1</code> 패턴은 Databricks에서 제가 가장 자주 보는 성능 안티패턴 중 하나입니다. 틀린 것은 아닙니다 — 단지 그 작업에 비해 지나치게 과대하게 설계되었을 뿐입니다. 최대값을 찾기 위해 전체 정렬을 사용하는 것은, 꽃 한 송이를 따기 위해 불도저를 사용하는 것과 같습니다.</p>
+
+<p><code>max_by()</code>는 이 문제를 위해 만들어졌습니다. 그 대수적 특성 — 교환법칙, 결합법칙, 점진적 계산 가능성 — 은 단순한 이론적 장점이 아닙니다. Spark가 부분 집계, 최소 셔플, 정렬 없이 실행할 수 있는 이유입니다. 이것은 직접적으로 더 빠른 작업, 낮은 비용, 그리고 규모에서 무너지지 않는 파이프라인으로 이어집니다.</p>
+
+<p>다음에 <code>ROW_NUMBER() OVER (PARTITION BY ... ORDER BY ...) = 1</code>을 작성하려고 할 때, 멈추세요. 대신 <code>max_by()</code>를 사용하세요. 클러스터가 감사할 것입니다.</p>
+</body></html>

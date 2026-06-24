@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stop Using Pearson Correlation! Why Distance Correlation is the Ultimate Data Science Cheat Code</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  h4{font-size:1.05em;margin:1.2em 0 .3em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-21/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Stop Using Pearson Correlation! Why Distance Correlation is the Ultimate Data Science Cheat Code</h1>
+<div class="meta">KoshurAI · 5 min read · <a href="https://koshurai.medium.com/stop-using-pearson-correlation-why-distance-correlation-is-the-ultimate-data-science-cheat-code-b1a93bf26414">원문</a> · <a href="https://freedium-mirror.cfd/https://koshurai.medium.com/stop-using-pearson-correlation-why-distance-correlation-is-the-ultimate-data-science-cheat-code-b1a93bf26414">freedium</a></div>
+<div class="summary">
+<p class="oneline">피어슨 상관계수는 비선형 관계를 탐지하지 못하는 치명적 맹점이 있으며, 거리 상관계수(Distance Correlation)를 사용하면 데이터 안의 숨겨진 패턴을 발견할 수 있다.</p>
+<h3>요약</h3>
+<p>피어슨 상관계수는 직선적 관계만 측정하므로 사인 곡선이나 포물선 같은 비선형 관계를 완전히 놓쳐버리는 치명적인 맹점을 가진다. 2005년 Székely 등이 제안한 거리 상관계수(dCor)는 두 변수의 거리 행렬을 비교해, 비선형을 포함한 모든 종류의 의존성을 탐지할 수 있다. 핵심 속성은 dCor가 정확히 0이 되는 경우는 X와 Y가 완전히 독립적일 때뿐이라는 것이다. Python의 <code>dcor</code> 라이브러리로 쉽게 사용할 수 있으며, 피어슨이 0을 반환하는 완전한 포물선 관계에서 dCor는 0.57을 반환하는 등 차이가 극명하다. 단점은 O(n²) 시간 복잡도이므로, 피어슨을 먼저 실행한 뒤 비선형 특성이 의심되는 경우에 dCor를 선별적으로 적용하는 것이 실용적이다.</p>
+</div>
+
+<p>피어슨이 당신에게 거짓말을 하고 있다. 데이터에서 비선형 관계를 찾고 있다면, 거리 상관계수(Distance Correlation)가 바로 당신이 기다려온 슈퍼히어로다.</p>
+<p>피어슨 상관계수가 비선형 관계에서 왜 실패하는지, 그리고 거리 상관계수가 어떻게 데이터 사이언스 프로젝트에서 숨겨진 패턴을 밝혀내는지 알아보자. 수학, 직관, 그리고 Python 코드까지 함께 살펴본다.</p>
+
+<h3>당신은 데이터에서 가장 좋은 패턴을 놓치고 있다. 이유가 여기 있다.</h3>
+<p>상상해보자. 거대하고 지저분한 데이터셋을 막 다운로드했다. Python을 열고, 빠르게 <code>.corr()</code>을 실행하고, 값을 정렬하고, 상관계수가 0에 가까운 컬럼을 모두 제거한다.</p>
+<p>"노이즈를 정리하자," 당신은 속으로 말한다.</p>
+<p>방금 당신은 치명적인 실수를 저질렀다.</p>
+<p>피어슨 상관계수를 사용했기 때문이다. 그리고 피어슨은 방금 당신의 얼굴에 대고 거짓말을 했다.</p>
+<p>피어슨은 통계 수업의 절대 왕자이지만, 거대하고 치명적인 맹점이 있다: 직선만 신경 쓴다. 데이터에 곡선, 파동, 혼돈스럽지만 결정론적인 패턴이 있으면, 피어슨은 그것을 보고 "여기에 관계 없음"이라고 말한다.</p>
+<p>등장: 거리 상관계수(Distance Correlation). 피어슨이 볼 수 없는 숨겨진 관계를 밝혀내는 알고리즘 치트 코드다.</p>
+<p>이 글에서 피어슨이 왜 실패하는지, 거리 상관계수가 무엇인지, 오늘 바로 특성 엔지니어링에 어떻게 활용할 수 있는지 파헤쳐보자.</p>
+
+<h3>악당: 피어슨의 선형 편향</h3>
+<p>피어슨 상관계수(흔히 그냥 "상관계수"라고 부르는 것)는 두 변수 X와 Y 사이의 선형 관계를 측정한다. -1에서 1까지의 점수를 준다.</p>
+<p>그런데 관계가 선형이 아닐 때는 어떨까?</p>
+<p>고전적인 Anscombe's Quartet이나 현대의 Datasaurus Dozen을 보자. 이 데이터셋들은 완전히 다르게 보인다. 하나는 원, 하나는 포물선, 하나는 공룡이지만, 모두 정확히 같은 피어슨 상관계수(약 0.16)를 가진다.</p>
+<p>간단한 사인 파동을 보자. Y = sin(X)이면, X와 Y는 수학적으로 깨뜨릴 수 없는 완벽한 관계로 묶여있다. 하지만 X와 sin(X) 사이의 피어슨 상관계수를 계산하면 어떻게 될까?</p>
+<p>0이다. 아무것도 없다. 완전히 제로.</p>
+<p>왜냐하면 사인 파동은 올라갔다가 내려오기 때문에, "선형" 추세가 0으로 평균화되기 때문이다. 피어슨은 손을 들고 "독립적!"이라고 말한다.</p>
+<p>실제 데이터에서, 주가, 생물학적 신호, 사용자 행동에서의 관계는 완벽하게 선형인 경우가 거의 없다. 특성 선택에 피어슨에만 의존한다면, 말 그대로 가장 예측력 있는 변수들을 삭제하고 있는 것이다.</p>
+
+<h3>영웅: 거리 상관계수</h3>
+<p>2005년, 통계학자 Gábor J. Székely, Maria L. Rizzo, Nail K. Bakirov이 혁신적인 개념을 소개했다: 거리 상관계수(Distance Correlation, dCor).</p>
+<p>피어슨과 달리, 거리 상관계수는 관계의 형태에 관심을 두지 않는다. X와 Y가 어떤 방식으로든 연결되어 있는지에만 관심을 가진다.</p>
+<p><strong>dCor의 황금률:</strong> 거리 상관계수가 정확히 0인 경우는 X와 Y가 완전히 독립적일 때뿐이다.</p>
+<p>dCor > 0이면 관계가 존재한다. 선형, 지수, 사인, 아니면 한번도 본 적 없는 형태일 수도 있다. 상관없다. dCor는 찾아낸다.</p>
+
+<h4>수학 없이 이해하는 직관</h4>
+<p>X에 대해 3개의 데이터 포인트가 있고 Y에 대해 3개가 있다고 상상해보자.</p>
+<ol>
+<li>피어슨은 각 포인트가 X와 Y의 평균에서 얼마나 떨어져 있는지 계산한다.</li>
+<li>거리 상관계수는 각 포인트가 X와 Y의 다른 모든 포인트에서 얼마나 떨어져 있는지 계산한다.</li>
+</ol>
+<p>X에 대한 거리 행렬과 Y에 대한 거리 행렬을 구축한다. X의 포인트 간 거리가 Y의 포인트 간 거리와 유사하면, dCor가 높다. 그것이 직선인지 혼돈스러운 나선인지 상관없이 데이터의 "구조"를 포착한다.</p>
+
+<h3>증명해보자: Python 대결</h3>
+<p>Python을 사용해 실시간으로 차이를 살펴보자. 완벽하게 종속된 비선형 관계(Y = X²)를 생성하고 피어슨과 거리 상관계수를 비교할 것이다.</p>
+<p>먼저 라이브러리를 설치한다: <code>pip install dcor</code></p>
+<p>코드:</p>
+
+<pre><code>import numpy as np
+import dcor
+from scipy.stats import pearsonr
+
+# 비선형 관계 생성 (포물선)
+np.random.seed(42)
+x = np.linspace(-10, 10, 500)
+y = x ** 2  # X와 Y는 완전히 종속적이다!
+
+# 1. 피어슨 상관계수
+pearson_corr, _ = pearsonr(x, y)
+print(f"Pearson Correlation: {pearson_corr:.4f}")
+
+# 2. 거리 상관계수
+dist_corr = dcor.distance_correlation(x, y)
+print(f"Distance Correlation: {dist_corr:.4f}")</code></pre>
+
+<p>출력 결과:</p>
+<ul>
+<li>Pearson Correlation: 0.0000</li>
+<li>Distance Correlation: 0.5674</li>
+</ul>
+<p>그렇다. 피어슨은 완벽한 수학적 결합을 보고 0이라고 한다. 거리 상관계수는 강한 비선형 의존성을 올바르게 식별한다.</p>
+<p>1,000개의 특성을 가진 데이터셋에서 이것을 실행한다고 상상해보자. 피어슨을 사용했기 때문에 매일 얼마나 많은 U자 모양이나 지수 관계를 버리고 있는가?</p>
+
+<h3>특성 엔지니어링에 거리 상관계수 활용하기</h3>
+<p>일상적인 데이터 사이언스 워크플로우에서 dCor를 적용하는 것은 특성 선택과 탐색적 데이터 분석(EDA)에 게임 체인저가 된다. 올바르게 하는 방법은 다음과 같다:</p>
+
+<h4>1. 비선형 특성 선택</h4>
+<p>특성을 제거하기 위해 <code>df.corr()</code>을 사용하는 것을 그만두자. 대신, 타깃 변수와 특성 사이의 거리 상관계수를 계산하자. 특성이 낮은 피어슨 점수를 가지고 있지만 높은 dCor 점수를 가지고 있다면, 숨겨진 보석을 찾은 것이다. 그것을 유지하고, 모델 정확도가 급등하는 것을 지켜보자.</p>
+
+<h4>2. 쌍별 EDA 히트맵</h4>
+<p>피어슨 행렬처럼 거리 상관계수 행렬을 계산할 수 있다. Seaborn을 사용해 시각화하면, 이전에 보이지 않았던 변수 간의 연결을 갑자기 발견하게 될 것이다.</p>
+
+<h4>3. 트리 기반 모델과 결합</h4>
+<p>거리 상관계수는 XGBoost나 랜덤 포레스트 같은 알고리즘과 아름답게 짝을 이룬다. 트리 기반 모델은 비선형 분할을 찾는 데 뛰어나지만, 비선형 특성을 이미 버려버렸다면 고생한다. dCor는 올바른 특성들이 모델에 전달되도록 보장한다.</p>
+
+<h3>단점: 왜 모두가 쓰지 않는가?</h3>
+<p>거리 상관계수가 그렇게 우월하다면, 왜 Pandas의 기본값이 아닐까?</p>
+<p><strong>속도.</strong></p>
+<p>피어슨은 번개처럼 빠르다. O(n) 시간 복잡도다. 거리 상관계수는 거리 행렬 계산이 필요하므로 O(n²) 규모로 확장된다.</p>
+<p>100만 행의 데이터셋이 있다면, 모든 특성에 걸쳐 dCor를 계산하는 것은 상당한 시간과 메모리를 소비할 것이다.</p>
+<p><strong>해결책:</strong> dCor를 지능적으로 사용하자. 모든 것에 실행하지 말자. 먼저 피어슨을 실행하고, 그런 다음 피어슨이 놓친 비선형 특성을 찾기 위해 데이터의 랜덤 샘플에 dCor를 실행하자. 또는 메모리 사용을 최적화하는 <code>dcor</code> 라이브러리의 더 새롭고 빠른 구현을 사용하자.</p>
+
+<h3>상관계수의 미래는 비선형이다</h3>
+<p>데이터 사이언티스트로서 우리의 일은 데이터를 직선에 억지로 맞추는 것이 아니다. 얼마나 이상하거나 구불구불하든 상관없이 진실을 밝혀내는 것이다.</p>
+<p>피어슨 상관계수는 1800년대의 유물이다. 계산이 손으로 이루어져야 했고 선형 가정이 필수였을 때의 것이다. 우리는 딥러닝과 복잡한 시스템의 시대에 살고 있다. 주식 시장, 유전학, 인간 행동을 이끄는 관계들은 직선이 아니다.</p>
+<p>도구를 업그레이드할 때다. 피어슨을 기반으로 특성을 제거하는 것을 그만두자. 거리 상관계수를 사용하기 시작하고, 모델들이 기다려온 숨겨진 패턴을 열어보자.</p>
+</body>
+</html>

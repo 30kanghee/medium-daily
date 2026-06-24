@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The 5-Minute Guide to Agentic AI Workflow</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-22/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>The 5-Minute Guide to Agentic AI Workflow</h1>
+<div class="meta">Shreyas Naphad · Towards AI · 5 min read · <a href="https://pub.towardsai.net/the-5-minute-guide-to-agentic-ai-workflow-acb4d3b6e17d" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://pub.towardsai.net/the-5-minute-guide-to-agentic-ai-workflow-acb4d3b6e17d" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">단순한 챗봇을 넘어 스스로 목표를 분해하고 도구를 사용해 실행하는 에이전틱 AI 워크플로우의 핵심 원리를 5분 안에 파악한다.</p>
+<p>2026년 현재, 텍스트를 입력하고 텍스트를 받는 단순한 챗봇 앱은 더 이상 의미 있는 기술로 여겨지지 않는다. 에이전틱 AI 워크플로우는 LLM 엔진(두뇌), 상태 및 메모리(맥락), 도구(실행 수단)라는 세 가지 핵심 요소로 구성되며 자율적으로 목표를 달성한다. ReAct(추론+행동) 패턴은 에이전트가 생각하고, 행동하고, 관찰하는 반복 루프로 복잡한 문제를 단계적으로 해결한다. LangGraph 같은 그래프 기반 아키텍처는 AI 애플리케이션을 상태 기계로 모델링해 에이전트의 무한 루프나 비용 과다 발생을 방지하는 안전 장치를 제공한다. 지금이 바로 단순 응답을 넘어 실제 행동을 취하는 시스템을 구축하기에 가장 좋은 시기다.</p>
+</div>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*cc-x0QpE6SU6U9Vp9A-w2Q.png"><figcaption>Source: AI-Generated Image</figcaption></figure>
+
+<p>2026년, 냉혹한 진실은 <strong>"데이터와 대화하는 앱"</strong>이 더 이상 대단하게 여겨지지 않는다는 것이다. 지난 몇 년 동안 <strong>수없이 많은 텍스트 입력, 텍스트 출력 앱들을 봐왔다.</strong> 솔직히 말하면 이런 앱들은 학습하는 데는 정말 좋다. <em>하지만 시대가 변했다.</em> 스스로를 발전시키고 따라잡는 것이 중요하다.</p>
+
+<p>이것을 알고 나서 <strong>벡터 데이터베이스를 추가하고 탄탄한 RAG 파이프라인을 구축하는</strong> 다음 단계를 밟기로 할 수도 있다. 그것도 훌륭하지만, 사실 여전히 멋진 챗봇에 불과하다. <strong>우리는 멋진 챗봇을 뒤로 하는 다음 레벨로 가야 한다.</strong></p>
+
+<p>최근에 나는 현실 세계의 문제들이 대화 상대를 필요로 하지 않는다는 것을 깨달았다. <strong>그것들이 필요로 하는 것은 <em>실행자</em>이다.</strong> 높은 수준의 목표를 받아 논리적 단계로 분해하고, 어떤 도구를 사용할지 결정하며, 실제로 작업을 실행할 수 있는 시스템이 필요하다. 여기서 중요한 점은 모든 조건을 수동으로 하드코딩하지 않는다는 것이다. <strong>시스템 자체가 원하는 목표를 달성하기 위한 필요한 단계를 취할 만큼 충분히 스마트하다.</strong></p>
+
+<p>그리고 맞다, 그것이 챗봇과 <strong>에이전틱 AI 워크플로우</strong>의 차이다.</p>
+
+<blockquote>
+<p><em>챗봇은 지시를 기다린다. 에이전트는 어떻게 일을 해낼지 스스로 파악한다.</em></p>
+</blockquote>
+
+<p>실제로 확장 가능하고 엄청난 가치를 제공하는 시스템을 구축하고 싶다면 <strong>자율성을 이해해야 한다.</strong> 가장 좋은 점은? <strong>생각만큼 복잡하지 않다.</strong></p>
+
+<p><strong>5분을 주면, 이 에이전틱 워크플로우가 어떻게 작동하는지 정확히 설명해 드리겠다.</strong> 왜 기존 방식을 대체하고 있는지, 그리고 오늘 어떻게 첫 번째 자율 루프 구축을 시작할 수 있는지도 알려드리겠다.</p>
+
+<h2>에이전트 공식</h2>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*JOuYdsa6FnHi1A6yYZqbgg.png"><figcaption>Source: AI-Generated Image</figcaption></figure>
+
+<p>실제 세계에서 작동하는 무언가를 구축하려면 먼저 <em>에이전트가 무엇인지</em> 이해해야 한다. <strong>AI 에이전트는 특정하고 결정론적인 아키텍처 루프에 의해 구동되는 자율 소프트웨어 시스템이다.</strong></p>
+
+<p>하나를 구축하려면 다음 세 가지만 마스터하면 된다.</p>
+
+<h3>1. LLM 엔진 (두뇌)</h3>
+
+<p>이전에는 LLaMA나 Gemini 같은 LLM을 데이터 요약이나 코드 생성에 사용했다. 에이전틱 워크플로우에서 LLM은 <strong>추론 엔진</strong>으로 작동한다. 직접 최종 답변을 제공하는 대신, 모델은 소리 내어 생각하도록 유도된다. <em>"내가 달성해야 할 것은 무엇인가? 어떤 정보가 부족한가? 다음에 어떤 단계를 취해야 하는가?"</em></p>
+
+<h3>2. 상태 및 메모리 (맥락)</h3>
+
+<p>에이전트가 두 단계 전에 무엇을 했는지 기억하는 것은 매우 중요하다. 데이터베이스 쿼리를 시도했다가 인증 오류가 발생했다면, 정확히 같은 쿼리를 무작정 다시 시도해서는 안 된다. <strong>이렇게 하면 에이전트가 무한 루프에 빠질 수 있다.</strong> 바로 여기서 메모리가 도움을 준다. 시스템이 <em>상태 추적기</em>를 유지할 수 있도록 한다. <strong>이것은 과거 행동, 시스템 관찰, 오류를 기록해</strong> 전략을 동적으로 업데이트할 수 있게 한다.</p>
+
+<h3>3. 도구 (실행 수단)</h3>
+
+<p>LLM 자체는 도구에 대한 접근 없이는 행동을 수행할 수 없다. LLM 단독으로는 오늘의 날씨를 알 수 없고, Git 저장소를 확인할 수 없으며, SQL 쿼리를 실행할 수 없기 때문이다. 그래서 도구가 필요하다. 도구는 단순히 API, 데이터베이스 연결, 웹 스크래퍼처럼 모델에 노출하는 함수들이다. <strong>도구가 무엇을 하는지 LLM에게 명확한 텍스트 설명을 제공하면, 모델이 언제 도구를 사용할지 그리고 어떻게 호출할지 결정한다.</strong></p>
+
+<h2>ReAct 패턴</h2>
+
+<p>에이전트가 어떻게 생각하는지 이해하는 것이 중요하다. 이제 이 세 가지 구성 요소를 배웠다. 이것들은 어떻게 서로 대화하는가? 업계 표준은 <strong>ReAct(추론 + 행동)라는 아키텍처이다.</strong></p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*vBaBZgQxesLfuDkunvypEA.png"><figcaption>Source: AI-Generated Image</figcaption></figure>
+
+<p>모델이 자기 자신과 나누는 지속적인 대화로 생각할 수 있다. 에이전트에게 "Python 라이브러리의 최신 API 문서를 찾아 브레이킹 체인지를 확인하라"고 요청하면, <strong>내부 실행 루프는 다음과 같다.</strong></p>
+
+<ul>
+<li><strong>생각:</strong> 최신 문서를 찾아야 한다. 이것은 내 훈련 데이터에 없다. 웹 검색 도구를 사용해야겠다.</li>
+<li><strong>행동:</strong> <code>web_search(query="Python library API documentation 2026")</code> 호출.</li>
+<li><strong>관찰:</strong> 검색 도구가 링크와 스니펫 목록을 반환한다.</li>
+<li><strong>생각:</strong> 이제 새 문서를 볼 수 있지만 특정 브레이킹 체인지를 파악해야 한다. 텍스트 스크래퍼 도구를 사용해 변경 사항을 읽겠다.</li>
+<li><strong>행동:</strong> <code>fetch_page(url="...")</code> 호출.</li>
+<li><strong>관찰:</strong> 페이지에서 특정 정적 메서드 호출이 더 이상 사용되지 않음을 보여준다.</li>
+<li><strong>생각:</strong> 브레이킹 체인지를 찾았다. 이제 사용자를 위한 최종 답변을 만들 수 있다.</li>
+</ul>
+
+<p>위의 사이클을 살펴보라. 전통적이고 경직된 <code>if/else</code>를 완전히 대체하고 있다. 모든 단일 엣지 케이스에 코드를 작성하는 대신, <strong>에이전트가 목표를 달성하는 자체적인 방법을 파악할 수 있는</strong> 환경을 구축한다.</p>
+
+<h2>그래프 기반 AI로의 이동</h2>
+
+<p>이제 에이전틱 시스템 구축에 초점을 맞추었으니, 기본적인 선형 실행 스크립트는 더 이상 필요하지 않다. 기사 초안을 작성하고, 비평 에이전트에게 피드백을 위해 보내고, 임계값을 통과할 때까지 루프를 반복하는 에이전트가 있다면, 선형 파이프라인은 이를 엉망으로 만들 것이다.</p>
+
+<p>그래서 업계는 <strong>그래프 기반 아키텍처</strong>로 이동하고 있다.</p>
+
+<p>애플리케이션을 직선으로 취급하는 대신, <strong>LangGraph 같은 도구를 사용하면 AI 애플리케이션을 상태 기계로 모델링할 수 있다.</strong></p>
+
+<ul>
+<li><strong>노드(Nodes):</strong> 행동을 나타낸다 (예: LLM이 생각하거나 도구가 Python 스크립트를 실행하는 것).</li>
+<li><strong>엣지(Edges):</strong> 조건부 경로를 정의한다. LLM이 <em>"완료됐다"</em>고 하면 엣지는 최종 출력으로 라우팅된다. LLM이 <em>"더 많은 데이터가 필요하다"</em>고 하면 엣지는 도구 실행 노드로 돌아간다.</li>
+</ul>
+
+<p>이렇게 <strong>워크플로우를 그래프로 정의함으로써</strong> 시스템 경계에 대한 완전한 제어권을 유지한다. 에이전트가 제멋대로 실행되는 위험 없이 LLM 추론의 유연성을 얻는다.</p>
+
+<h2>빠른 ReAct 에이전트 구축하기</h2>
+
+<p>이 패턴이 현대 Python 프레임워크에서 어떻게 보이는지 살펴보자. 수천 줄의 보일러플레이트 코드가 필요하지 않다. <strong>LLM 엔진을 실행 가능한 도구에 연결하는 단순화된 샘플 아키텍처는 다음과 같다.</strong></p>
+
+<pre><code>import os
+from langchain_core.tools import tool
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+
+os.environ["OPENAI_API_KEY"] = "your-key-here"
+
+# 1. 도구 정의
+@tool
+def calculate_system_latency(requests_per_second: int) -> str:
+    """활성 트래픽 부하를 기반으로 예상 서버 지연시간을 계산합니다."""
+    if requests_per_second > 5000:
+        return "위험 경고: 예상 지연시간이 800ms를 초과합니다. 최적화가 필요합니다."
+    return "시스템 안정: 예상 지연시간이 45ms 미만입니다."
+
+# 2. 모델 초기화
+model = ChatOpenAI(model="gpt-4o", temperature=0)
+tools = [calculate_system_latency]
+
+# 3. 에이전트 구축
+agent_executor = create_agent(model, tools)
+
+# 4. 실행
+response = agent_executor.invoke({
+    "messages": [("user", "트래픽이 초당 6,200 요청으로 급증했습니다. 지연시간을 확인하고 패닉할 필요가 있는지 알려주세요.")]
+})
+
+# 5. 최종 응답 출력
+print(response["messages"][-1].content)</code></pre>
+
+<p>이제 모델은 단순히 답을 추측하지 않는다. 도구 정의를 읽고, <code>6200</code>이 <code>calculate_system_latency</code>의 입력 서명과 일치한다는 것을 알아채고, 함수를 실행하고, 위험 경고 관찰을 캡처한 뒤, 팀에게 경고를 표시한다.</p>
+
+<h2>대부분이 실수하는 부분</h2>
+
+<p>전체 코드베이스를 자율 에이전트에 넣기 전에, 냉혹한 진실을 말씀드리겠다. 자율성이 제대로 제한되지 않으면 매우 비용이 많이 들 수 있다.</p>
+
+<p>예를 들어 에이전트를 구축하고 문제가 해결될 때까지 무한정 루프를 돌 수 있는 완전한 자유를 준다면, 단 하나의 사소한 API 오류로 우발적인 무한 루프가 발생할 수 있다. 당신이 잠든 사이 시스템이 수천 번의 연속 LLM 호출을 기꺼이 수행해 예산을 소진시킬 것이다.</p>
+
+<p>그래서 에이전틱 시스템을 구축하기 전에 다음 규칙들을 따르길 권장한다.</p>
+
+<ul>
+<li><strong>하드 토큰 및 루프 제한:</strong> 에이전트가 5~6번 이상 루프를 돌지 못하도록 하라.</li>
+<li><strong>엄격한 유사도 임계값:</strong> 낮은 임계값은 에이전트가 관련 없는 데이터를 선택하고, 계획을 환각하며, 충돌을 일으킬 수 있다.</li>
+<li><strong>휴먼-인-더-루프(Human-in-the-Loop):</strong> 상태 그래프에 체크포인트를 설계하라. 에이전트가 코드를 프로덕션에 푸시하려 한다면, <strong>인간이 "승인"을 클릭할 때까지 그래프가 실행을 일시 중지하도록 하라.</strong></li>
+</ul>
+
+<h2>이제 당신 차례</h2>
+
+<p>오늘 일상 워크플로우에서 반복적이고 수동적인 작업 하나를 선택해보길 권한다. 수신 프로젝트 요청을 정리하든 특정 알림을 요약하든 상관없다. <strong>몇 가지 Python 함수를 사용하고, 로컬 또는 오픈소스 모델에 연결해 첫 번째 자동화 워크플로우를 구축하라.</strong></p>
+
+<p>AI가 단순히 쿼리에 답하는 챗봇이었던 시대는 지나갔다. <strong>우리는 AI가 우리를 위해 적극적으로 일할 수 있는 시대로 들어서고 있다.</strong> 그리고 단순히 답변하는 것을 넘어 실제로 행동을 취하는 시스템을 구축하기에 지금보다 더 좋은 시기는 없다.</p>
+</body>
+</html>

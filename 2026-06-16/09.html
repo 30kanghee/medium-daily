@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 Data Models Every Data Engineer Must Know (Before They Break Production)</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-16/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>10 Data Models Every Data Engineer Must Know (Before They Break Production)</h1>
+<div class="meta">Rohan Dutt · 12분 · <a href="https://medium.com/@Rohan_Dutt/10-data-models-every-data-engineer-must-know-before-they-break-production-11a020e87e31">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@Rohan_Dutt/10-data-models-every-data-engineer-must-know-before-they-break-production-11a020e87e31">freedium</a></div>
+<div class="summary">
+  <div class="oneline">스타 스키마부터 통합 서빙 레이어까지 — 프로덕션을 박살내기 전에 데이터 엔지니어가 반드시 알아야 할 10가지 데이터 모델의 실패 패턴과 탈출구.</div>
+  <p>올바른 데이터 모델 선택은 확장성, 일관성, 안정적인 분석의 기반이 된다. 스타 스키마는 직관적이지만 대규모에선 성능 병목이 되고, 스노우플레이크 스키마는 저장 공간을 아끼지만 쿼리를 죽인다. Data Vault는 규제 환경에서 감사 추적에 강하지만 분석에는 너무 느리다. 이 글은 10가지 데이터 모델 각각의 "무엇이 잘못되는가"와 "어떻게 탈출하는가"를 실전 SQL과 함께 제시한다. 칼럼형 저장소, 이벤트 소싱, 그래프 모델, 멀티모델 하이브리드, 역방향 ETL을 거쳐 최종 목표인 통합 서빙 레이어까지, 각 패턴의 한계와 적용 조건을 명확히 이해하면 프로덕션 장애를 예방할 수 있다.</p>
+</div>
+
+<p>프로덕션 시스템의 장애를 막는 핵심 데이터 모델들을 배웁니다. 올바른 모델 선택은 확장성, 일관성, 신뢰할 수 있는 분석을 보장합니다.</p>
+
+<h2>10. 스타 스키마 — 규모에서 실패하는 레거시 방식</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>스타 스키마는 직관적이고 분석가 친화적이지만, 대규모에서는 성능 병목이 됩니다 — 특히 수십억 행의 팩트 테이블, 고카디널리티 디멘션, 준실시간 워크로드에서.</p>
+
+<p><strong>핵심 문제:</strong></p>
+<ul>
+  <li>팩트 테이블이 커질수록(수십억 행) 쿼리 성능이 급격히 저하됩니다.</li>
+  <li>원시 팩트에 복잡한 조인 + GROUP BY = 느린 스캔, 타임아웃</li>
+</ul>
+
+<pre>-- 원시 팩트 테이블에 대한 전형적인 스타 스키마 쿼리
+SELECT d.region, d.store_type, SUM(f.sales_amount) AS total_sales
+FROM fact_sales f
+JOIN dim_store d ON f.store_id = d.store_id
+JOIN dim_date dt ON f.date_id = dt.date_id
+WHERE dt.date BETWEEN '2025-11-28' AND '2025-11-29'
+GROUP BY d.region, d.store_type;</pre>
+
+<p><strong>무엇이 잘못되는가:</strong> 수억 개의 팩트 행 스캔, 모든 쿼리마다 비싼 조인, 고카디널리티 디멘션에서 GROUP BY</p>
+
+<blockquote>실제 사고: 대형 소매업체의 블랙프라이데이 대시보드가 시간당 1,000만+ 거래를 넘어서자 타임아웃됐습니다. 스타 스키마는 버티지 못했습니다.</blockquote>
+
+<p><strong>해결책: 집계 인식 모델링 — 사전 집계 요약 테이블</strong></p>
+
+<pre>CREATE TABLE sales_daily_summary AS
+SELECT date_id, store_id, SUM(sales_amount) AS total_sales, COUNT(*) AS txn_count
+FROM fact_sales
+GROUP BY date_id, store_id;</pre>
+
+<pre>-- 최적화된 쿼리
+SELECT d.region, d.store_type, SUM(s.total_sales) AS total_sales
+FROM sales_daily_summary s
+JOIN dim_store d ON s.store_id = d.store_id
+JOIN dim_date dt ON s.date_id = dt.date_id
+WHERE dt.date BETWEEN '2025-11-28' AND '2025-11-29'
+GROUP BY d.region, d.store_type;</pre>
+
+<p><strong>결과:</strong> 10~100배 빠른 쿼리, 피크 부하에서도 예측 가능한 성능</p>
+
+<p><strong>결론:</strong> 스타 스키마는 정적이고 소규모 분석에는 적합합니다. 고처리량 OLAP에서는 사전 집계, 와이드 테이블, 현대적 레이크하우스 모델이 선택이 아닌 생존 도구입니다.</p>
+
+<h2>9. 스노우플레이크 스키마 — 과도하게 설계되고 느린</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>스노우플레이크 스키마는 저장소를 최적화하지 쿼리 성능은 최적화하지 않습니다. 현대 분석(클라우드 OLAP, 대시보드, 임시 쿼리)에서 병목은 디스크가 아니라 연산입니다. 과도한 정규화는 조인 깊이를 폭발시키고 지연 시간을 죽입니다.</p>
+
+<p><strong>핵심 문제:</strong> 디멘션 테이블이 여러 서브 디멘션으로 분리되어 단순 지표에도 5~10개 조인이 필요합니다.</p>
+
+<pre>-- 스노우플레이크 스타일 쿼리 (고통)
+SELECT r.region_name, c.category_name, SUM(f.sales_amount) AS total_sales
+FROM fact_sales f
+JOIN dim_product p ON f.product_id = p.product_id
+JOIN dim_category c ON p.category_id = c.category_id
+JOIN dim_subcategory sc ON c.subcategory_id = sc.subcategory_id
+JOIN dim_store s ON f.store_id = s.store_id
+JOIN dim_region r ON s.region_id = r.region_id
+GROUP BY r.region_name, c.category_name;</pre>
+
+<p><strong>현대적 대안: 디멘션 비정규화</strong></p>
+
+<pre>-- 평탄화된 디멘션 생성
+CREATE TABLE dim_product_flat AS
+SELECT p.product_id, p.product_name, c.category_name, sc.subcategory_name
+FROM dim_product p
+JOIN dim_category c ON p.category_id = c.category_id
+JOIN dim_subcategory sc ON c.subcategory_id = sc.subcategory_id;</pre>
+
+<p><strong>결론:</strong> 스노우플레이크 스키마는 어제의 저장 문제를 해결하면서 오늘의 성능 악몽을 만듭니다. 규모 있는 분석에서는 디멘션을 평탄화하고, 조인을 구체화하고, 칼럼형 엔진이 무거운 작업을 하도록 두세요.</p>
+
+<h2>8. Data Vault — 감사 추적이 필요할 때의 엔터프라이즈 방식</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>Data Vault는 감사 추적, 데이터 계보, 완전한 이력화에 뛰어납니다 — 규제 산업(금융, 의료)에 필수적입니다. 하지만 다층 아키텍처로 인해 저지연 분석에는 근본적으로 부적합합니다.</p>
+
+<p><strong>핵심 구조 (왜 느린가):</strong></p>
+<ul>
+  <li>허브 → 비즈니스 키</li>
+  <li>링크 → 관계</li>
+  <li>새틀라이트 → 설명적 속성 + 이력</li>
+</ul>
+<p>모든 쿼리가 시간 변동 테이블 전반에 걸친 조인 폭발이 됩니다.</p>
+
+<pre>-- Raw Vault 고통
+SELECT h_cust.customer_id, s_cust.customer_name, SUM(s_tx.amount) AS total_spend
+FROM hub_customer h_cust
+JOIN link_customer_tx l_ct ON h_cust.hub_customer_key = l_ct.hub_customer_key
+JOIN hub_transaction h_tx ON l_ct.hub_transaction_key = h_tx.hub_transaction_key
+JOIN sat_customer s_cust ON h_cust.hub_customer_key = s_cust.hub_customer_key
+    AND s_cust.is_current = true
+JOIN sat_transaction s_tx ON h_tx.hub_transaction_key = s_tx.hub_transaction_key
+    AND s_tx.is_current = true
+GROUP BY h_cust.customer_id, s_cust.customer_name;</pre>
+
+<p><strong>탈출구: Data Vault에서 구체화 마트로</strong></p>
+
+<pre>-- 빠른 쿼리를 위한 마트
+SELECT customer_name, SUM(amount) AS total_spend
+FROM customer_spend_mart
+GROUP BY customer_name;</pre>
+
+<p><strong>결론:</strong> Data Vault는 분석 레이어가 아닌 통합 및 컴플라이언스 레이어입니다. 규제기관이 이력을 요구할 때 사용하고, 속도를 위해 스트리밍 CDC + 디멘션/와이드 마트를 그 위에 올리세요.</p>
+
+<h2>7. 와이드 컬럼 저장소 — 시계열 혼돈을 위한 (Cassandra, Bigtable)</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>와이드 컬럼 데이터베이스는 쓰기가 멈추지 않는 고속 수집(IoT, 메트릭, 로그)에서 지배적입니다. 하지만 쿼리 유연성을 희생합니다 — 조인 없음, 제한적 필터링, 엄격한 접근 패턴. 쓰기에서 이기고 탐색에서 집니다.</p>
+
+<p><strong>흔한 실수:</strong> Cassandra를 관계형 DB처럼 사용 → 보조 인덱스, 무작위 필터, 조인 → 즉각적인 후회.</p>
+
+<pre>-- 접근 패턴 중심의 올바른 테이블 설계
+CREATE TABLE device_metrics (
+    device_id TEXT,
+    metric_date DATE,
+    event_ts TIMESTAMP,
+    metric_type TEXT,
+    metric_value DOUBLE,
+    PRIMARY KEY (
+        (device_id, metric_date),  -- 파티션 키
+        event_ts                    -- 클러스터링 키
+    )
+) WITH CLUSTERING ORDER BY (event_ts DESC);
+
+-- 잘 확장되는 쿼리
+SELECT event_ts, metric_value
+FROM device_metrics
+WHERE device_id = 'dev_42'
+  AND metric_date = '2025-12-26'
+  AND event_ts >= '2025-12-26 10:00:00'
+  AND event_ts < '2025-12-26 11:00:00';</pre>
+
+<p><strong>하지 말아야 할 것:</strong></p>
+<pre>-- 안티패턴: 파티션 키 없음
+SELECT * FROM device_metrics WHERE metric_type = 'cpu';</pre>
+
+<p><strong>결론:</strong> 와이드 컬럼 저장소는 쓰기 최적화 시계열 엔진이지 분석 데이터베이스가 아닙니다. 쿼리를 미리 설계하거나, 실제 분석을 위해 OLAP 엔진(Druid, ClickHouse, BigQuery)과 페어링하세요.</p>
+
+<h2>6. 그래프 모델 — 숨겨진 관계를 위한 (Neo4j, TigerGraph)</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>통찰이 관계(사기 링, 소셜 영향력, 네트워크 홉)에 있을 때, 관계형 조인은 재귀적 깊이 하에서 무너집니다. 그래프 데이터베이스는 관계를 일급 시민으로 취급해 다중 홉 순회를 빠르고 자연스럽게 만듭니다.</p>
+
+<p><strong>SQL이 무너지는 곳:</strong></p>
+<pre>-- SQL에서 N단계 연결 (안티패턴) - 친구의 친구 (2홉)
+SELECT DISTINCT f2.user_id
+FROM friendships f1
+JOIN friendships f2 ON f1.friend_id = f2.user_id
+WHERE f1.user_id = 123 AND f2.user_id <> 123;</pre>
+
+<p>홉이 늘어날수록 조인이 기하급수적으로 증가합니다.</p>
+
+<p><strong>그래프 모델의 승리 — Cypher/GQL 스타일 쿼리:</strong></p>
+<pre>MATCH (u:User {id: 123})-[:FRIEND*2..4]->(conn)
+RETURN DISTINCT conn.id LIMIT 100;</pre>
+
+<p>N단계 순회를 밀리초 단위로, 조인 폭발 없이.</p>
+
+<pre>-- 사기 탐지
+MATCH (a:Account)-[:TRANSFER]->(b:Account)-[:TRANSFER]->(c:Account)
+WHERE a.country <> c.country
+RETURN a, b, c;</pre>
+
+<blockquote>실제 증명: LinkedIn의 "아는 사람" 기능은 대규모에서 다중 홉 연결을 계산하기 위해 그래프 순회에 의존합니다.</blockquote>
+
+<p><strong>결론:</strong> 질문이 "누가 누구와 연결되어 있는가"로 시작한다면, SQL은 잘못된 도구입니다. 관계 중심 통찰에서 그래프 데이터베이스는 조인을 몇 배나 능가합니다.</p>
+
+<h2>5. 스트리밍 이벤트 소싱 (Kafka + CDC)</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>배치 ETL은 실시간 시스템과 근본적으로 호환되지 않습니다. CDC는 DB 변경을 불변 이벤트로 바꿔 준실시간 파이프라인, 재생 가능한 상태, 마이크로서비스 전반의 일관성을 가능하게 합니다.</p>
+
+<p><strong>핵심 아이디어:</strong> 데이터베이스 → 이벤트 생산자, Kafka → 내구성 있는 이벤트 로그, 컨슈머 → 언제든 상태 재구성. 데이터가 스냅샷이 아닌 타임라인이 됩니다.</p>
+
+<pre>-- 소스 테이블
+CREATE TABLE orders (
+    order_id BIGINT PRIMARY KEY,
+    user_id BIGINT,
+    status TEXT,
+    amount DECIMAL(10, 2),
+    updated_at TIMESTAMP
+);
+
+-- Debezium 스타일 CDC 이벤트
+-- {"op": "u", "before": {"status": "CREATED"}, "after": {"status": "PAID"}, "ts_ms": 1735209123123}
+
+-- 멱등성 싱크 (중요)
+INSERT INTO orders_state (order_id, status, amount)
+VALUES (:order_id, :status, :amount)
+ON CONFLICT (order_id) DO UPDATE
+SET status = EXCLUDED.status, amount = EXCLUDED.amount;</pre>
+
+<p><strong>순서 및 정확히 한 번 (어려운 부분):</strong></p>
+<ul>
+  <li>비즈니스 키(<code>order_id</code>)로 Kafka 토픽 파티션 분할</li>
+  <li>원자적 생산 + 커밋을 위해 Kafka 트랜잭션 사용</li>
+  <li>DB 쓰기와 동일한 트랜잭션에서 오프셋 추적</li>
+</ul>
+
+<blockquote>이를 잘못하면 → 무음 데이터 손상. Uber는 이벤트 소싱을 사용해 100개+ 마이크로서비스를 동기화합니다.</blockquote>
+
+<p><strong>결론:</strong> 이벤트 소싱은 최적화가 아닌 아키텍처적 전환입니다. 실시간 일관성, 감사 추적, 복구가 필요하다면 Kafka + CDC가 백본이지만, 정확성을 먼저 엔지니어링해야 합니다.</p>
+
+<h2>4. 칼럼형 저장소 — 저렴하고 빠른 분석을 위한 (Parquet, Delta Lake)</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>행 기반 데이터베이스는 포인트 조회에 최적화되어 있지 스캔에는 그렇지 않습니다. 분석 워크로드는 수십억 행에서 몇 개 칼럼만 읽습니다 — 칼럼형 저장소가 정확히 이를 위해 만들어졌습니다. 결과: 비용의 몇 분의 일로 몇 배나 빠른 쿼리.</p>
+
+<p><strong>핵심 장점:</strong> 필요한 칼럼만 읽기, 높은 압축(RLE, 딕셔너리 인코딩), 벡터화 실행 → 더 적은 I/O = 빠른 쿼리 + 낮은 클라우드 비용</p>
+
+<pre>-- 파티션 분할된 Parquet 테이블
+CREATE TABLE sales_parquet (
+    order_id BIGINT,
+    region STRING,
+    amount DECIMAL(10, 2),
+    order_ts TIMESTAMP
+) USING PARQUET PARTITIONED BY (region, order_date);
+
+-- 최적화된 쿼리 - amount와 region 칼럼만 읽고
+-- order_date=2025-12-25 및 US 파티션만 스캔
+SELECT region, SUM(amount) AS total_sales
+FROM sales_parquet
+WHERE order_date = '2025-12-25' AND region = 'US'
+GROUP BY region;
+
+-- Delta Lake MERGE - 데이터 레이크에서 ACID 보장
+MERGE INTO sales_parquet t USING updates u ON t.order_id = u.order_id
+WHEN MATCHED THEN UPDATE SET amount = u.amount
+WHEN NOT MATCHED THEN INSERT *;</pre>
+
+<p><strong>결론:</strong> 칼럼형 저장소는 원시 데이터를 분석 슈퍼파워로 바꿉니다. 행 저장소에서 빅데이터를 스캔하고 있다면 돈과 시간을 낭비하는 것입니다.</p>
+
+<h2>3. 멀티모델 하이브리드 — SQL + NoSQL이 충돌할 때</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>실제 세계의 데이터는 좀처럼 하나의 형태만 갖지 않습니다. 현대 앱은 관계형 팩트, 반구조화 JSON, 관계를 혼합합니다. 멀티모델 데이터베이스는 이 모든 것을 한 곳에서 쿼리할 수 있게 해줍니다.</p>
+
+<p><strong>일반적인 사용 사례:</strong></p>
+<ul>
+  <li>구조적: 예약, 가격, 재고</li>
+  <li>반구조적: 목록 메타데이터, 편의 시설, 사용자 선호도</li>
+  <li>그래프형: 호스트-게스트-목록 관계 (Airbnb가 구조화 테이블과 JSON 기반 목록 속성을 혼합)</li>
+</ul>
+
+<pre>-- JSONB가 포함된 테이블
+CREATE TABLE listings (
+    listing_id BIGINT PRIMARY KEY,
+    city TEXT,
+    price NUMERIC,
+    attributes JSONB
+);
+
+-- 구조적 + JSON을 함께 쿼리
+SELECT city, COUNT(*) AS luxury_listings
+FROM listings
+WHERE price > 300
+  AND attributes @> '{"amenities": ["pool", "wifi"]}'
+  AND (attributes->>'pet_friendly')::boolean = true
+GROUP BY city;
+
+-- JSON 쿼리 성능을 위한 인덱싱 (중요)
+CREATE INDEX idx_listings_attrs ON listings USING GIN (attributes);
+
+-- 그래프형 관계를 위한 뷰 레이어
+CREATE VIEW host_listing_view AS
+SELECT h.host_id, l.listing_id, l.city, l.price
+FROM hosts h
+JOIN listings l ON h.host_id = l.attributes->>'host_id';</pre>
+
+<p><strong>결론:</strong> 멀티모델 하이브리드는 실용적인 타협점입니다. 데이터가 테이블, 문서, 관계에 걸쳐 있을 때, 뷰와 인덱스 뒤에 복잡성을 숨기는 한 유연성을 제공합니다.</p>
+
+<h2>2. 역방향 ETL — 앱에 데이터를 돌려보내는 운영 분석</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>전통적인 분석은 대시보드에서 멈춥니다. 역방향 ETL은 웨어하우스에서 모델링된 데이터를 운영 도구로 다시 밀어넣어 통찰이 보고서가 아닌 행동을 이끌도록 합니다.</p>
+
+<p><strong>핵심 사용 사례:</strong> 준실시간 개인화, 실시간 고객 건강 및 이탈 점수, 판매 및 마케팅 자동화(CRM, ESP)</p>
+
+<pre>-- dbt 스타일 모델 - 웨어하우스가 지능 시스템이 됨
+-- customer_360.sql
+SELECT
+    customer_id,
+    MAX(last_login_ts) AS last_active,
+    SUM(lifetime_spend) AS ltv,
+    COUNT(DISTINCT order_id) AS order_count,
+    CASE
+        WHEN SUM(lifetime_spend) > 5000 THEN 'VIP'
+        WHEN SUM(lifetime_spend) > 1000 THEN 'High'
+        ELSE 'Standard'
+    END AS customer_tier
+FROM orders
+GROUP BY customer_id;
+
+-- 역방향 ETL 동기화
+-- warehouse.customer_360 → Hightouch/Census
+--   → Salesforce (Account Tier)
+--   → HubSpot (Lifecycle Stage)
+--   → Zendesk (Support Priority)
+
+-- 증분 업데이트 (중요 - API 친화적)
+SELECT * FROM customer_360 WHERE updated_at > :last_sync_ts;</pre>
+
+<p><strong>결론:</strong> 역방향 ETL은 웨어하우스를 보고 무덤에서 운영 엔진으로 변환합니다. 통찰이 고객 대면 도구에 닿지 않는다면 가치를 창출하지 못하는 것입니다.</p>
+
+<h2>1. 통합 서빙 레이어 — 프로덕션 데이터의 미래</h2>
+
+<h3>왜 중요한가</h3>
+
+<p>현대 데이터 스택은 OLTP, OLAP, 검색, 스트리밍 시스템에 걸쳐 데이터를 분산시켜 동기화 지연과 중복된 로직을 만듭니다. 통합 서빙 레이어는 여러 접근 모드를 가진 하나의 논리적 데이터 레이어(Iceberg/Hudi/Delta)를 사용합니다: SQL 분석, 준실시간 읽기, ML, 심지어 그래프/검색 워크로드까지.</p>
+
+<p><strong>하나의 데이터셋. 다양한 엔진. 재작성 없음.</strong></p>
+
+<p><strong>이것이 대체하는 것:</strong> ETL 확산(웨어하우스 → 레이크 → 피처 스토어), 시스템 간 데이터 드리프트, SQL·Spark·앱에서 동일한 로직을 다시 구현하는 것</p>
+
+<pre>-- Iceberg: 통합 테이블
+CREATE TABLE user_events (
+    user_id BIGINT,
+    event_type STRING,
+    event_ts TIMESTAMP,
+    attributes MAP&lt;STRING, STRING&gt;
+) USING ICEBERG PARTITIONED BY (days(event_ts));
+
+-- OLAP 쿼리 (Trino / Spark SQL)
+SELECT event_type, COUNT(*) AS cnt
+FROM user_events
+WHERE event_ts >= current_date - INTERVAL '7' DAY
+GROUP BY event_type;
+
+-- 증분 / 준실시간 읽기
+SELECT * FROM user_events
+FOR SYSTEM_TIME AS OF TIMESTAMP '2025-12-26 10:00:00';
+
+-- 동일한 테이블에서 스트리밍 + 배치
+-- Kafka/Flink → Iceberg에 쓰기
+-- Trino/Spark → 즉시 읽기
+-- ML → 동일한 스냅샷에서 훈련</pre>
+
+<p><strong>장점:</strong></p>
+<ul>
+  <li>단일 진실의 원천</li>
+  <li>멀티 엔진 접근 (SQL, ML, 스트리밍)</li>
+  <li>ACID, 타임 트래블, 스키마 진화</li>
+  <li>벤더 종속 없음</li>
+</ul>
+
+<p><strong>단점:</strong></p>
+<ul>
+  <li>더 높은 플랫폼 복잡성</li>
+  <li>강력한 거버넌스 및 메타데이터 관리 필요</li>
+  <li>OLTP 대체품이 아님</li>
+</ul>
+
+<blockquote>빅테크 증명: LinkedIn Data Hub, Uber Marmaray, Netflix Iceberg가 페타바이트 규모 추천을 구동하고 있습니다.</blockquote>
+
+<p><strong>결론:</strong> 통합 서빙 레이어는 최종 목표 아키텍처입니다. 하나의 데이터셋, 다양한 워크로드, 사일로 없음. 다음 10년을 위해 설계한다면 오픈 테이블 포맷은 선택이 아닙니다.</p>
+</body>
+</html>

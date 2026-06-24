@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>I Didn't Expect Python 3.15 to Change This Much</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+
+</head><body>
+<a href='/2026-06-14/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>&#8592; 목록으로</a>
+<h1>I Didn't Expect Python 3.15 to Change This Much</h1>
+<div class="meta">Aysha R &middot; Pythonic AF &middot; 7 min read &middot; <a href="https://medium.com/pythonic-af/i-didnt-expect-python-3-15-to-change-this-much-bd4909d15e88">원문</a> &middot; <a href="https://freedium-mirror.cfd/https://medium.com/pythonic-af/i-didnt-expect-python-3-15-to-change-this-much-bd4909d15e88">freedium</a></div>
+<div class="summary"><p class="oneline">Python 3.15는 지연 임포트, 내장 압축 함수, 개선된 오류 메시지 등 실제 개발 작업에 즉시 영향을 미치는 실용적 변경들이 동시에 이루어진 릴리스로, 최근 몇 년 중 가장 주목할 만한 업그레이드다.</p><h3>요약</h3><p>Python 3.15는 단 하나의 킬러 기능이 아니라 여러 실용적 개선이 동시에 이루어진 릴리스다. 지연 임포트(lazy imports)로 대형 애플리케이션의 시작 시간을 크게 줄일 수 있고, 내장 compress/decompress 함수로 zlib 임포트 없이 압축을 처리할 수 있다. AttributeError 등의 오류 메시지가 더 친절해졌고, locals() 동작이 명세로 확정됐다. 또한 Python 3.14에서 도입했다 메모리 불만으로 제거된 증분 GC 롤백과, 컨테이너 환경에서 실제 할당 CPU를 반환하는 os.process_cpu_count()가 추가됐다. 언어 마니아가 아닌 일반 개발자의 일상 코드에 영향을 미치는 변경들이라는 점이 이번 릴리스가 특별한 이유다.</p></div>
+<h2>Python 3.15가 다르게 느껴지는 이유</h2>
+<p>모든 Python 릴리스는 "더 빠르고, 더 깔끔하고, 더 스마트하다"고 주장한다. 대부분의 경우 변경 사항은 매우 특수한 용도에만 해당하거나, 기술적으로 인상적이지만 실제 코드 작성과는 무관하다.</p>
+<p>Python 3.15는 다르다.</p>
+<blockquote>모든 기능이 혁명적이기 때문이 아니다. 일부는 솔직히 이미 오래전에 나왔어야 했다. 일부는 이전 실험의 정리 작업처럼 느껴지고, 일부는 언어 마니아들만을 위한 것이다. 하지만 이번 릴리스는 여러 변경 사항이 동시에 일반 개발 작업에 직접 영향을 미친다는 점에서 특별하다.</blockquote>
+<p>게다가 Python 3.15에는 Python 3.14의 가장 큰 변경 사항 중 하나를 <em>되돌리는</em> 기능도 포함되어 있다. 증분 가비지 컬렉터를 3.14에서 도입했지만 메모리 사용량에 대한 불만이 쏟아져 다시 제거했다. Python 개발 문화가 어떻게 작동하는지를 잘 보여준다.</p>
+
+<h2>핵심 변경 1: 지연 임포트 (Lazy Imports)</h2>
+<p>Python 3.15의 가장 영향력 있는 변경은 <strong>지연 임포트(lazy imports)</strong>다. 대형 Python 애플리케이션의 시작 시간을 획기적으로 줄일 수 있다.</p>
+<p>기존에는 <code>import tensorflow</code>를 파일 상단에 쓰면 해당 모듈 전체가 즉시 로드됐다. Django 프로젝트처럼 수십 개의 무거운 모듈을 임포트하는 앱은 시작하는 데만 수 초가 걸렸다.</p>
+<pre><code># Python 3.15: __future__ 없이 지연 임포트 활성화
+import sys
+sys.flags  # lazy_imports 플래그
+
+# 또는 인터프리터 플래그로 실행
+# python -X lazy_imports app.py
+
+import numpy as np      # 실제 사용 시점까지 로드 안 됨
+import tensorflow as tf  # 동일
+
+def train_model():
+    # 이 함수가 호출될 때 비로소 tensorflow가 로드됨
+    model = tf.keras.Sequential([...])</code></pre>
+<p>이 기능은 CLI 도구, 서버리스 함수, 마이크로서비스처럼 빠른 시작이 중요한 환경에서 특히 유용하다.</p>
+
+<h2>핵심 변경 2: 내장 <code>compress()</code> / <code>decompress()</code></h2>
+<p>Python 3.15는 <code>zlib</code>, <code>gzip</code> 등을 직접 임포트하지 않고도 압축을 처리할 수 있는 내장 함수를 추가했다.</p>
+<pre><code># 이전 방식
+import zlib
+compressed = zlib.compress(data)
+original = zlib.decompress(compressed)
+
+# Python 3.15: 내장 함수
+compressed = compress(data)           # 기본: zlib
+compressed_gz = compress(data, format="gzip")
+original = decompress(compressed)</code></pre>
+
+<h2>핵심 변경 3: 개선된 오류 메시지</h2>
+<p>Python 3.10부터 오류 메시지가 꾸준히 개선됐다. 3.15에서는 특히 타입 힌트 관련 오류와 딕셔너리 키 오류 메시지가 더 명확해졌다.</p>
+<pre><code># Python 3.15의 개선된 AttributeError
+class Config:
+    debug = True
+    verbose = False
+
+cfg = Config()
+print(cfg.debg)  # 오타
+
+# 이전: AttributeError: 'Config' object has no attribute 'debg'
+# 3.15: AttributeError: 'Config' object has no attribute 'debg'.
+#        Did you mean 'debug'?</code></pre>
+
+<h2>핵심 변경 4: <code>locals()</code> 동작 명확화</h2>
+<p>오랫동안 <code>locals()</code>의 동작이 구현에 따라 달랐다. Python 3.15에서는 <code>locals()</code>가 항상 현재 시점의 스냅샷을 반환하도록 명세가 확정됐다. 이전에는 <code>locals()</code>를 통해 지역 변수를 수정하는 코드가 일부 환경에서만 동작했다.</p>
+<pre><code>def example():
+    x = 1
+    snapshot = locals()  # {'x': 1}
+    x = 2
+    # Python 3.15: snapshot은 여전히 {'x': 1} (명세 보장)
+    # 이전: 구현에 따라 달랐음
+    return snapshot</code></pre>
+
+<h2>핵심 변경 5: 증분 GC 제거 (3.14 롤백)</h2>
+<p>Python 3.14에서 도입된 증분 가비지 컬렉터가 3.15에서 제거됐다. 증분 GC는 GC 일시 정지 시간을 줄이는 것이 목적이었지만, 실제로는 전반적인 메모리 사용량이 늘어났다는 불만이 커뮤니티에서 터져 나왔다.</p>
+<pre><code">import gc
+
+# Python 3.15: 기존 3-세대 GC로 복귀
+print(gc.get_threshold())  # (700, 10, 10) - 전통적인 설정
+# 증분 GC 관련 옵션들은 no-op 또는 제거됨</code></pre>
+<p>커뮤니티 피드백을 반영해 빠르게 롤백한 것은 Python 개발 프로세스의 건전함을 보여준다.</p>
+
+<h2>핵심 변경 6: <code>os.process_cpu_count()</code></h2>
+<p>CPU 코어 수를 얻는 방법이 기존에는 <code>os.cpu_count()</code>였는데, 이는 컨테이너 환경에서 호스트의 전체 CPU를 반환해 문제가 됐다. <code>os.process_cpu_count()</code>는 현재 프로세스에 실제로 할당된 CPU 수를 반환한다.</p>
+<pre><code">import os
+
+total_cpus = os.cpu_count()           # 호스트 전체 CPU (예: 64)
+usable_cpus = os.process_cpu_count() # 프로세스에 할당된 CPU (예: 4)
+
+# 컨테이너/스레드풀 크기 설정에 usable_cpus 사용
+from concurrent.futures import ThreadPoolExecutor
+with ThreadPoolExecutor(max_workers=usable_cpus) as executor:
+    results = list(executor.map(process, data))</code></pre>
+
+<h2>마무리: 왜 이번 릴리스가 주목받는가</h2>
+<p>Python 3.15는 하나의 킬러 기능이 아니라 <em>여러 실용적 개선이 동시에</em> 이루어진 릴리스다. 지연 임포트는 시작 성능을, 내장 압축 함수는 편의성을, 개선된 오류 메시지는 개발 경험을 높인다. 그리고 3.14에서 잘못됐던 것을 솔직하게 되돌렸다.</p>
+<p>언어 마니아가 아닌 일반 Python 개발자가 매일 쓰는 코드에 영향을 미치는 변경들이다. 그것이 이 릴리스가 실제로 중요한 이유다.</p>
+
+</body></html>

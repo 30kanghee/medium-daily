@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stop Memorizing Design Patterns: Use This Decision Tree Instead</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-16/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Stop Memorizing Design Patterns: Use This Decision Tree Instead</h1>
+<div class="meta">Alina Kovtun · Women in Technology · 10분 · <a href="https://medium.com/womenintechnology/stop-memorizing-design-patterns-use-this-decision-tree-instead-e84f22fca9fa">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/womenintechnology/stop-memorizing-design-patterns-use-this-decision-tree-instead-e84f22fca9fa">freedium</a></div>
+<div class="summary">
+  <div class="oneline">디자인 패턴 외우기 그만, 지금 겪는 고통이 무엇인지 물어보면 어떤 패턴을 써야 할지 결정 트리가 답을 알려준다.</div>
+  <p>디자인 패턴은 '틀려서' 실패하는 게 아니라 잘못된 순간에, 잘못된 이유로 꺼내기 때문에 실패한다. 이 글은 세 가지 핵심 질문(객체 생성이 문제인가 / 객체 조합 구조가 문제인가 / 행동·변화가 문제인가)으로 이루어진 결정 트리를 제시하며, 각 답에 맞는 GoF 패턴을 짧게 안내한다. 생성 패턴(Singleton·Builder·Factory·Prototype), 구조 패턴(Adapter·Facade·Decorator·Proxy·Composite·Flyweight·Bridge), 행동 패턴(Chain·Command·Strategy·State·Observer·Memento·Mediator·Visitor)이 실제 상황 예시와 함께 설명된다. 패턴을 암기하는 대신 '지금 어떤 마찰을 줄이려 하는가'를 먼저 물어보라는 것이 핵심 메시지다.</p>
+</div>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*xfboC-sVIT2hzWkgQZT_7w.png"><figcaption>결정 트리 개요</figcaption></figure>
+
+<p>디자인 패턴은 '틀려서' 실패하는 게 아닙니다. 잘못된 순간에, 잘못된 이유로, 혹은 진짜 문제를 이름 붙이는 대신 패턴을 끌어다 쓰기 때문에 실패합니다. 대개 어려운 부분은 Strategy가 존재한다는 것을 기억하는 게 아니라, 지금 코드에 Strategy가 필요한지, 아니면 더 단순한 접근이 더 효과적인지를 판단하는 일입니다.</p>
+
+<blockquote><p>Medium 비회원이신가요? <a href="https://medium.com/womenintechnology/stop-memorizing-design-patterns-use-this-decision-tree-instead-e84f22fca9fa?sk=d8ce25c71ba530c026c9b90e9c8d38f0">여기서 무료로 전문을 읽을 수 있습니다.</a></p></blockquote>
+
+<p>그래서 결정 트리가 도움이 됩니다. 패턴을 고르기 전에 딱 한 단계의 규율을 강제하기 때문입니다: <strong><em>제거하려는 마찰이 무엇인지 먼저 설명하세요.</em></strong></p>
+
+<p>객체 생성이 점점 복잡해져서 문제입니까? 컴포넌트 사이의 경계나 외부 의존성이 말썽입니까? 아니면 동작이 계속 바뀌어서 코드에 조건문이 쌓이고 있습니까?</p>
+
+<p>이 글의 목표는 여러분의 상황에 맞는 패턴 후보를 좁혀주는 짧은 질문 목록을 드리는 것입니다. 판단력은 여전히 필요하지만, 추측에 시간을 낭비하지 않고 결정에 집중할 수 있습니다.</p>
+
+<h2>디자인 패턴은 왜 유용한가?</h2>
+
+<p>패턴은 반복되는 비용을 줄일 때 자리를 차지합니다. 실제로 그 비용은 보통 다음 중 하나처럼 보입니다:</p>
+<ul>
+<li>변경할 때마다 너무 많은 파일을 건드려야 한다</li>
+<li>코드에 깔끔한 이음매가 없어서 테스트가 느리거나 불안정하다</li>
+<li>외부 API가 도메인 로직에 스며들어 '번역' 코드가 사방에 퍼진다</li>
+<li>생성자와 초기화 코드가 점점 커지고 유효한 조합이 불분명해진다</li>
+<li>안정적인 자리가 없어 동일한 로직이 중복된다</li>
+</ul>
+<p>실수는 패턴을 그 자체로 '업그레이드'처럼 대하는 것입니다. 그렇지 않습니다. 패턴은 유연성을 한 곳에서 통제된 방식으로 지불하는 방법이지, 모든 곳에서 반복적으로 지불하는 방법이 아닙니다.</p>
+
+<h2>세 가지 질문으로 이루어진 결정 트리</h2>
+
+<p>먼저 하나의 질문으로 시작하세요: <strong><em>고통이 어디서 오는가?</em></strong></p>
+<p>그런 다음 좁혀갑니다:</p>
+<ol>
+<li><strong><em>객체 생성과 관련된 고통인가?</em></strong></li>
+<li><strong><em>객체들이 어떻게 맞물리는지와 관련된 고통인가?</em></strong></li>
+<li><strong><em>케이스별 혹은 시간에 따라 변하는 동작과 관련된 고통인가?</em></strong></li>
+</ol>
+<p>이것은 각각 생성(Creational), 구조(Structural), 행동(Behavioural) 패턴에 대응됩니다. 카테고리는 무시해도 됩니다. 중요한 건 질문입니다.</p>
+
+<h2>브랜치 1: 객체 생성 (생성 패턴)</h2>
+
+<p>생성 로직 자체가 문제가 될 때 이 브랜치를 사용하세요: 매개변수가 너무 많거나, 반복적인 설정, 불명확한 기본값, 또는 "여기서 어떤 구현체를 만들어야 하지?"라는 로직이 코드베이스 전반에 퍼져 있을 때입니다.</p>
+
+<h3>스텝 1: 정말로 인스턴스가 딱 하나만 필요한가?</h3>
+<p>Singleton을 쓰려 한다면, 이유를 구체적으로 말해보세요. "접근하기 쉬워서"는 충분한 이유가 아닙니다. 의존성을 숨기고 테스트를 어렵게 만드는 경우가 많습니다.</p>
+<p>Singleton이 합리적인 경우는 객체가 <strong>사실상 무상태</strong>이거나 <strong>공유해도 안전</strong>할 때입니다(예: 읽기 전용 설정 스냅샷, 프로세스 전체 로거 래퍼). 가변 상태, 요청 컨텍스트, 테스트 사이에 초기화해야 하는 것을 저장한다면 위험해집니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*dz2hoUfgipHtrx3LU9rqig.png"><figcaption>Singleton 예시</figcaption></figure>
+
+<p>원하는 것이 제어된 생성과 명시적 연결이라면, 전역 인스턴스보다 의존성 주입이나 작은 애플리케이션 컨테이너가 더 오래갑니다.</p>
+
+<h3>스텝 2: 생성이 복잡하거나 잘못 사용하기 쉬운가?</h3>
+<p>생성자에 선택적 인수가 쌓이고 설정 조합이 중요해지면, <strong>Builder</strong>가 대개 가장 깔끔한 해결책입니다. 핵심은 체이닝의 미학이 아니라 객체 생성을 명시적으로 만들고 일찍 검증하는 것입니다.</p>
+
+<pre><code># Builder 없이: 읽기 어렵고 잘못 쓰기 쉬움
+request = Request.new(url, method, headers, body, timeout, retry_count, cache, auth)
+
+# Builder 사용: 의도가 명확, 검증이 쉬움
+request = RequestBuilder.new
+  .url("https://api.example.com")
+  .method(:post)
+  .headers(auth_headers)
+  .timeout(2)
+  .build</code></pre>
+
+<p>Builder는 긴 인수 목록 없이 "잘 알려진 기본 프리셋"(예: 기본 재시도 전략)을 노출하기도 쉽게 해줍니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*BopWLtH9gXcehcI2M2-gxA.png"><figcaption>Builder 예시</figcaption></figure>
+
+<h3>스텝 3: 컨텍스트에 따라 구현체를 선택하고 있는가?</h3>
+<p>설정, 파일 타입, 프로바이더, 피처 플래그, 환경에 따라 어떤 구체 클래스를 인스턴스화할지 반복적으로 결정해야 한다면, 그 결정을 중앙화해야 합니다.</p>
+<ul>
+<li><strong>Factory Method</strong>: 기반 클래스가 계약을 정의하고 서브클래스가 구체 타입을 결정할 때 적합합니다.</li>
+</ul>
+<figure><img src="https://freedium-mirror.cfd/img/700/1*qHiBtz4z2K77TCdp1fVm0A.png"><figcaption>Factory 예시</figcaption></figure>
+<ul>
+<li><strong>Abstract Factory</strong>: 서로 맞아야 하는 관련 객체 <em>패밀리</em>가 필요할 때(예: 프로바이더별 클라이언트 + 매퍼 + 밸리데이터) 적합합니다.</li>
+</ul>
+<figure><img src="https://freedium-mirror.cfd/img/700/1*T8IHVbBpdJXsRriwEdQMdw.png"><figcaption>Abstract Factory 예시</figcaption></figure>
+<ul>
+<li><strong>Prototype</strong>: 이미 설정된 객체를 복제하는 것이 다시 만드는 것보다 저렴하거나 안전할 때, 특히 초기화가 비쌀 때 유용합니다.</li>
+</ul>
+<figure><img src="https://freedium-mirror.cfd/img/700/1*ZplR7ddFb_c1i53EG5h_-Q.png"><figcaption>Prototype 예시</figcaption></figure>
+
+<h2>브랜치 2: 객체 구조화 (구조 패턴)</h2>
+
+<p>코드는 올바르지만 경계가 불명확해서 어색할 때 이 브랜치를 사용하세요: 외부 인터페이스가 애플리케이션 로직에 스며들거나, 서브시스템을 안전하게 사용하려면 너무 많은 단계가 필요하거나, 컴포지션이 관리하기 어려울 때입니다.</p>
+
+<h3>스텝 1: 호환되지 않는 인터페이스를 연결하고 있는가?</h3>
+<p>내부 코드가 기대하는 인터페이스와 외부 의존성이 제공하는 인터페이스가 다르다면, <strong>Adapter</strong>가 직관적인 해결책입니다. 벤더별 모양과 네이밍으로부터 도메인을 보호합니다.</p>
+
+<pre><code># 앱이 기대하는 것:
+payment_processor.process(amount, card)
+
+# 프로바이더가 제공하는 것:
+provider.execute_payment(card_info, transaction_amount)
+
+class ProviderAdapter
+  def initialize(provider)
+    @provider = provider
+  end
+
+  def process(amount, card)
+    @provider.execute_payment(card.to_provider_format, amount)
+  end
+end</code></pre>
+
+<p><strong><em>유용한 규칙</em></strong>: 어댑터는 번역에만 집중하세요. 어댑터에 비즈니스 규칙이 들어오기 시작하면, 경계를 깔끔하게 유지하기 위해 별도 컴포넌트로 분리하세요.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*BhChpsHZjENWlV-zy88Fvg.png"><figcaption>Adapter 예시</figcaption></figure>
+
+<h3>스텝 2: 서브시스템이 올바르게 사용하기 너무 복잡한가?</h3>
+<p>라이브러리나 내부 서브시스템에서 올바른 순서로 호출해야 하는 여러 단계가 있다면, <strong>Facade</strong>를 도입하세요. 좋은 파사드는 안전한 경로를 쉽게 만들고 엔지니어가 저수준 부분을 잘못 호출할 가능성을 줄입니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*Iibb2SD4JD7N2ZZElH4g-w.png"><figcaption>Facade 예시</figcaption></figure>
+
+<p>예: "비디오 변환" 워크플로우는 프로빙, 트랜스코딩, 메타데이터 추출, 스토리지 업로드, 정리 과정을 포함할 수 있습니다. 파사드는 단일 진입점을 노출하면서 내부 오케스트레이션이 자유롭게 발전할 수 있게 합니다.</p>
+
+<h3>스텝 3: 서브클래스 폭발 없이 선택적 기능이 필요한가?</h3>
+<p>로깅 + 암호화 + 압축 + 캐싱 같은 조합이 필요할 때, 서브클래싱은 조합 폭발 문제를 일으킵니다. <strong>Decorator</strong>는 지역적이고 명시적인 컴포지션을 제공합니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*LDNoVBdKCU-Z0O1zJL54zw.png"><figcaption>Decorator 예시</figcaption></figure>
+
+<p>Decorator는 각 래퍼가 작고 예측 가능할 때 가장 잘 동작합니다. 래퍼들이 서로 의존하기 시작하면 호출 순서와 사이드 이펙트를 파악하기 어려워집니다.</p>
+
+<h3>스텝 4: 대리 객체가 필요한가?</h3>
+<p>지연 로딩, 캐싱, 접근 제어, 계측, 또는 로컬처럼 보이는 인터페이스 뒤의 원격 호출이 필요할 때 <strong>Proxy</strong>를 사용하세요.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*8d5vX6tDv5pInAqA2GReSw.png"><figcaption>Proxy 예시</figcaption></figure>
+
+<h3>스텝 5: 트리 구조가 있고 균일하게 처리하고 싶은가?</h3>
+<p>도메인이 자연스럽게 계층을 이루고 리프 노드와 컨테이너를 같은 방식으로 처리하고 싶을 때 <strong>Composite</strong>를 사용하세요(파일 시스템이 고전적인 예시; UI 컴포넌트와 중첩된 콘텐츠 구조도 흔합니다).</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*8p9JZ2mmjWS-wMhwFz8BJA.png"><figcaption>Composite 예시</figcaption></figure>
+
+<h3>스텝 6: 반복 공유 상태로 메모리 비용을 지불하고 있는가?</h3>
+<p><strong>Flyweight</strong>는 많은 객체가 동일한 데이터를 공유하고 복제가 비쌀 때 중요합니다. 일반적인 웹 앱 코드에서는 덜 흔하지만, 에디터, 렌더러, 또는 대형 인메모리 모델에서는 기억해 둘 가치가 있습니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*ktmB2Ldl9Jl3ogueHtQLdg.png"><figcaption>Flyweight 예시</figcaption></figure>
+
+<h3>스텝 7: 추상화와 구현을 독립적으로 변경하고 싶은가?</h3>
+<p>두 가지 변화 차원이 있고 서브클래스 매트릭스를 피하고 싶을 때 <strong>Bridge</strong>를 사용하세요(예: "내보내기 형식" vs "내보내기 대상", 또는 "장치 유형" vs "컨트롤 유형").</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*T0Nw--oKaZZg6DDPi_VfvQ.png"><figcaption>Bridge 예시</figcaption></figure>
+
+<h2>브랜치 3: 행동 처리 (행동 패턴)</h2>
+
+<p>변화하는 규칙과 워크플로우 로직이 주요 문제일 때 이 브랜치를 사용하세요: 메서드에 <code>if</code> 브랜치가 쌓이거나, 알고리즘이 고객이나 플랜에 따라 달라지거나, 확장하기 어려운 파이프라인이 있을 때입니다.</p>
+
+<h3>스텝 1: 요청이 독립적인 단계들의 순서를 거치는가?</h3>
+<p><strong>Chain of Responsibility</strong>는 각 단계가 처리를 중단하거나 요청을 다음으로 넘길 수 있는 미들웨어 스타일 파이프라인에 적합합니다.</p>
+
+<pre><code>class Handler
+  def initialize(next_handler = nil)
+    @next = next_handler
+  end
+
+  def call(request)
+    return unless handle?(request)
+    @next&.call(request)
+  end
+end</code></pre>
+
+<p>각 핸들러가 단일 책임을 갖고 "중단 vs 계속" 계약이 명확할 때 패턴이 건강하게 유지됩니다. 핸들러들이 공유 상태를 예측 불가능하게 변경하거나 서로의 내부 동작에 의존하면 무너집니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*n_LsAfpIFk5NO9Hs-pweUA.png"><figcaption>Chain of Responsibility 예시</figcaption></figure>
+
+<h3>스텝 2: 액션을 큐에 넣거나 로깅, 재시도, 실행 취소가 필요한가?</h3>
+<p>액션을 객체로 표현하면 운영적 이점이 생길 때 <strong>Command</strong>를 사용하세요: 작업 큐, 재시도, 감사 로그, "나중에 실행" 워크플로우, 실행 취소 스택.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*jWvxrcGkhBAzOkZ9vZLjzQ.png"><figcaption>Command 예시</figcaption></figure>
+
+<h3>스텝 3: 호출자를 변경하지 않고 알고리즘을 교체해야 하는가?</h3>
+<p><strong>Strategy</strong>는 같은 동작의 여러 구현체가 있고 호출자는 안정적으로 유지하고 싶을 때 ROI가 높은 답입니다. 결제 프로바이더, 라우팅 결정, 추천 정책, 속도 제한 알고리즘, 포맷팅 로직에서 흔합니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*dfOMeMnKFJWqOvfUsu3VEg.png"><figcaption>Strategy 예시</figcaption></figure>
+
+<p>실용적인 신호는 반복되는 분기입니다: "플랜이 X면 이렇게, Y면 저렇게" + 브랜치마다 설정이 중복되는 테스트.</p>
+
+<h3>스텝 4: 상태에 의해 동작이 결정되고 조건문이 계속 늘어나는가?</h3>
+<p>잘 정의된 모드와 전환이 있을 때(연결, 승인 워크플로우, 세션 수명주기) <strong>State</strong>를 사용하세요. State는 상태별로 동작을 명시적으로 만들어 복잡한 분기를 줄입니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*_REhKlH45RCrkBOnGUsLUw.png"><figcaption>State 예시</figcaption></figure>
+
+<h3>스텝 5: 일 대 다 알림이 필요한가?</h3>
+<p>구독 스타일 업데이트에 <strong>Observer</strong>를 사용하세요. 도메인 이벤트와 함께 특히 깔끔할 수 있지만, 제어 흐름을 숨길 수도 있습니다. 옵저버를 눈에 띄게 유지하고 예상치 못한 사이드 이펙트를 피하세요.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*T8H5S4nzDzFcA3pTEG6Y4A.png"><figcaption>Observer 예시</figcaption></figure>
+
+<h3>스텝 6: 스냅샷과 복원이 필요한가?</h3>
+<p><strong>Memento</strong>는 내부 표현을 노출하지 않고 실행 취소, 롤백, 이전 버전 복원 기능에 적합합니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*aAaOj5A3fe-gczYV_hU6EA.png"><figcaption>Memento 예시</figcaption></figure>
+
+<h3>스텝 7: 객체들이 서로 직접 의존하지 않도록 조정자가 필요한가?</h3>
+<p><strong>Mediator</strong>는 복잡한 조정 시나리오, 특히 UI 로직이나 워크플로우 오케스트레이션에서 결합도를 줄일 수 있습니다. 위험은 한 곳에 너무 많은 로직을 집중시키는 것입니다. 미디에이터의 책임이 좁고 잘 정의되어 있을 때 관리 가능합니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*ZYTLMMCaMGrUx8OkE-sepg.png"><figcaption>Mediator 예시</figcaption></figure>
+
+<h3>스텝 8: 안정적인 객체 구조에 새 연산을 추가해야 하는가?</h3>
+<p><strong>Visitor</strong>는 구조가 안정적이고(AST 같은) 구조를 변경하지 않고 새 연산을 추가해야 할 때 가장 유용합니다. 애플리케이션 코드에서 Strategy나 Chain보다 덜 흔하지만 적합한 도메인에서는 여전히 가치 있습니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*8w6mZaQFB7QtBR0Qxr3ACg.png"><figcaption>Visitor 예시</figcaption></figure>
+
+<h2>완성된 결정 트리</h2>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*zVERJDiM3j1sMbLwdeCfqw.png"><figcaption>전체 결정 트리</figcaption></figure>
+
+<h2>일반적인 상황에 트리 적용하기</h2>
+
+<h3>1) 알림 전송 (이메일, SMS, 푸시)</h3>
+<p>전송 규칙이 늘고 채널이 확장될 때, 분기가 기본 구현 전략이 됩니다. Strategy가 더 적합합니다. 호출자를 재작성하지 않고 새 채널을 추가할 수 있기 때문입니다.</p>
+<p>실용적인 구현은 <code>NotificationChannel#send(user, message)</code> 같은 인터페이스에 채널별 구체 구현을 두고, 설정이나 피처 플래그에 따라 전략을 선택하는 셀렉터를 두는 것입니다.</p>
+
+<h3>2) API 요청 처리 (속도 제한 → 인증 → 핸들러)</h3>
+<p>요청이 정해진 순서로 여러 검사를 거쳐야 할 때, Chain of Responsibility는 각 단계를 작고 테스트 가능하게 유지합니다. 계약이 명시적이어서 단계를 재정렬하거나 삽입하는 것도 더 안전합니다.</p>
+
+<h3>3) 리포트 생성 (많은 옵션, 여러 형식)</h3>
+<p>리포트 설정에 매개변수가 많고 유효한 조합이 중요할 때 Builder가 도움이 됩니다. PDF/CSV/XLSX 생성을 조건문 안에 포매팅 로직을 파묻지 않고 선택하고 싶을 때 Strategy가 도움이 됩니다.</p>
+
+<p><em>장기적으로 더 강한 엔지니어가 되고 싶다면, 소프트웨어 설계 기초와 아키텍처에 관해서도 글을 씁니다.</em></p>
+
+</body>
+</html>

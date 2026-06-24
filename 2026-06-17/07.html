@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palantir&#x27;s Real Secret Sauce - Ontologies</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head><body>
+<a href='/2026-06-17/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Palantir&#x27;s Real Secret Sauce - Ontologies</h1>
+<div class="meta">balaji bal · 4 min read<br><a href="https://medium.com/@balajibal/palantirs-real-secret-sauce-ontologies-15419c03ec3b" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@balajibal/palantirs-real-secret-sauce-ontologies-15419c03ec3b" target="_blank">freedium</a></div>
+<div class="summary">
+<h3>요약</h3>
+<p class="oneline">팔란티어의 진짜 경쟁 우위는 데이터를 구조가 아닌 의미로 모델링하는 &#x27;온톨로지&#x27; 개념에 있으며, 이는 에이전틱 AI 시대에 더욱 핵심적인 기반이 된다.</p>
+<p>팔란티어는 빅데이터 업계가 데이터 품질과 거버넌스에 집착하던 시절부터, 데이터가 실제로 &#x27;무엇을 의미하는지&#x27;를 시스템이 이해해야 한다는 온톨로지 철학을 고집했다. 온톨로지는 단순한 스키마를 넘어 현실 세계의 엔티티, 관계, 제약 조건, 상태 전이를 정의하는 운영 모델이다. 과거 배치 처리와 인간 판단에 의존하던 시스템에서는 이것이 선택 사항이었지만, AI 에이전트가 직접 행동을 취하는 에이전틱 시대에는 온톨로지 없는 시스템은 환각과 안전 실패로 귀결된다. 팔란티어의 온톨로지는 여러 에이전트와 서비스가 공유하는 조율 레이어로서, 조직과 시간에 걸쳐 확장되는 안정적인 기반을 제공한다. 결국 팔란티어의 진짜 비밀은 &#x27;의미가 지능에 앞선다&#x27;는 단순하지만 급진적인 신념이었다.</p>
+</div>
+<hr>
+<figure><img src="https://freedium-mirror.cfd/img/700/1*MjQ58uKsgCrjrw9HiFgY8Q.png"><figcaption>팔란티어는 현실 세계의 엔티티와 관계를 모델링하는 온톨로지를 구축함으로써 차별화를 이뤘다.</figcaption></figure>
+
+<p>지난 10여 년간 빅데이터 업계는 동일한 문제들에 집착해 왔다: 데이터 품질, 데이터 거버넌스, 리니지, 카탈로그, 소유권. <em>이 데이터는 누가 소유하는가?</em>, <em>어디서 왔는가?</em>, <em>신뢰할 수 있는가?</em> 같은 질문에 답하기 위해 수많은 제품 카테고리와 컨설팅 제국이 세워졌다.</p>
+
+<p>이 질문들은 중요하다. 하지만 그것이 전부는 아니다.</p>
+
+<p>업계가 최근까지 대부분 간과했던 것은, 아무리 깨끗하고 잘 관리된 데이터라도 시스템이 <strong>그 데이터가 실제로 무엇을 나타내는지</strong>를 이해하지 못하면 죽은 데이터에 불과하다는 점이다. 단순한 구조적 이해가 아니라 <em>의미론적</em> 이해, 즉 행과 열이 아니라 <em>세상에 존재하는 사물</em>, 그것들의 관계, 그리고 그것들에 무슨 일이 일어날 수 있는지에 대한 이해가 필요하다.</p>
+
+<p>바로 여기서 온톨로지가 등장한다. 그리고 이것이 바로 팔란티어가, 종종 오해받고 때로는 무시당하면서도, 지난 20년간 소프트웨어 업계에서 가장 중요한 해자(moat) 중 하나를 조용히 구축할 수 있었던 이유다.</p>
+
+<h3>팔란티어의 비주류적인 도박</h3>
+
+<p>"팔란티어 이해하기: 전방 배치 엔지니어와 특이한 플랫폼 기업의 탄생"이라는 글을 읽어보면 한 가지가 분명해진다: 팔란티어는 대시보드 회사도, 데이터 레이크 회사도, 심지어 애널리틱스 회사도 아니었다. 처음부터 팔란티어는 <strong>세계 모델링 회사</strong>였다.</p>
+
+<p>나머지 빅데이터 생태계가 더 많은 데이터를 더 빠르게 수집하는 경쟁을 벌이는 동안, 팔란티어는 다른 질문에 유달리 많은 시간을 쏟았다:</p>
+
+<blockquote>
+<p><em>이 도메인의 실제 엔티티는 무엇이며, 그것들은 어떻게 관계 맺는가?</em></p>
+</blockquote>
+
+<p>그들의 답이 바로 온톨로지였다.</p>
+
+<p>이는 비주류적인 도박이었다. Hadoop 클러스터와 스키마-온-리드(schema‑on‑read)가 속도와 유연성을 약속하던 시대에, 온톨로지는 학문적이고 느리며 비용이 많이 드는 것처럼 들렸다. 대부분의 벤더는 의미를 분석가나 다운스트림 애플리케이션이 "나중에 파악할" 것으로 취급했다.</p>
+
+<blockquote>
+<p><em>팔란티어는 정반대로 했다. 그들은 의미를 <em>사전에</em>, 명시적으로, 시스템 전체에 걸쳐 공유된 방식으로 인코딩해야 한다고 주장했다.</em></p>
+</blockquote>
+
+<p>그 결정이 이후 모든 것을 결정지었다.</p>
+
+<h3>팔란티어가 말하는 "온톨로지"의 의미 (그리고 아닌 것)</h3>
+
+<p>팔란티어의 세계에서 온톨로지는 철학적 분류 체계나 메타데이터 용어집이 아니다. 그것은 <strong>현실의 운영 모델</strong>이다.</p>
+
+<p>구체적으로 온톨로지는 다음을 정의한다:</p>
+<ul>
+<li><strong>엔티티</strong> (사람, 계좌, 차량, 시설, 거래)</li>
+<li><strong>관계</strong> (소유권, 이동, 의존성, 권한 부여)</li>
+<li><strong>제약 조건</strong> (허용되는 것, 금지된 것)</li>
+<li><strong>상태 전이</strong> (사물이 시간에 따라 어떻게 변하는가)</li>
+</ul>
+
+<p>이것이 업계가 대부분 놓친 핵심적인 구별이다:</p>
+
+<blockquote>
+<p><em><strong>스키마는 데이터를 설명한다. 온톨로지는 현실을 설명한다.</strong></em></p>
+</blockquote>
+
+<p>스키마는 테이블에 <code>status</code> 컬럼이 있다고 말해 준다.<br>
+온톨로지는 <em>어떤 상태들이 가능한지</em>, 그 사이를 어떻게 이동하는지, 그리고 그 상태들이 어떤 행동을 가능하게 하거나 금지하는지를 알려준다.</p>
+
+<p>이것을 이해하면 팔란티어의 아키텍처가 이해된다. 온톨로지는 시스템 위에 얹힌 레이어가 아니다 — 그것이 <em>곧</em> 시스템이다.</p>
+
+<h3>과거에 빅데이터가 온톨로지 없이도 작동했던 이유</h3>
+
+<p>과거에 대해 공정하게 평가하는 것이 중요하다.</p>
+
+<p>초기 빅데이터 시스템들은 온톨로지 없이도 — 적어도 충분히 — <em>작동했다</em>. Hadoop, Spark, 데이터 레이크는 특정 컴퓨팅 방식에 최적화되었기 때문에 성공했다:</p>
+<ul>
+<li>회고적 분석</li>
+<li>배치 처리</li>
+<li>인간이 개입한 해석</li>
+</ul>
+
+<p>이 시스템들에서 의미는 대부분 사람의 머릿속에 있었다. 분석가들이 테이블을 조인하고, 결과를 해석하고, 시스템 외부에서 결정을 내렸다. 데이터 거버넌스는 프로세스, 정책, 문서화로 그 공백을 메웠다.</p>
+
+<blockquote>
+<p><em>이것이 가능했던 이유는 시스템 자체가 <em>행동</em>할 것으로 기대받지 않았기 때문이다. 시스템은 인사이트를 생성하고, 인간이 판단을 제공했다.</em></p>
+</blockquote>
+
+<p>지능이 외부에 있었기 때문에 온톨로지는 선택 사항이었다.</p>
+
+<h3>임계점: 에이전틱 시스템</h3>
+
+<p>그 시대가 끝나고 있다.</p>
+
+<p>에이전틱 시스템은 단순히 데이터를 분석하는 것이 아니라 <strong>행동을 취한다</strong>. 도구를 호출하고, 워크플로를 트리거하고, 자원을 할당하고, 기계 속도로 결정을 내린다. 인사이트에서 행동으로 넘어가는 순간, 암묵적인 의미는 위험 요소가 된다.</p>
+
+<p>온톨로지 없이는:</p>
+<ul>
+<li>에이전트가 말이 안 되는 행동을 환각(hallucinate)한다</li>
+<li>효과가 명확히 정의되지 않아 도구가 오용된다</li>
+<li>안전 경계가 모호해지거나 실행 불가능해진다</li>
+<li>에이전트 간 조율이 프롬프트 스파게티로 붕괴된다</li>
+</ul>
+
+<p>이것이 오늘날 수많은 "AI 에이전트"가 데모에서는 인상적으로 보이지만 프로덕션에서 실패하는 이유다. 그것들은 공유된 현실 모델이 아닌 텍스트와 스키마를 기반으로 추론하고 있다.</p>
+
+<p>팔란티어의 시스템은 이 문제가 없다 — 에이전트들이 온톨로지에 의해 제약받기 때문이다. 행동은 실제 엔티티의 합법적인 상태 전이에 해당하는 경우에만 유효하다.</p>
+
+<p>이것은 있으면 좋은 기능이 아니다. 이것은 기본 요건이다.</p>
+
+<h3>조율 레이어로서의 온톨로지</h3>
+
+<p>온톨로지에서 가장 저평가된 측면 중 하나는 <strong>조율</strong>을 가능하게 한다는 점이다.</p>
+
+<p>여러 인간, 서비스, 에이전트가 동일한 시스템에서 작동할 때, 그들은 다음에 대한 공유된 이해가 필요하다:</p>
+<ul>
+<li>무엇이 존재하는가</li>
+<li>무엇이 변할 수 있는가</li>
+<li>누가 그것을 변경할 수 있는가</li>
+<li>그 결과는 무엇인가</li>
+</ul>
+
+<p>온톨로지는 그 공유된 기반을 제공한다. 시스템을 조합 가능하게 만든다. API를 단순한 함수 서명이 아닌 현실에 대한 계약으로 바꾼다.</p>
+
+<p>이것이 팔란티어의 배포가 단순한 워크로드를 넘어 조직과 세월에 걸쳐 확장되는 이유다. 온톨로지는 사람, 소프트웨어, 그리고 이제는 에이전트 사이의 안정적인 인터페이스가 된다.</p>
+
+<blockquote>
+<p><em>현대적인 표현으로: 온톨로지는 에이전틱 시스템이 절실히 필요로 하는 결정론적 인터페이스다.</em></p>
+</blockquote>
+
+<h3>데이터 거버넌스만으로는 결코 충분하지 않은 이유</h3>
+
+<p>데이터 거버넌스는 다음과 같은 질문들에 답한다:</p>
+<ul>
+<li>이 데이터셋은 누가 소유하는가?</li>
+<li>누가 접근할 수 있는가?</li>
+<li>규정을 준수하고 있는가?</li>
+</ul>
+
+<p>온톨로지는 다른 종류의 질문에 답한다:</p>
+<ul>
+<li>이것은 <em>무엇</em>인가?</li>
+<li>이것에 무슨 일이 일어날 수 있는가?</li>
+<li>지금 어떤 행동이 유효한가?</li>
+</ul>
+
+<p>온톨로지 없는 거버넌스는 물리학 없는 관료주의다. 데이터 접근을 아무리 규제해도, 시스템이 자신이 운영하는 도메인을 이해하지 못한다면 안전하거나 효과적으로 추론할 수 없다.</p>
+
+<p>팔란티어는 이것을 일찍 이해했다. 그래서 그들의 시스템에서 거버넌스는 온톨로지와 불가분의 관계다 — 정책으로 덧붙이는 것이 아니라 의미를 통해 강제된다.</p>
+
+<h3>팔란티어는 이상한 게 아니라 시대를 앞서갔을 뿐이다</h3>
+
+<p>수년간 팔란티어의 온톨로지 강조는 회사를 느리고, 비싸고, 과도하게 설계된 것처럼 보이게 했다. 돌이켜 보면, 그것은 예언적으로 보인다.</p>
+
+<p>업계가 에이전틱 시스템, 자율 워크플로, 그리고 조언이 아닌 행동하는 AI로 나아가면서, 빠져 있던 레이어가 고통스러울 정도로 명확해졌다. 깨끗한 데이터만으로는 충분하지 않다. 잘 관리된 데이터만으로도 충분하지 않다.</p>
+
+<p>시스템에는 공유되고 명시적인 현실 모델이 필요하다.</p>
+
+<p>팔란티어의 진짜 비밀 소스는 방산 계약이나 영업 전술이 아니었다. 그것은 단순하지만 급진적인 신념이었다: <strong><em>의미가 지능에 앞선다.</em></strong></p>
+</body></html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Isn't Replacing Developers. It's Doing Something Worse.</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-15/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>AI Isn't Replacing Developers. It's Doing Something Worse.</h1>
+<div class="meta">Michael Lawrence · Level Up Coding · 7 min read · <a href="https://medium.com/gitconnected/ai-isnt-replacing-developers-it-s-doing-something-worse-2d18fb595362">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/gitconnected/ai-isnt-replacing-developers-it-s-doing-something-worse-2d18fb595362">freedium</a></div>
+<div class="summary">
+  <p class="oneline">AI는 개발자를 대체하지 않는다 — 하지만 더 조용하고 더 위험한 방식으로 당신을 바꾸고 있다.</p>
+  <h3>요약</h3>
+  <p>저자 Michael Lawrence는 Claude Code로 작성한 PR을 검토하다 어느 날 null 체크가 사라진 것을 이틀 뒤에야 발견했다. 25년 경력의 개발자였지만, AI와 함께 일하기 시작한 뒤부터 코드를 읽는 방식이 달라졌다. 문제는 AI가 일자리를 빼앗는다는 거창한 이야기가 아니다 — 그 대신, AI에 의존하는 환경이 개발자가 수년에 걸쳐 쌓아온 '판단력'을 조용히 마모시킨다는 것이다. 코드를 직접 쓰고, 디버깅하고, 혼란을 겪으며 쌓이는 경험이 바로 그 판단력의 원천인데, AI가 그 마찰을 없애버리면 성장도 함께 사라진다. 결국 AI를 쓸 것이냐 말 것이냐의 문제가 아니라, 내가 무엇을 위한 병목(bottleneck)인지를 이해하는 것이 중요하다.</p>
+</div>
+
+<p>AI가 개발자를 대체할 것이라는 이야기는 요란하다. 하지만 더 조용하고, 이미 진행 중인 다른 이야기가 있다.</p>
+
+<p>나는 최근 Claude Code로 작성한 PR을 검토했다. 서비스 클래스를 리팩터링한 표준적인 작업으로, diff는 약 400줄이었다. 검토는 깔끔해 보였다. 병합했다. 이틀 뒤, 그 메서드 중 하나가 null 체크를 조용히 잃어버린 채로 있었다는 걸 발견했다.</p>
+
+<p>2020년의 나였다면 12초 만에 잡아냈을 버그다.</p>
+
+<p>이것이 AI가 개발자에게 하고 있는 '더 나쁜 일'의 본질이다. 취업 시장을 위협하는 게 아니라, 당신이 어떤 종류의 개발자가 되어가는지를 조용히 바꾸고 있는 것이다.</p>
+
+<h2>인간은 병목이다 — 그리고 그것이 핵심이다</h2>
+
+<p>소프트웨어 업계는 오랫동안 병목을 제거하는 임무를 수행해왔다. 느린 개발자, 코드 리뷰, 인간의 판단력. '티켓이 요구하는 것'과 '실제로 출시되는 것' 사이의 고통스러운 마찰.</p>
+
+<p>AI는 이 임무를 달성 가능한 것처럼 느끼게 해준다. 드디어 병목들을 없앨 수 있다고.</p>
+
+<p>문제는 딱 하나다: 그 병목이 바로 요점이라는 것이다.</p>
+
+<p>시니어 개발자가 풀 리퀘스트를 검토하다 갑자기 멈추고 <em>"잠깐, 이게 뭘 하는 거지?"</em>라고 할 때, 그 멈춤은 프로세스의 실패가 아니다. 프로세스가 제대로 작동하고 있는 것이다. 혼란이 곧 데이터다.</p>
+
+<p>두 분 안에 이해할 수 있어야 할 코드를 이해하는 데 20분이 걸렸다는 것은 뭔가 잘못되었다는 뜻이다.</p>
+
+<blockquote>고통은 정보다.</blockquote>
+
+<p>코드를 읽으면서 아무것도 느끼지 못하는 개발자, 코드 내용이 무엇이든 상관없이 리뷰를 빠르게 쓱 지나가는 개발자 — 그는 눈을 뜨고 자는 것이나 마찬가지다. 다른 사람의 코드를 읽는 마찰, 그 느림, 가끔씩 찾아오는 <em>"도대체 뭘 생각하고 이렇게 짠 거야"</em>라는 감각 — 그것은 비효율이 아니다. 그것이 품질 신호다.</p>
+
+<h2>AI는 혼란을 느끼지 않는다</h2>
+
+<p>자동화 에이전트는 혼란을 느끼지 않는다. 뭔가 잘못됐을 때 속도를 늦추지 않는다. 살짝 이상한 함수 이름, 구현과 맞지 않는 주석, 단독으로는 괜찮아 보이지만 보이지 않는 통합 테스트를 폭파시킬 변경사항 앞에서 멈추지 않는다.</p>
+
+<p>그냥 출시한다. 자신 있게. 빠르게.</p>
+
+<p>그리고 망가졌을 때, 아무도 코드베이스를 읽지 못한다. 아무도 코드베이스를 쓰지 않았으니까.</p>
+
+<p>업계는 '병목'을 듣고 '문제'로 들었다. 느림으로, 방해물로, 엔지니어링으로 해결해야 할 무언가로. 그들이 놓친 것은, 이미 뭔가를 디버깅해본 모든 개발자가 아는 것이다: 버그를 마침내 이해하는 순간이 바로 고통이 멈추는 순간이라는 것을.</p>
+
+<p>당신이 막혀 있었던 건 실력이 없어서가 아니다. 시스템이 당신에게 무언가를 말하고 있었기 때문이다. 혼란이 정보를 건네주려 하고 있었다. 마찰과 싸우는 것을 멈추고 그것에 귀를 기울이기 시작한 순간, 비로소 찾아낸 것이다.</p>
+
+<p>개발 프로세스에서 마찰을 없애는 것은 비효율을 없애는 것이 아니다. 뭔가 잘못됐을 때 알려주는 피드백 루프를 없애는 것이다.</p>
+
+<h2>판단력은 어떻게 만들어지는가</h2>
+
+<p>스토아 철학자들이 고통 자체를 목적으로 삼았던 것이 아니다 — 그들은 어려움이 어려움을 다루는 역량을 키우는 방법임을 관찰했다. 이것은 추상적인 철학이 아니다. 인간이 어떻게 판단력을 개발하는지에 대한 실용적인 관찰이다.</p>
+
+<p>5년간 혼란스러운 코드와 씨름한 개발자 — 그것을 쓰고, 고장내고, 수정하고, 최악의 순간에 다른 사람의 최악의 커밋을 읽어온 개발자 — 는 자신의 머릿속에 소프트웨어 시스템에 대한 모델을 구축해왔다. 어떤 책에도 없는 모델이다. 그 흉터 조직 속에 있다.</p>
+
+<p>그 모델이 코드 리뷰에서 null 체크를 잡아낸다. 프로덕션에서 null 체크가 되기 전에.</p>
+
+<p>AI가 그 모델을 형성한 게 아니다. 당신이 했다. 수년간의 마찰을 통해.</p>
+
+<h2>우리가 잃어가고 있는 것</h2>
+
+<p>지금의 궤도에서 내가 걱정하는 것이 있다.</p>
+
+<p>우리는 그 모델을 만드는 형성 과정을 놓치게 될 개발자 세대를 키우고 있다. 게으르기 때문이 아니다. 환경이 그것을 만드는 조건을 제거했기 때문이다.</p>
+
+<p>좌절감을 지름길로 건너뛸 수 없다. 좌절감이 바로 학습이 일어나는 곳이다. 주니어 개발자가 자신이 쓰지 않은 코드베이스에 혼란스러워하며 보내는 모든 시간은, 그들이 앞으로 20년간 길잡이로 삼을 정신적 지도를 구축하는 시간이다.</p>
+
+<p>AI를 너무 일찍 그 루프에 끌어들이면, 혼란이 사라진다. 개발자가 이해했기 때문이 아니라. AI가 혼란이 제 역할을 하기 전에 해결해버렸기 때문에.</p>
+
+<p>그것은 승리가 아니다. 시니어 타이틀을 달아도 그 타이틀을 의미 있게 만드는 모델을 구축한 적 없는 개발자 세대가 만들어진다.</p>
+
+<h2>그렇다면 어떻게 해야 하는가</h2>
+
+<p>AI를 쓰지 말라는 게 아니다. 나도 쓴다. 계속 쓸 것이다.</p>
+
+<p>내가 주장하는 것은 이것이다: 내가 무엇을 위한 병목인지를 이해하라.</p>
+
+<p>당신은 타이핑이 느리기 때문에 병목이 아니다. 당신의 판단력 — 예측 가능하고 완전히 예측 불가능한 방식으로 일이 잘못되는 것을 수년간 지켜보며 쌓은 판단력 — 이 문제가 복합되기 전에 잡아내는 메커니즘이기 때문에 병목이다.</p>
+
+<p>자발적 불편함은 스토아 철학의 실천만이 아니다. 이 맥락에서 그것은 직업적 유지보수다. AI가 쓸 수 있을 때 손으로 코드를 쓰는 것. AI가 요약해줄 수 있을 때 낯선 코드베이스를 읽는 것. 불편함을 최적화해서 없애는 대신 이해할 때까지 어려움 속에 머무르는 것.</p>
+
+<p>왜냐하면 어려운 읽기, 느린 사고, 불편한 멈춤을 외주화하는 순간, 당신을 가치 있게 만드는 것을 조용히 덜 유지하게 되기 때문이다.</p>
+
+<p>한동안은 느끼지 못할 것이다. 그리고 나서 그 모델이 필요한 순간이 오고, 그것이 거기에 없다.</p>
+
+<hr>
+
+<p>병목이 바로 기능이다.</p>
+
+<p>고통은 정보다. 혼란은 데이터다. 개발 프로세스의 마찰 — 인간적인 종류의, 느린 종류의 — 이 <em>출시됨</em>과 <em>잘 만들어짐</em>을 구분하는 것이다.</p>
+
+<p>병목임을 자랑스럽게 여기라. 그것이 당신의 가장 좋은 점이다.</p>
+
+<hr>
+
+<blockquote>"방해물이 행동을 전진시킨다. 길을 막는 것이 길이 된다." — 마르쿠스 아우렐리우스</blockquote>
+</body>
+</html>

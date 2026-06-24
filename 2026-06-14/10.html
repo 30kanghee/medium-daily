@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>What the Heck is Apache Iggy?</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+
+</head><body>
+<a href='/2026-06-14/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>What the Heck is Apache Iggy?</h1>
+<div class="meta">Shawn Gordon · 7 min read · <a href="https://progrockrec.medium.com/what-the-heck-is-apache-iggy-6f7f5ab312f7">원문</a> · <a href="https://freedium-mirror.cfd/https://progrockrec.medium.com/what-the-heck-is-apache-iggy-6f7f5ab312f7">freedium</a></div>
+<div class="summary"><p class="oneline">Apache Iggy는 2023년 Rust로 처음부터 구축된 고성능 메시지 스트리밍 플랫폼으로, io_uring 기반의 스레드-퍼-코어 아키텍처를 통해 초당 수백만 건의 메시지 처리와 서브 밀리초 지연 시간을 달성하며 Kafka 대안으로 주목받고 있다.</p><h3>요약</h3><p>Apache Iggy는 2023년 4월 Piotr Gankiewicz가 Rust 학습 프로젝트로 시작했지만, 지금은 GitHub 스타 약 4,000개를 보유하고 Apache 인큐베이터에 입성한 진지한 메시지 스트리밍 플랫폼으로 성장했다. 메시지 브로커가 아닌 영속형 스트리밍 플랫폼으로, Kafka와 유사한 스트림·토픽·파티션 개념 모델을 채택하되 Rust의 thread-per-core 아키텍처와 io_uring을 통해 극한의 성능을 추구한다. 2025년 12월 0.6.0 릴리스에서 비동기 런타임을 완전 재작성해 5,000MB/s 이상의 처리량과 서브 밀리초 P99 지연 시간을 달성했으며, QUIC·TCP·WebSocket·HTTP 등 다양한 전송 프로토콜을 지원한다. 현재 단일 노드로만 운영 가능하다는 제약이 있지만 Thoughtworks 테크놀로지 레이더에 등재될 만큼 업계의 주목을 받고 있으며, Rust·C#·Java·Go·Python·Node.js용 SDK와 Web UI, MCP 서버까지 갖춘 생태계를 구축 중이다.</p></div>
+
+<figure><img src="https://cdn-images-1.medium.com/max/1024/0*yIkV0QBcpYvzNegP.jpeg"></figure>
+
+<h2>소개</h2>
+<p>메시지 스트리밍 분야를 조금이라도 알고 있다면, 몇 가지 굵직한 이름들이 시장을 지배하고 있다는 걸 잘 알 것이다. Apache Kafka는 2011년 LinkedIn이 오픈소스로 공개한 이후 업계의 절대 강자로 군림해 왔다. 이 시리즈에서는 <a href="https://hackernoon.com/what-the-heck-is-warpstream">WarpStream</a>, <a href="https://hackernoon.com/what-the-heck-is-apache-paimon">Apache Paimon</a>, <a href="https://hackernoon.com/what-the-heck-is-proton">Proton</a> 같은 스트리밍 인접 프로젝트들을 몇 번 다룬 적이 있다. 그러다 Rust로 처음부터 새로 짠 메시지 스트리밍 플랫폼이 초당 수백만 건의 메시지를 처리한다는 소문이 돌기 시작했고, 나는 직접 확인해 볼 수밖에 없었다. 그것이 바로 <a href="https://iggy.apache.org/">Apache Iggy</a>(인큐베이팅 단계)이다.</p>
+
+<p>이 프로젝트는 2023년 4월 Piotr Gankiewicz가 만들었다. 개발자라면 누구나 공감할 만한 탄생 배경을 가지고 있다. Piotr는 Rust를 배우고 싶었는데, 가장 좋은 방법은 실제로 뭔가를 만들어 보는 것이라 판단했다. RabbitMQ, ZeroMQ, Kafka, Aeron 같은 분산 시스템 도구를 수년간 다뤄 온 경험을 바탕으로 메시지 스트리밍 플랫폼을 직접 구축하기로 결심했다.</p>
+
+<p>학습 프로젝트로 시작했던 것이 이제는 GitHub 스타 약 4,000개를 자랑하는 프로젝트로 성장했고, 2025년 2월에는 찬성 21표, 반대 0표로 Apache 인큐베이터에 입성했다.</p>
+
+<p>참고로 이름은 '이탈리안 그레이하운드(Italian Greyhound)'의 약어다. Piotr가 두 마리를 키우고 있다. 작지만 매우 빠른 개 품종인데, 이 프로젝트가 추구하는 방향과 딱 맞아떨어진다.</p>
+
+<h2>살펴보기</h2>
+<p>그렇다면 Iggy는 정확히 무엇인가? 메시지 브로커가 아니라 <strong>영속형 메시지 스트리밍 플랫폼</strong>이다. 이 구분이 중요하다. RabbitMQ보다는 Kafka에 가까운 개념이다. 스트림, 토픽, 파티션, 세그먼트라는 유사한 개념 모델을 사용하므로, Kafka를 써 본 사람이라면 정신 모델을 금방 이해할 수 있다.</p>
+
+<p>핵심 차이는 내부 구조에 있다. Iggy는 Rust로 작성되었으며, io_uring을 사용한 스레드-퍼-코어, 공유 없음(shared-nothing) 아키텍처를 채택했다. 이게 익숙하지 않다면 간단히 말해서, 현대 Linux 시스템에서 성능을 최대한 쥐어짜도록 설계되었다는 뜻이다.</p>
+
+<p>가비지 컬렉터도 없고 JVM도 없으며, Kafka에 비해 리소스 사용량이 극히 적다. 일부 초기 채택자들은 TCP를 통해 초당 2,000만 건의 메시지를 처리했다고 보고했는데, 이 정도 나이의 프로젝트로는 매우 놀라운 수치다.</p>
+
+<p>2025년 12월에 출시된 <a href="https://iggy.apache.org/blogs/2025/12/09/release-0.6.0/">0.6.0 릴리스</a>는 중요한 이정표였다. 팀은 Tokio 기반 비동기 런타임에서 io_uring과 compio를 사용하는 완료 기반 모델로 서버를 완전히 재작성했다. 이는 상당한 아키텍처 도박이었지만, 벤치마크가 이를 뒷받침한다. 적절한 하드웨어에서 5,000MB/s 이상의 처리량과 서브 밀리초 P99 지연 시간을 보고했다. 직접 확인해 볼 수 있는 <a href="https://benchmarks.iggy.apache.org/">라이브 벤치마크 페이지</a>도 있다.</p>
+
+<p>흥미로운 점 중 하나는 전송 프로토콜의 유연성이다. Iggy는 QUIC, TCP, WebSocket, HTTP를 모두 TLS와 함께 지원한다. TCP는 커스텀 바이너리 프로토콜로 최고의 성능을 제공한다. QUIC는 손실이 많은 네트워크에서 낮은 지연 시간에 유리하다. WebSocket은 브라우저 연결에 적합하고, HTTP는 통합 및 디버깅에 사용할 수 있는 표준 REST API를 제공한다. 클라이언트 연결 방식에서 이러한 유연성은 훌륭한 설계다.</p>
+
+<p>프로젝트는 커스텀 제로카피 직렬화도 사용해 스키마를 강제하지 않고 바이너리 데이터를 직접 다룬다. 이는 기존 직렬화/역직렬화의 오버헤드를 줄여 성능 수치에 기여한다.</p>
+
+<h2>직접 사용해 보기</h2>
+<p>시작하기는 간단하다. <code>docker pull apache/iggy</code>로 Docker 이미지를 내려받고 <code>docker compose up</code>으로 실행하면 된다. <code>cargo install iggy-cli</code>로 CLI 도구를 설치하고 터미널에서 <code>iggy</code>를 입력하면 된다.</p>
+
+<p><a href="https://iggy.apache.org/docs/introduction/getting-started/">시작 가이드</a>는 Rust로 프로듀서와 컨슈머 애플리케이션을 만드는 방법을 잘 설명하고 있다. 기본 자격증명은 사용자명 <code>iggy</code>, 비밀번호 <code>iggy</code>이며, 이 루트 사용자는 전체 권한을 가진다.</p>
+
+<p>간단한 실습 시나리오를 살펴보자:</p>
+<ul>
+<li>"프로듀서" 하나가 알림 메시지를 전송한다.</li>
+<li>"컨슈머" 하나가 이를 수신해 처리한다(예: 대시보드 표시 또는 이메일 전송).</li>
+</ul>
+
+<p><strong>1단계: Iggy 서버 시작 (최초 1회)</strong></p>
+<pre>git clone https://github.com/apache/iggy.git
+cd iggy
+export IGGY_ROOT_USERNAME=iggy
+export IGGY_ROOT_PASSWORD=iggy
+docker compose up -d</pre>
+
+<p><strong>2단계: 메일박스 생성 (스트림 + 토픽)</strong></p>
+<pre>docker exec -it iggy-server /iggy --username iggy --password iggy stream create notifications
+docker exec -it iggy-server /iggy --username iggy --password iggy topic create notifications alerts 1 none</pre>
+
+<ul>
+<li><code>notifications</code> = 전체 메일박스 ("스트림")</li>
+<li><code>alerts</code> = 그 안의 특정 채널 ("토픽")</li>
+</ul>
+
+<p><strong>3단계: 메시지 전송 (프로듀서 측)</strong></p>
+<pre>docker exec -it iggy-server /iggy --username iggy --password iggy message send --partition-id 1 notifications alerts "Hello from Iggy! User just logged in at 8:06 PM."</pre>
+
+<p><strong>4단계: 메시지 수신 (컨슈머 측)</strong></p>
+<pre>docker exec -it iggy-server /iggy --username iggy --password iggy message poll --consumer 1 --offset 0 --message-count 5 --auto-commit notifications alerts 1</pre>
+
+<p>메시지가 즉시 출력된다. 10개 미만의 명령으로 프로듀서 → 스트리밍 서버 → 컨슈머 파이프라인을 완성한 것이다.</p>
+
+<p>Rust, C#, Java, Go, Python, Node.js용 SDK를 제공하며 C++와 Elixir가 개발 중이다. 예상대로 Rust SDK가 가장 성숙하다. 스트림과 토픽을 지정하고, 배치와 파티셔닝을 설정한 뒤 메시지를 전송하면 되는 깔끔한 API를 제공한다.</p>
+
+<p>별도의 Docker 이미지 <code>apache/iggy-web-ui</code>로 스트림, 토픽, 파티션을 관리하고 메시지를 탐색할 수 있는 Web UI도 제공된다.</p>
+
+<figure><img src="https://cdn-images-1.medium.com/max/1024/0*u-Y42msJfRPKu0xM.png"><figcaption>Iggy Web UI - 스트림 관리 화면</figcaption></figure>
+
+<p>최근에는 Rust로 Source 또는 Sink 트레이트를 구현해 커스텀 데이터 파이프라인을 만들 수 있는 커넥터 프레임워크도 추가되었다. 0.6.0 릴리스에서는 Apache Iceberg, Elasticsearch, Apache Flink용 커넥터가 추가되었는데, 이는 팀이 더 넓은 데이터 생태계를 고려하고 있음을 보여준다. LLM에 컨텍스트를 제공하는 MCP(Model Context Protocol) 서버도 있다.</p>
+
+<h2>생태계와 향후 계획</h2>
+<p>한 가지 아쉬운 점은 아직 클러스터링을 지원하지 않는다는 것이다. Iggy는 현재 단일 노드로 실행되며, Viewstamped Replication 기반의 클러스터링이 향후 계획에 있다. 고가용성이 필수인 프로덕션 환경에서는 이것이 걸림돌이 될 수 있다. 팀도 이를 인지하고 있으며 로드맵에 포함되어 있지만, 배포를 계획하기 전에 알아두어야 할 사항이다.</p>
+
+<p>긍정적인 면으로는 Iggy가 최근 <a href="https://www.thoughtworks.com/en-us/radar">Thoughtworks 테크놀로지 레이더</a>에서 '실험해볼 만한' 기술로 등재되었다. 20개 가까운 저장소, 커넥터 런타임, MCP 서버, 다양한 SDK, CLI, Web UI를 갖춘 성장하는 생태계가 구축되어 있어 탄탄한 출발점을 보여준다.</p>
+
+<h2>요약</h2>
+<p>Iggy, Redpanda, WarpStream 같은 프로젝트들을 보면 현대 하드웨어와 클라우드 환경에 맞게 메시지 스트리밍 인프라를 재고하는 추세가 보인다. Kafka는 여전히 지배적인 플레이어이고 한동안 그럴 것이지만, 이런 신생 프로젝트들은 성능, 리소스 효율성, 운영 단순성 측면에서 다른 트레이드오프를 탐구하고 있다.</p>
+
+<p>그렇다면 Apache Iggy란 무엇인가? 이 분야에서 성능 왕좌를 노리는 Rust 기반 고성능 메시지 스트리밍 플랫폼이다. WarpStream처럼 Kafka 호환을 목표로 하지 않는다. 대신 자체 프로토콜과 API로 처음부터 최대한 빠르고 가볍게 만들어졌다. 원시 처리량과 낮은 지연 시간이 중요하고 현재의 단일 노드 제한을 감당할 수 있다면, 반드시 실험해볼 가치가 있는 프로젝트다.</p>
+
+</body></html>

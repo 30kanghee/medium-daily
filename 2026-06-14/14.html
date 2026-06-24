@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Day a Google L7 Engineer Tore My System Design to Shreds</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head><body>
+<a href='/2026-06-14/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>The Day a Google L7 Engineer Tore My System Design to Shreds</h1>
+<div class="meta">Cloud With Azeem · 7 min read · <a href="https://medium.com/expocomputing/google-l7-system-design-interview-lessons-0b3834fded07">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/expocomputing/google-l7-system-design-interview-lessons-0b3834fded07">freedium</a></div>
+<div class="summary"><p class="oneline">Google L7 시니어 엔지니어와의 시스템 디자인 인터뷰에서 URL 단축기라는 단순해 보이는 문제가 수평적 확장, Kafka, 일관된 해싱까지 이어지는 깊은 아키텍처 논의로 확장된 경험을 나눕니다.</p><h3>요약</h3><p>저자는 시스템 디자인 인터뷰를 자신 있게 준비했지만, Google L7 Staff Engineer를 만나 URL 단축기 설계라는 겉보기에 쉬운 문제에서 완전히 무너집니다. 초기 설계(API Gateway, Load Balancer, NoSQL, Redis 캐시)는 수천 명의 사용자에게는 적합했지만, 초당 수백만 건의 쓰기 요청이 발생할 경우 어떻게 되는지 질문받자 한계가 드러났습니다. 인터뷰어는 수평적 확장의 병목 지점, Netflix 마이크로서비스 패턴, Kafka의 적절한 활용, 일관된 해싱을 통한 부하 분산, 분산 시스템의 수학적 근거 등을 짚어가며 진정한 대규모 시스템 설계의 사고 방식을 가르쳐줍니다. 이 글은 암기된 청사진이 아닌 실제 확장 문제에 대한 깊은 이해가 필요하다는 교훈을 전합니다.</p></div>
+
+<h2>자신감은 있었지만, 준비가 부족했습니다</h2>
+
+<p>저는 "시스템을 정복했다"는 조용한 자신감을 가지고 인터뷰실에 들어갔습니다. MongoDB와 Cassandra의 차이를 외웠고, CDN(콘텐츠 전송 네트워크)은 눈 감고도 그릴 수 있었으며, Netflix 기술 스택은 마치 성경처럼 머릿속에 새겨져 있었습니다. 마이크로서비스, 샤딩, 고가용성을 이야기할 준비가 되어 있었습니다.</p>
+
+<p>그런데 인터뷰어를 만났습니다. 조용한 말투의 L7 Staff Engineer였는데, 그는 지난 10년간 1초에 대부분의 앱이 1년 동안 받는 것보다 더 많은 트래픽을 처리하는 시스템을 운영해온 사람이었습니다.</p>
+
+<p>그가 제시한 문제는 겉보기에 단순했습니다: <strong>"URL 단축기를 설계하세요."</strong></p>
+
+<p>저는 속으로 미소지었습니다. 이건 시스템 디자인의 "Hello World"였습니다. 마커를 잡고 빠르게 그려나갔습니다. 여기에 API Gateway, 저기에 Load Balancer, 매핑을 위한 NoSQL 데이터베이스, 빠른 응답을 위한 Redis 캐시. <strong>O(1) 조회</strong>와 <strong>Base62 인코딩</strong>을 이야기했습니다. 마치 스타처럼 느껴졌습니다.</p>
+
+<p>그러다 그가 앞으로 몸을 기울였습니다. "수천 명의 사용자에게는 훌륭한 설계네요. 그런데 <strong>초당 1,000만 건의 쓰기 요청</strong>이 발생하면 당신의 아키텍처는 어떻게 되나요?"</p>
+
+<blockquote>
+<p>그 순간 저는 말문이 막혔습니다. 그 질문 하나가 제가 암기한 청사진과 실제 운영 환경의 시스템 설계 사이의 거리를 적나라하게 드러냈습니다.</p>
+</blockquote>
+
+<h2>수평적 확장의 함정</h2>
+
+<p>제 첫 번째 본능은 "서버를 더 추가하면 되죠"였습니다. 수평적 확장. 교과서적인 답입니다.</p>
+
+<p>하지만 인터뷰어는 멈추지 않았습니다. "그렇다면 상태(state)는 어디에 있나요? 모든 서버가 동일한 Redis 인스턴스에 쓰기를 한다면, Redis 자체가 병목이 됩니다. Redis를 수평 확장하면 어떤 서버가 어떤 데이터를 갖고 있는지 어떻게 알죠?"</p>
+
+<p>그게 핵심이었습니다. 수평적 확장은 솔루션이 아니라 새로운 문제의 시작입니다. 서버를 추가할 때마다 다음 질문이 따라옵니다:</p>
+<ul>
+  <li>데이터는 어떻게 분산되나요?</li>
+  <li>노드가 실패하면 어떻게 되나요?</li>
+  <li>재조정(rebalancing) 비용은 얼마나 되나요?</li>
+  <li>일관성(consistency)은 어떻게 보장하나요?</li>
+</ul>
+
+<h2>일관된 해싱: 단순한 아이디어, 강력한 솔루션</h2>
+
+<p>인터뷰어가 화이트보드에 원을 그렸습니다. "일관된 해싱(Consistent Hashing)을 아나요?"</p>
+
+<p>알고 있었습니다. 하지만 그가 설명하는 방식은 달랐습니다. 단순히 요청을 분산하는 게 아니라, 노드가 추가되거나 제거될 때 <em>최소한의 데이터만 이동</em>하도록 설계된 시스템이었습니다. 전통적인 해시 테이블에서는 노드가 하나 바뀌면 거의 모든 키를 재매핑해야 합니다. 일관된 해싱에서는 영향을 받는 키는 전체의 K/N개뿐입니다(K=키 수, N=노드 수).</p>
+
+<p>이게 Netflix가 CDN 노드를 관리하는 방식이고, Cassandra가 클러스터 전반에 데이터를 분산하는 방식입니다. 암기한 청사진이 아니라, 실제로 작동하는 수학적 원리였습니다.</p>
+
+<h2>Kafka: 언제 필요하고 언제 필요 없는가</h2>
+
+<p>저는 Kafka를 언급했습니다. 멘토님이 항상 "대규모 시스템에는 Kafka를 넣어라"고 했기 때문입니다.</p>
+
+<p>"왜요?" 인터뷰어가 물었습니다.</p>
+
+<p>저는 멈췄습니다. "음... 비동기 처리를 위해서요."</p>
+
+<p>"URL 단축기에서 뭘 비동기로 처리하려는 건가요? URL 생성 자체는 동기적으로 처리해야 합니다. 사용자가 단축 URL을 클릭했을 때 리디렉션이 동작해야 하니까요. 분석 데이터(클릭 수, 지역, 시간대)를 수집하는 건 비동기로 처리할 수 있습니다. 그 경우라면 Kafka가 의미 있습니다. 하지만 핵심 경로에 Kafka를 추가하면 레이턴시만 늘어납니다."</p>
+
+<p>그 순간 깨달았습니다. 도구는 이유가 있을 때 선택해야 합니다. 그냥 "있어 보여서"가 아니라.</p>
+
+<h2>분산 시스템의 수학</h2>
+
+<p>그가 마지막 질문을 던졌습니다. "초당 1,000만 건의 쓰기, 평균 1KB 페이로드, 30일 보관. 스토리지 요구량을 계산해보세요."</p>
+
+<pre>
+초당 10,000,000건 × 1KB = 10GB/초
+하루 = 10GB × 86,400초 = 864TB/일
+30일 = 864TB × 30 = ~26PB
+</pre>
+
+<p>"이제 복제 팩터 3을 적용하면요?"</p>
+
+<pre>
+26PB × 3 = ~78PB
+</pre>
+
+<p>"그럼 압축 비율 5:1을 적용하면?"</p>
+
+<pre>
+78PB / 5 = ~15.6PB 실제 스토리지
+</pre>
+
+<p>이게 시스템 디자인 인터뷰에서 실제로 벌어지는 일입니다. 암기가 아닌 추론. 공식이 아닌 수학적 사고. 그리고 모든 결정에 뒤따르는 트레이드오프에 대한 이해.</p>
+
+<h2>인터뷰 후 얻은 교훈</h2>
+
+<p>그 인터뷰에서 탈락했습니다. 하지만 그것은 제가 받은 가장 값진 교육이었습니다.</p>
+
+<p>L7 엔지니어가 보고 싶은 것은 다음이 아닙니다:</p>
+<ul>
+  <li>청사진 암기</li>
+  <li>유행하는 기술 스택 나열</li>
+  <li>"Netflix처럼 하면 됩니다" 류의 답변</li>
+</ul>
+
+<p>그들이 보고 싶은 것은 이것입니다:</p>
+<ul>
+  <li>시스템에 가해지는 압력을 정량적으로 생각하는 능력</li>
+  <li>각 결정이 만들어내는 새로운 문제를 인식하는 능력</li>
+  <li>도구를 선택하는 이유를 설명할 수 있는 능력</li>
+  <li>불확실한 상황에서도 구조적으로 추론하는 능력</li>
+</ul>
+
+<p>시스템 디자인은 퀴즈가 아닙니다. 그것은 생각하는 방식을 보여주는 대화입니다.</p>
+
+<blockquote>
+<p>더 많은 트래픽을 처리할 수 있는 사람이 아니라, 트래픽이 늘어날 때 어떤 일이 일어나는지 정확히 설명할 수 있는 사람을 찾고 있습니다. — 그 L7 엔지니어</p>
+</blockquote>
+</body></html>

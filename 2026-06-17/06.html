@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 PySpark DataFrame Design Patterns Every Data Engineer Uses (But Rarely Documents)</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head><body>
+<a href='/2026-06-17/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>10 PySpark DataFrame Design Patterns Every Data Engineer Uses (But Rarely Documents)</h1>
+<div class="meta">Rohan Dutt · 9 min read<br><a href="https://medium.com/@Rohan_Dutt/10-pyspark-dataframe-design-patterns-every-data-engineer-uses-60163b8075db" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@Rohan_Dutt/10-pyspark-dataframe-design-patterns-every-data-engineer-uses-60163b8075db" target="_blank">freedium</a></div>
+<div class="summary">
+<h3>요약</h3>
+<p class="oneline">데이터 엔지니어들이 프로덕션에서 자주 사용하는 10가지 PySpark DataFrame 디자인 패턴(파티션 프루닝, 프레디케이트 푸시다운, 브로드캐스트 조인, 타임 트래블, Z-오더링, 맵-사이드 집계, 솔팅, 딕셔너리 인코딩, 증분 처리, 지연 평가)을 코드 예시와 함께 설명한다.</p>
+<p>이 글은 프로덕션 데이터 파이프라인에서 일반적으로 사용되지만 거의 문서화되지 않는 10가지 PySpark DataFrame 디자인 패턴을 코드 예시와 함께 소개합니다. 파티션 프루닝과 프레디케이트 푸시다운은 스토리지 레이어에서 데이터 스캔을 최소화하여 I/O 비용을 70~90% 줄이고, 브로드캐스트 조인은 작은 테이블 조인 시 셔플을 제거하여 10~100배의 속도 향상을 제공합니다. Delta Lake 타임 트래블과 Z-오더링은 데이터 신뢰성과 쿼리 성능을 높이며, 맵-사이드 집계와 솔팅은 셔플 병목과 데이터 스큐 문제를 각각 해결합니다. 딕셔너리 인코딩은 스토리지를 10배까지 줄이고, CDC 기반 증분 처리는 전체 재처리 대비 비용을 90% 절감하며, 지연 평가를 활용한 DAG 최적화는 전체 스테이지 코드젠을 통해 10배 속도를 달성합니다. 각 패턴마다 장단점이 명시되어 있어 실무에서 트레이드오프를 이해하며 적용할 수 있습니다.</p>
+</div>
+<hr>
+<h2>모든 데이터 엔지니어가 사용하는 (하지만 거의 문서화하지 않는) 10가지 PySpark DataFrame 디자인 패턴</h2>
+
+<p>프로덕션 파이프라인에서 일반적으로 사용되는 PySpark DataFrame 디자인 패턴들입니다. 이 패턴들에 이름을 붙이면 일관성, 가독성, 팀 협업 향상에 도움이 됩니다.</p>
+
+<h2>1. 파티션 프루닝: 조용한 쿼리 킬러</h2>
+
+<p>대부분의 ETL 파이프라인은 데이터의 5%만 필요로 할 때도 전체 데이터셋을 스캔합니다.</p>
+
+<blockquote>파티션 프루닝은 스토리지 레이어에서 필터링하여 빅데이터 시스템에서 I/O 비용을 70% 이상 절감합니다.</blockquote>
+
+<h3>왜 중요한가</h3>
+
+<p>스토리지 시스템은 쿼리 조건에 따라 전체 디렉토리/파일을 건너뜁니다. 프루닝 없이는 모든 쿼리가 전체 테이블 스캔이 되어, 성능과 클라우드 예산을 압박합니다.</p>
+
+<p>장점: 쿼리 속도 10~100배 향상, 대폭적인 비용 절감, 모든 주요 포맷과 호환.</p>
+
+<p>단점: 작은 파일 문제(너무 많은 작은 파티션), 파티션 컬럼 선택은 중요하고 되돌릴 수 없음, 파티션 10,000개 초과 시 메타스토어 부담.</p>
+
+<pre><code>from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, lit
+
+spark = SparkSession.builder.appName("PartitionPruning").getOrCreate()
+
+# Write data with hierarchical partitioning
+sales_df = spark.range(0, 1000000).select(
+    (col("id") % 365).alias("day_of_year"),
+    (col("id") % 12).alias("month"),
+    (col("id") % 5).alias("year"),
+    (lit("product_") + col("id").cast("string")).alias("product_id"),
+    (col("id") * 10).alias("revenue")
+)
+
+# Partition by year/month/day during write
+sales_df.write \
+    .partitionBy("year", "month", "day_of_year") \
+    .mode("overwrite")</code></pre>
+
+<h2>2. 프레디케이트 푸시다운: 데이터베이스가 일하게 하라</h2>
+
+<p>메모리에 테라바이트의 데이터를 가져와서 행을 필터링하는 것은 시간이 많이 걸릴 수 있습니다.</p>
+
+<blockquote>프레디케이트 푸시다운은 필터를 소스(예: Parquet/ORC 파일)에서 실행하도록 강제하여 데이터 이동을 방지합니다.</blockquote>
+
+<h3>왜 중요한가</h3>
+
+<p>분산 시스템에서 네트워크가 병목입니다. 필터를 스토리지로 푸시하면 클러스터에 도달하기 전에 데이터 전송의 90%를 제거합니다.</p>
+
+<p>장점: 스캔된 데이터 90% 감소, 낮은 메모리 압박, 빠른 작업 완료.</p>
+
+<p>단점: 파일 포맷에 의해 제한됨(JSON/CSV는 통계 없음), 복잡한 표현식은 푸시가 안 될 수 있음, 컬럼형 포맷(Parquet/ORC) 필요.</p>
+
+<pre><code># BAD: Pulls all columns then filters (wasteful)
+wasteful_df = spark.read.parquet("s3://logs/") \
+    .select("user_id", "timestamp", "action", "ip_address") \
+    .filter(col("action") == "purchase")
+
+# GOOD: Filter pushed to Parquet reader (scans less data)
+optimized_df = spark.read.parquet("s3://logs/") \
+    .filter(col("action") == "purchase") \
+    .select("user_id", "timestamp")  # Filter executes first
+
+# Pushdown with complex predicates
+complex_filter = spark.read.parquet("s3://logs/") \
+    .filter((col("timestamp") &gt;= "2024-01-01") &amp;
+            (col("action").isin("click", "purchase")))</code></pre>
+
+<h2>3. 작은 테이블을 위한 브로드캐스트 조인</h2>
+
+<p>10TB 팩트 테이블을 100MB 디멘션 테이블과 조인하는 것은 매우 무거울 수 있습니다.</p>
+
+<blockquote>브로드캐스트 조인은 작은 테이블을 모든 워커에 전송하여 비용이 많이 드는 셔플을 방지합니다.</blockquote>
+
+<h3>왜 중요한가</h3>
+
+<p>셔플은 분산 조인에서 #1 성능 킬러입니다. 브로드캐스팅은 작은 디멘션에 대한 네트워크 I/O를 제거하여 시간 단위 작업을 초 단위로 줄입니다.</p>
+
+<p>장점: 작은 테이블에서 10~100배 속도 향상, 셔플 제거, 예측 가능한 성능.</p>
+
+<p>단점: 테이블이 메모리를 초과하면 OOM 위험, 네트워크 오버헤드는 워커 수에 비례, 드라이버 메모리에 의해 제한.</p>
+
+<pre><code>from pyspark.sql.functions import broadcast
+
+# Fact table (large)
+orders_df = spark.read.parquet("s3://orders/")  # 50GB, 100M rows
+
+# Dimension table (tiny)
+currency_df = spark.createDataFrame([
+    ("USD", 1.0), ("EUR", 0.92), ("GBP", 0.79)
+], ["currency_code", "conversion_rate"])  # 3 rows, &lt;1KB
+
+# Automatic broadcast (size &lt; spark.sql.autoBroadcastJoinThreshold)
+result = orders_df.join(currency_df, "currency_code")
+
+# Manual broadcast hint for explicit control
+result_explicit = orders_df.join(
+    broadcast(currency_df),
+    "currency_code",
+    "left"
+)
+
+# Adjust threshold for larger small tables
+spark.conf.set("spark.sql.autoBroadcastJoinThreshold", 200 * 1024 * 1024)  # 200MB</code></pre>
+
+<h2>4. 즉각적인 롤백을 위한 Delta Lake 타임 트래블</h2>
+
+<p>ETL은 프로덕션 데이터를 망가뜨릴 수 있습니다.</p>
+
+<blockquote>타임 트래블(Delta Lake/Iceberg)을 사용하면 전체 재로딩 없이 이전 버전으로 되돌릴 수 있습니다.</blockquote>
+
+<h3>왜 중요한가</h3>
+
+<p>ETL이 망가지면 데이터 손상이 발생합니다. 타임 트래블은 재해 복구를 수 시간의 수동 재로딩에서 단일 SQL 명령으로 전환하며, 전체 감사 이력도 제공합니다.</p>
+
+<p>장점: 즉각적인 롤백(1분 미만), 무료 감사 추적, ACID 준수, 디버깅 간소화.</p>
+
+<p>단점: 버전 저장에 2배 스토리지 오버헤드, 보존 정리 필요, Delta/Iceberg에 대한 벤더 종속.</p>
+
+<pre><code>from delta.tables import DeltaTable
+
+# Create Delta table with history
+delta_path = "s3://lake/sales/"
+
+# Enable time travel with delta.io
+spark.sql("CREATE TABLE sales USING DELTA LOCATION '{}'".format(delta_path))
+
+# Insert initial data
+spark.range(100).write.format("delta").mode("append").save(delta_path)
+
+# Update (corrupts data)
+spark.sql("UPDATE delta.`{}` SET id = id * -1 WHERE id &lt; 50".format(delta_path))
+
+# View history
+history = spark.sql("DESCRIBE HISTORY delta.`{}`".format(delta_path))
+history.show(truncate=False)
+# Output: version, timestamp, operation (WRITE, UPDATE), user, jobId</code></pre>
+
+<h2>5. Z-오더링: 지역성의 비밀</h2>
+
+<p>관련 데이터(예: user_id + timestamp)를 함께 저장하면 디스크 탐색이 최소화됩니다.</p>
+
+<blockquote>Z-오더링은 핫 컬럼을 파일 내에 함께 배치합니다.</blockquote>
+
+<h3>왜 중요한가</h3>
+
+<p>실제 쿼리는 여러 차원에서 필터링합니다. Z-오더링은 다차원 지역성을 만들어 포인트 쿼리를 5배 빠르게 합니다.</p>
+
+<p>장점: 다중 컬럼 필터에서 60% 지연 시간 감소, 더 나은 압축 비율, 자동 데이터 스킵.</p>
+
+<p>단점: 비용이 많이 드는 작업(전체 테이블 재작성), 고카디널리티 쿼리에는 효과적이지 않음, 주기적인 재최적화 필요.</p>
+
+<pre><code># Create large table with skewed access patterns
+user_events = spark.range(0, 100000000).select(
+    (col("id") % 1000000).alias("user_id"),
+    (col("id") % 1000).alias("event_type"),
+    (col("id") * 1000).alias("timestamp"),
+    lit("some_data").alias("payload")
+)
+
+# Write as Delta table
+user_events.write.format("delta").mode("overwrite").save("s3://lake/events/")
+
+# Z-order by frequently queried columns
+# This physically reorganizes data to group user_id and timestamp together
+spark.sql("""
+    OPTIMIZE delta.`s3://lake/events/`
+    ZORDER BY (user_id, timestamp)
+""")</code></pre>
+
+<h2>6. 맵-사이드 집계: 셔플 전에 사전 축소</h2>
+
+<p>셔플은 분산 ETL에서 가장 큰 병목입니다.</p>
+
+<blockquote>맵-사이드 집계(예: combineByKey)는 셔플 전에 데이터 볼륨을 줄입니다.</blockquote>
+
+<h3>왜 중요한가</h3>
+
+<p>네트워크 대역폭은 희소합니다. 매퍼에서 사전 집계하면 셔플 트래픽이 80% 감소하여 OOM 오류를 빠른 완료로 전환합니다.</p>
+
+<p>장점: 셔플 크기 80% 감소, OOM 방지, 조인 및 집계 속도 향상.</p>
+
+<p>단점: 맵 태스크의 메모리 압박, 저카디널리티 그룹핑에는 효과적이지 않음, 수동 구현이 복잡.</p>
+
+<pre><code># Generate clickstream data
+clicks = spark.range(0, 10000000).select(
+    (col("id") % 100000).alias("user_id"),
+    (col("id") % 100).alias("campaign_id"),
+    lit(1).alias("click_count")
+)
+
+# BAD: Full shuffle of all rows
+full_shuffle = clicks.groupBy("user_id", "campaign_id").sum("click_count")
+# Shuffles ~10M rows across network
+
+# GOOD: Map-side combine before shuffle
+# Spark does this automatically with aggregate functions
+optimized = clicks \
+    .rdd \
+    .map(lambda row: ((row.user_id, row.campaign_id), row.click_count)) \
+    .combineByKey(
+        lambda v: v,  # create combiner
+        lambda c, v: c + v,  # merge value into combiner
+        lambda c1, c2: c1 + c2  # merge combiners
+    )</code></pre>
+
+<h2>7. 스큐된 조인을 위한 솔팅</h2>
+
+<p>일부 키(예: "users")가 조인을 지배합니다.</p>
+
+<blockquote>솔팅은 핫 키를 인위적으로 분할하여 워크로드를 균형 있게 만듭니다.</blockquote>
+
+<h3>왜 중요한가</h3>
+
+<p>스큐는 다른 태스크보다 10배 느린 스트래글러 태스크를 만들어 클러스터 자원을 낭비합니다. 솔팅은 긴 꼬리를 제거합니다.</p>
+
+<p>장점: 4시간짜리 스큐 조인을 수 분으로 해결, 수동 튜닝 불필요, 적응형 쿼리 실행이 탐지를 자동화.</p>
+
+<p>단점: 복잡한 코드 중복, 일시적으로 출력 크기 증가, 신중한 솔트 카운트 선택 필요.</p>
+
+<pre><code>from pyspark.sql.functions import col, rand, floor, concat, lit, explode, array
+
+# Fact table: 100M rows, 90% are user_id=0 (free tier)
+events = spark.range(0, 100000000).select(
+    (when(col("id") &lt; 90000000, 0).otherwise(col("id") % 1000)).alias("user_id"),
+    lit("click").alias("action")
+)
+
+# Dimension table: 1K rows
+users = spark.range(0, 1000).select(
+    col("id").alias("user_id"),
+    lit("segment").alias("user_segment")
+)
+
+# Identify skew
+skew_df = events.groupBy("user_id").count().orderBy(col("count").desc())
+skew_df.show(5)
+# Output: user_id=0 count=90M, user_id=1 count=1000, ...</code></pre>
+
+<h2>8. 컬럼형 스토리지 트릭: 딕셔너리 인코딩</h2>
+
+<p>문자열은 메모리를 많이 차지합니다.</p>
+
+<blockquote>딕셔너리 인코딩은 반복되는 값(예: 국가명)을 작은 정수로 대체합니다.</blockquote>
+
+<h3>왜 중요한가</h3>
+
+<p>문자열 컬럼은 데이터 크기의 80%를 차지할 수 있습니다. 딕셔너리 인코딩은 스토리지를 10배 줄이고 정수 연산으로 스캔 속도를 높입니다.</p>
+
+<p>장점: 스토리지 10배 감소, 스캔 2~3배 빨라짐, Parquet/ORC에서 자동으로 작동.</p>
+
+<p>단점: 고카디널리티 컬럼(고유값 100만 개 초과)에는 효과 없음, 인코딩 중 메모리 오버헤드, 쓰기 느려짐.</p>
+
+<pre><code>import pandas as pd
+
+# Create high-redundancy dataset
+data = {
+    "country": ["United States"] * 500000 + ["United Kingdom"] * 500000,
+    "status": ["ACTIVE"] * 800000 + ["INACTIVE"] * 200000,
+    "user_id": range(1000000)
+}
+
+df = pd.DataFrame(data)
+
+# Write without encoding (large)
+df.to_parquet("/tmp/no_encoding.parquet", compression=None)  # ~20MB
+
+# Write with dictionary encoding (default in Parquet)
+# Parquet automatically encodes low-cardinality strings
+df.to_parquet("/tmp/with_dict.parquet",
+              compression="snappy",
+              use_dictionary=True)  # ~2MB (10x smaller)</code></pre>
+
+<h2>9. 증분 처리: 새로운 데이터만</h2>
+
+<p>일일 1% 업데이트를 위해 전체 이력을 재처리하는 이유가 있을까요?</p>
+
+<blockquote>증분 처리는 워터마킹이나 CDC를 통해 델타를 추가합니다.</blockquote>
+
+<h3>왜 중요한가</h3>
+
+<p>전체 재빌드는 델타 처리보다 100배 더 비쌉니다. 증분 파이프라인은 컴퓨팅 비용을 90% 줄이고 지연 시간을 시간 단위에서 분 단위로 줄입니다.</p>
+
+<p>장점: 비용 90% 절감, 시간 단위 대비 분 단위 지연 시간, 실시간 파이프라인 가능.</p>
+
+<p>단점: 복잡한 워터마크 관리, 중복 처리 위험, CDC 소스 또는 추가 전용 설계 필요.</p>
+
+<pre><code>from delta.tables import DeltaTable
+from pyspark.sql.functions import current_timestamp
+
+# Source: CDC feed with _change_type
+cdc_df = spark.read.json("s3://cdc/orders/") \
+    .withColumn("processed_time", current_timestamp())
+
+# Target Delta table
+target_path = "s3://lake/orders/"
+
+# Micro-batch read with watermarking
+streaming_df = spark.readStream \
+    .format("delta") \
+    .option("maxFilesPerTrigger", 1000) \
+    .load(target_path)
+
+# MERGE for upserts (idempotent)
+deltaTable = DeltaTable.forPath(spark, target_path)
+
+def merge_micro_batch(micro_batch_df, batch_id):
+    deltaTable.alias("target").merge(
+        micro_batch_df.alias("source"),
+        "target.order_id = source.order_id"
+    ).whenMatchedUpdateAll() \
+     .whenNotMatchedInsertAll() \
+     .execute()</code></pre>
+
+<h2>10. DAG 최적화를 위한 지연 평가</h2>
+
+<p>Spark/Polars는 <code>.collect()</code> 또는 <code>.write()</code>를 호출할 때까지 실행하지 않습니다. 이를 활용해 스테이지를 재정렬하거나 재사용하세요.</p>
+
+<h3>왜 중요한가</h3>
+
+<p>즉각적인 실행은 중간 단계에 컴퓨팅을 낭비합니다. 지연 평가는 연산을 융합하고, 데드 코드를 제거하며, 10배 속도 향상을 위한 전체 스테이지 코드젠을 가능하게 합니다.</p>
+
+<p>장점: 전체 스테이지 코드젠, 데드 코드 제거, 쿼리 최적화 가능, 월 $15,000 클라우드 비용 절감.</p>
+
+<p>단점: 디버깅이 더 어려움, 캐시되지 않은 DataFrame으로 인한 메모리 누수, 예측 불가능한 실행 타이밍.</p>
+
+<pre><code>from pyspark.sql import functions as F
+from pyspark.storagelevel import StorageLevel
+
+# Build DAG without execution
+df1 = spark.read.parquet("s3://source1/")  # Not executed
+df2 = spark.read.parquet("s3://source2/")  # Not executed
+
+# Multiple transformations (no execution)
+joined = df1.join(df2, "id", "inner")
+filtered = joined.filter(col("status") == "active")
+aggregated = filtered.groupBy("category").agg(F.sum("value").alias("total"))
+
+# Branch 1: Write to S3 (triggers execution)
+aggregated.write.mode("overwrite").parquet("s3://output1/")  # EXECUTES
+
+# Branch 2: Different aggregation on same DAG (reuses cached stages)
+aggregated.groupBy("category").agg(F.count("*").alias("count")) \
+    .write.mode("overwrite").parquet("s3://output2/")  # Reuses filtered DAG</code></pre>
+
+<h2>감사합니다... 50번 박수치고 팔로우해 주세요 :)</h2>
+
+</body></html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP is Dead</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-13/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>MCP는 죽었다</h1>
+<div class="meta">Nick Babich · UX Planet · 5 min read · <a href="https://medium.com/ux-planet/mcp-is-dead-cf16b667ba6d">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/ux-planet/mcp-is-dead-cf16b667ba6d">freedium</a></div>
+<div class="summary">
+<p class="oneline">MCP가 AI 통합의 미래처럼 보이지만, 실제 제품 개발에서는 복잡성·신뢰성·보안 문제로 인해 직접 API 호출이 더 나은 선택이다.</p>
+<p>MCP(Model Context Protocol)는 AI 모델이 외부 도구와 연결되는 방식을 표준화한 오픈소스 프로토콜이다. 하지만 저자는 MCP가 실제 제품 설계 작업에서 5가지 핵심 문제를 지닌다고 주장한다. 불필요한 복잡성 계층 추가, LLM의 불안정한 도구 사용, 대규모 유지보수의 어려움, 과도한 토큰 소비, 그리고 보안 위험이 그것이다. 저자는 대신 CLI와 직접 API 호출, 또는 엄격한 스키마 기반의 구조화된 도구 호출을 권장한다. MCP는 만능 스위스 칼처럼 보이지만, 대부분의 실제 제품에는 과잉 설계이며 정밀한 제어가 가능한 직접 통합이 80/20 법칙에 더 잘 맞는다.</p>
+</div>
+
+<p>Model Context Protocol(MCP)은 AI 모델이 외부 데이터 소스, 도구, 소프트웨어 시스템과 원활하게 연결될 수 있도록 하는 오픈소스 표준이다.</p>
+<blockquote>
+<p><em>MCP는 USB와 같은 플러그앤플레이 기술이지만, AI를 위한 것이다.</em></p>
+</blockquote>
+<figure><img src="https://freedium-mirror.cfd/img/700/0*qkxnoK1RBPVHOiod.png"><figcaption>MCP 아키텍처.</figcaption></figure>
+<p>MCP가 AI와의 일상적인 상호작용에 가져다주는 모든 이점에도 불구하고, 이 기술에는 실제 제품 설계 작업에서 활용도를 떨어뜨리는 5가지 심각한 문제가 있다.</p>
+<p>이 글에서 필자는 MCP 사용이 <em>나쁜</em> 생각인 5가지 이유와 그 대안을 설명하고자 한다.</p>
+
+<h4>문제 #1: MCP는 복잡성을 한 단계 더 높인다</h4>
+<p>MCP는 흔히 API와 비교된다.</p>
+<blockquote>
+<p>API(Application Programming Interface)는 서로 다른 소프트웨어 애플리케이션이 통신하고 데이터를 교환할 수 있도록 하는 규칙 및 프로토콜의 집합이다.</p>
+</blockquote>
+<pre><code># DB에서 사용자 정보를 반환하는 API 메서드 예시
+
+## API 요청
+GET /api/users/{id}
+
+## API 응답
+{
+  "id": 123,
+  "name": "Nick Babich",
+  "email": "nick@example.com",
+  "role": "Product Designer",
+  "createdAt": "2026-01-10T12:00:00Z"
+}</code></pre>
+<p>MCP가 출시되었을 때 많은 기술 관계자들은 MCP가 서드파티 서비스와 연동하는 올바른 방식이며, API는 "<em>구식이고 시대에 뒤처진 방식</em>"이라고 말했다.</p>
+<p>그러나 MCP를 사용하면 LLM(예: Claude)과 외부 도구(예: Notion) 사이에 프로토콜 계층이 추가된다. 이는 종종 Claude와 서드파티 도구 간의 과도하게 복잡한 상호작용으로 이어진다. 그 결과 실행에 대한 정밀 제어가 어려워지고, 디버깅이 힘들어지며, 모델이 도구를 해석하는 방식에 따라 예측 불가능한 동작이 발생한다.</p>
+<p>이 모든 일이 일어나는 이유는 단순하다. API를 사용하면 서드파티 도구가 기대하는 명확하고 잘 정의된 규칙을 따른다.</p>
+<figure><img src="https://freedium-mirror.cfd/img/700/1*I0jFQbVil7nnobnCCmXAmg.png"><figcaption>API 요청 예시.</figcaption></figure>
+<p>MCP를 사용하면 LLM이 실시간으로 규칙을 파악해야 하며, 이로 인해 더 많은 설정과 더 많은 이동 부품(아래 다이어그램의 새로운 MCP 계층이 이를 처리)이 생긴다. 그리고 문제가 생길 수 있는 부분도 늘어난다.</p>
+<figure><img src="https://freedium-mirror.cfd/img/700/1*BI14upplUIeK5HbNf2kiyA.png"><figcaption>MCP 요청 예시</figcaption></figure>
+
+<h4>문제 #2: LLM은 MCP를 항상 신뢰성 있게 사용하지 않는다</h4>
+<p>AI 모델이 서드파티 서비스와 상호작용하는 규칙을 스스로 정의하기 때문에, <em>AI 모델만이 그 규칙을 안다</em>는 의미이기도 하다. 즉, MCP 도구를 정의하더라도(예: 서드파티 도구에서의 데이터 수집) 모델이 이를 잘못 사용할 수 있다. 그런 일이 발생하면 작업에서 벗어나 AI를 위한 폴백 로직을 구축하고 가드레일을 정의하기 시작한다. 그 시점에서 MCP의 가치에 의문을 품게 된다.</p>
+
+<h4>문제 #3: 규모 확장 시 유지보수가 어려워진다</h4>
+<p>MCP는(적어도 현재 형태로는) AI 에이전트 기능의 확장에 적합하지 않다. 사용 사례에서 제대로 작동하더라도 의도한 동작과 실제 동작 사이에 괴리가 생긴다. 이 문제는 Figma MCP 같은 도구를 사용할 때 명확하게 드러난다.</p>
+
+<h4>문제 #4: 높은 토큰 소비량</h4>
+<p>MCP는 컨텍스트 윈도우의 상당 부분을 차지하며, 여러 MCP를 사용하면 쉽게 최대 토큰 소비자가 될 수 있다. Claude 토큰을 빠르게 소모하는 가장 쉬운 방법은 프로젝트에서 모든 MCP 서버를 켜두는 것이다. 연결된 MCP 서버는 매 메시지마다 해당 작업에 필요하지 않은 경우에도 모든 도구를 컨텍스트에 로드한다.</p>
+<p>필자는 Figma MCP만 활성화되어 있어도 LLM 호출마다 약 20,000개의 토큰이 소비되는 것을 확인했다.</p>
+<blockquote>
+<p><em>MCP에 컨텍스트 윈도우 공간이 많이 할당될수록, 당면 작업의 핵심 세부 사항을 위한 공간은 줄어든다.</em></p>
+</blockquote>
+<p>Claude Code에서 컨텍스트 윈도우 사용량이 50,000개를 초과하면 AI 모델의 효율이 급격히 떨어지고, LLM이 작업 수행 시 더 혼란스러워진다.</p>
+<p><em>빠른 팁:</em> Claude Code 환경에 어떤 MCP가 있는지 확인하고 사용하지 않는 MCP를 비활성화하는 것이 원칙이다.</p>
+<p>다음 명령어를 실행하라:</p>
+<pre><code>/mcp</code></pre>
+<p>각 세션 시작 시 필요하지 않은 내장 MCP(<em>항상 사용 가능</em>으로 표시됨)의 연결을 해제하라. 아래에서는 Figma MCP 서버를 비활성화하는 방법을 보여준다.</p>
+<figure><img src="https://freedium-mirror.cfd/img/700/1*15H2CMc9ZghM4Cbtmb_P_A.gif"><figcaption></figcaption></figure>
+
+<h4>문제 #5: 보안 위험</h4>
+<p>MCP는 AI에게 도구에 대한 접근 권한과 <em>언제/어떻게</em> 사용할지를 결정하는 능력을 부여한다. 이는

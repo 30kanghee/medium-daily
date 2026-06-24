@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apache Spark 4.1.0: The New Features That Actually Matter</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head><body>
+<a href='/2026-06-17/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Apache Spark 4.1.0: The New Features That Actually Matter</h1>
+<div class="meta">Venkata Krishna Jonnalagadda · 5 min read<br><a href="https://medium.com/@venkatakrishna.jonnalagadda/apache-spark-4-1-0-the-new-features-that-actually-matter-3d268a50ffcc" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@venkatakrishna.jonnalagadda/apache-spark-4-1-0-the-new-features-that-actually-matter-3d268a50ffcc" target="_blank">freedium</a></div>
+<div class="summary">
+<h3>요약</h3>
+<p class="oneline">Apache Spark 4.1.0은 선언적 파이프라인(SDP), 실시간 스트리밍 모드, Arrow 네이티브 UDF, SQL 스크립팅 GA, VARIANT GA, 재귀 CTE 등 실용적인 개선을 통해 Spark를 더 완전한 데이터 플랫폼으로 발전시켰다.</p>
+<p>Apache Spark 4.1.0은 스트리밍, SQL, PySpark, 파이프라인 오케스트레이션 전반에 걸친 실용적인 업그레이드를 제공합니다. 가장 주목할 기능은 Spark 선언적 파이프라인(SDP)으로, 데이터셋과 쿼리만 정의하면 Spark가 실행 그래프, 병렬성, 체크포인트, 재시도를 자동으로 처리합니다. 구조화 스트리밍 실시간 모드(RTM)는 서브초, 심지어 한 자릿수 밀리초 지연 시간의 연속 처리를 공식 지원하여 Flink와의 격차를 좁힙니다. Arrow 네이티브 UDF 실행으로 PySpark 성능이 향상되고, SQL 스크립팅과 VARIANT가 GA가 되어 프로덕션에서 신뢰할 수 있게 사용 가능해졌습니다. 재귀 CTE 지원과 Spark Connect의 계속된 성숙(JDBC 드라이버, ML GA 지원 등)까지 더해져, Spark 4.1.0은 단순한 기능 추가를 넘어 Spark의 미래 방향을 명확히 보여주는 중요한 릴리스입니다.</p>
+</div>
+<hr>
+<figure><img src="https://freedium-mirror.cfd/img/700/1*K77GtI3Gekml-tIXO7crXw.png"><figcaption>Apache Spark 4.1.0 주요 기능 개요</figcaption></figure>
+
+<h4>Spark 4.1.0은 스트리밍, SQL, PySpark, 파이프라인 오케스트레이션 전반에 걸쳐 주요 업그레이드를 가져오며, 최근 몇 년간 가장 실용적인 Spark 릴리스 중 하나일 수 있습니다.</h4>
+
+<p>Spark 4.1.0이 주목할 만한지 궁금하다면, 대답은 예입니다. 눈에 띄는 기능을 많이 추가해서가 아니라, 추가된 기능들이 실제 워크플로 문제들을 해결하기 때문입니다: 오케스트레이션 오버헤드, Python 실행 마찰, 반정형 데이터 처리, 스트리밍 지연 시간. 가장 큰 추가 사항은 Spark 선언적 파이프라인, 구조화 스트리밍 실시간 모드, Arrow 네이티브 Python 실행, SQL 스크립팅 GA 지원, VARIANT GA 지원입니다.</p>
+
+<h2>1. Spark이 마침내 더 선언적으로 변한다</h2>
+
+<p>Spark 4.1.0의 가장 큰 변화 중 하나는 Spark 선언적 파이프라인(SDP)입니다. 릴리스 노트는 이를 데이터셋과 쿼리를 정의하면 Spark가 실행 그래프, 의존성 순서, 병렬성, 체크포인트, 재시도를 처리하는 프레임워크로 설명합니다. 많은 데이터 엔지니어링 노력이 비즈니스 로직을 정의하는 것이 아니라 실행 흐름을 관리하는 데 들어가기 때문에, 이것은 중요한 변화입니다.</p>
+
+<p>모든 것을 수동으로 연결하는 대신, 파이프라인 객체를 더 직접적으로 정의할 수 있습니다:</p>
+
+<pre><code>from pyspark import pipelines as dp
+
+@dp.materialized_view
+def customers_mv():
+  return spark.read.format("csv").option("header", True).load("/data/customers")
+
+@dp.materialized_view
+def orders_mv():
+  return spark.read.format("json").load("/data/orders")
+
+@dp.materialized_view
+def customer_orders_mv():
+  return spark.table("orders_mv").join(spark.table("customers_mv"), "customer_id")</code></pre>
+
+<p>이것이 중요한 이유: Spark는 단순한 "분산 실행 엔진"처럼 느껴지는 것에서 유지 관리 가능한 파이프라인 구축을 위한 플랫폼으로 발전하기 시작했습니다. 이것은 프로젝트가 다음에 어디로 향하고 있는지에 대한 가장 명확한 신호 중 하나일 것입니다.</p>
+
+<h2>2. 구조화 스트리밍이 실시간 지원을 갖추다</h2>
+
+<p>이전에 구조화 스트리밍을 사용해 본 적이 있다면, 이미 일반적인 주의 사항을 알고 있을 것입니다: 스트리밍이었지만 주로 마이크로배치를 통해서였습니다. Spark 4.1.0은 실시간 모드(RTM)에 대한 공식 지원을 추가하여 이를 바꿉니다. 릴리스 노트에 따르면 이것은 연속적인 서브초 지연 시간 처리를 가능하게 하며, 무상태 작업의 경우 한 자릿수 밀리초에도 도달할 수 있습니다.</p>
+
+<p>일반적인 스트리밍 예시는 여전히 친숙해 보입니다:</p>
+
+<pre><code>stream_df = (
+spark.readStream
+.format("kafka")
+.option("kafka.bootstrap.servers", "localhost:9092")
+.option("subscribe", "events")
+.load()
+)
+
+query = (
+stream_df.writeStream
+.trigger(Trigger.ProcessingTime(0)
+.start()
+)
+
+query.awaitTermination()
+stream_df = (
+spark.readStream
+.format("kafka")
+.option("kafka.bootstrap.servers", "localhost:9092")
+.option("subscribe", "events")
+.load()
+)
+
+query = (
+stream_df.writeStream
+.trigger(Trigger.RealTime()  # here is the new change
+.start()
+)
+
+query.awaitTermination()</code></pre>
+
+<p>Spark 스트리밍은 전통적으로 마이크로배치 처리와 연관되어 있었기 때문에 이것은 의미 있는 업그레이드입니다. 실시간 모드는 이벤트 기반 모니터링, 준즉시 보강, 운영 알림, 그리고 마이크로배치 지연이 너무 느리게 느껴지는 기타 워크로드에 Spark를 훨씬 더 매력적으로 만듭니다.</p>
+
+<h2>3. PySpark가 중요한 방식으로 더 빨라지다</h2>
+
+<p>Spark 4.1.0은 PySpark 사용자들에게도 실용적인 것을 제공합니다: Arrow 네이티브 UDF 및 UDTF 실행. 릴리스 노트는 특히 불필요한 Pandas 변환 오버헤드를 피하기 위한 새로운 Arrow 네이티브 Python 실행과 데이터 이동을 줄이기 위한 Python 데이터 소스 필터 푸시다운을 강조합니다.</p>
+
+<p>다음은 소규모 Arrow 최적화 UDF 예시입니다:</p>
+
+<pre><code>from pyspark.sql.functions import udf
+from pyspark.sql.types import IntegerType
+
+@udf(returnType=IntegerType(), useArrow=True)
+def plus_one(x: int) -> int:
+  return x + 1 if x is not None else None
+
+df = spark.createDataFrame([(1,), (2,), (3,)], ["id"])
+df.select("id", plus_one("id").alias("id_plus_one")).show()</code></pre>
+
+<p>Python 중심 팀에게 이것은 사소한 향상이 아닙니다. Spark는 항상 Python으로 강력했지만 항상 우아하지는 않았습니다. Spark 4.1.0은 PySpark가 단지 지원되는 것이 아닌—진지한 일급 발전 방향임을 더 명확하게 만듭니다.</p>
+
+<h2>4. SQL 스크립팅이 이제 GA가 되다</h2>
+
+<p>Spark SQL은 SQL 스크립팅이 이제 GA로 기본 활성화되어 4.1.0에서 훨씬 더 흥미로워집니다. 릴리스 노트는 또한 CONTINUE HANDLER 지원, DECLARE의 다중 변수, 그리고 스크립팅 조건에서의 NULL 동작에 대한 수정도 나열합니다.</p>
+
+<p>간단한 예시:</p>
+
+<pre><code>BEGIN
+  DECLARE a INT DEFAULT 1;
+  DECLARE b INT DEFAULT 5;
+  SET a = a + b;
+  VALUES (a);
+END;</code></pre>
+
+<p>오류 처리 예시:</p>
+
+<pre><code>BEGIN
+  DECLARE a INT DEFAULT 10;
+  DECLARE b INT DEFAULT 0;
+
+  DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+  BEGIN
+  VALUES ('division error handled');
+  END;
+
+  VALUES (a / b);
+END;</code></pre>
+
+<p>이것이 중요한 이유는 Spark SQL이 단순한 쿼리 엔진이 아닌 성숙한 절차적 SQL 환경에서 데이터베이스 엔지니어들이 기대하는 것에 더 가까워지고 있기 때문입니다.</p>
+
+<h2>5. VARIANT가 프로덕션 준비 완료 상태가 되다</h2>
+
+<p>또 다른 주요 업그레이드는 VARIANT가 이제 GA라는 것입니다. Spark 4.1.0은 CSV, XML, Parquet 전반에 걸쳐 VARIANT 지원을 확장하고, 더 나은 접근 패턴과 더 빠른 읽기를 위한 Variant 슈레딩을 추가합니다.</p>
+
+<p>예시:</p>
+
+<pre><code>from pyspark.sql.functions import try_parse_json, try_variant_get, col
+
+data = [
+  ('{"id": 1, "attributes": {"key1": "value1"}}',),
+  ('{"id": 2, "attributes": {"key1": "value2"}}',)
+]
+
+df = spark.createDataFrame(data, ["raw_json"])
+
+variant_df = df.select(
+  try_parse_json(col("raw_json")).alias("v")
+)
+
+variant_df.select(
+  try_variant_get("v", "$.id").alias("id"),
+  try_variant_get("v", "$.attributes.key1").alias("key1")
+).show(truncate=False)</code></pre>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*MmiGEsYrDTkKcnvV9hcZPw.png"><figcaption>VARIANT 데이터 처리 결과 예시</figcaption></figure>
+
+<p>팀이 진화하는 JSON 페이로드, 반정형 이벤트, 또는 외부 API를 다룬다면, 이것은 전체 릴리스에서 가장 즉시 유용한 기능 중 하나입니다. 첫날부터 모든 것을 평탄화하도록 강요하지 않고 유연한 데이터에 대해 Spark에 훨씬 더 나은 스토리를 제공합니다.</p>
+
+<h2>6. 재귀 CTE가 마침내 도래하다</h2>
+
+<p>Spark 4.1.0은 또한 재귀 CTE 지원을 추가하는데, 이것은 복잡한 계층 구조와 순회 로직을 즉시 더 쉽게 만드는 SQL 기능 중 하나입니다. 릴리스 노트는 이것을 SQL 기반 섹션에 직접 나열합니다.</p>
+
+<p>예시:</p>
+
+<pre><code>WITH RECURSIVE nums(n) AS (
+  SELECT 1
+  UNION ALL
+  SELECT n + 1
+  FROM nums
+  WHERE n &lt; 5
+)
+SELECT * FROM nums;</code></pre>
+
+<p>단순해 보일 수 있지만, Spark SQL 내에서 계층 구조 확장, 의존성 순회, 조직 트리, 재귀 관계 로직에 대한 더 자연스러운 패턴을 열어줍니다.</p>
+
+<h2>7. Spark Connect가 계속 성숙해지다</h2>
+
+<p>마지막으로, Spark 4.1.0은 계속해서 Spark Connect를 발전시킵니다. 릴리스 노트는 Spark Connect를 위한 JDBC 드라이버, Python 클라이언트를 위한 Connect의 ML에 대한 GA 지원, 압축된 프로토버프 플랜 및 청크 Arrow 결과 스트리밍과 같은 여러 안정성 및 성능 개선 사항을 언급합니다.</p>
+
+<p>이것은 또 다른 장기적인 신호입니다: Spark는 클라이언트 경험을 클러스터 실행으로부터 분리하는 것을 계속하고 있으며, 이는 원격 우선 및 더 모듈식 Spark 애플리케이션을 구축하기 더 쉽게 만들어야 합니다.</p>
+
+<h2>마무리 생각</h2>
+
+<p>Spark 4.1.0은 명확한 메시지를 가진 릴리스처럼 느껴집니다: Spark는 운영하기 쉽고, Python 사용자에게 더 빠르며, 실시간 워크로드에 더 적합하고, SQL 및 파이프라인 플랫폼으로서 더 완전해지기를 원합니다. 가장 두드러진 것은 선언적 파이프라인, 실시간 모드, GA SQL 스크립팅, GA VARIANT, 그리고 Spark Connect의 성장하는 성숙도입니다.</p>
+
+<p>데이터 엔지니어링에 종사하고 있다면, 이것은 주목할 가치가 있는 릴리스입니다. 단순히 새로운 구문이나 몇 가지 추가 함수에 관한 것이 아닙니다. Spark가 다음에 어디로 향하는지를 보여줍니다.</p>
+
+<p>참고:</p>
+<ol>
+<li>https://www.databricks.com/blog/introducing-apache-sparkr-41</li>
+<li>https://spark.apache.org/releases/spark-release-4.1.0.html#streaming</li>
+<li>https://medium.com/data-engineering-space/apache-spark-4-1-is-here-the-next-chapter-in-unified-analytics-e890067d8046</li>
+</ol>
+</body></html>

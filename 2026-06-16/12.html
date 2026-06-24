@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snowflake vs Databricks: The Real Story No One Told Me (After Studying Both)</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-16/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Snowflake vs Databricks: The Real Story No One Told Me (After Studying Both)</h1>
+<div class="meta">Cloud With Azeem · 7분 · <a href="https://medium.com/expocomputing/snowflake-vs-databricks-the-real-story-no-one-told-me-after-studying-both-deeply-5df0cfc73d22">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/expocomputing/snowflake-vs-databricks-the-real-story-no-one-told-me-after-studying-both-deeply-5df0cfc73d22">freedium</a></div>
+<div class="summary">
+  <div class="oneline">Snowflake는 과거를 설명하고, Databricks는 미래를 예측한다 — 둘은 경쟁자가 아니라 서로 다른 문제의 해답이다.</div>
+  <p>실제 프로덕션 시스템을 깊이 파고든 후 저자가 깨달은 것은, Snowflake와 Databricks 중 하나를 "선택"하는 것 자체가 잘못된 질문이었다는 것이다. Snowflake는 럭셔리 호텔 주방처럼 정돈되고 즉시 사용 가능한 분석 환경을 제공하고, Databricks는 연구실 주방처럼 자유롭고 실험적인 AI·ML 환경을 제공한다. 대부분의 대기업들은 이미 두 플랫폼을 함께 쓰고 있으며, 데이터 파이프라인의 앞단은 Databricks, 뒷단 분석과 대시보드는 Snowflake가 담당한다. 핵심은 어느 게 더 나은지가 아니라 어떤 문제에 어떤 도구가 맞는지를 아는 것이다.</p>
+</div>
+
+<h2>그 순간: "Snowflake 써야 해요, Databricks 써야 해요?"</h2>
+<p>실제 프로덕션 논의에서 이 질문이 내게 날아든 순간을 나는 아직도 기억한다. 단순한 기술 선택처럼 들렸다. 하지만 이내 이게 도구 선택이 아니라는 걸 깨달았다. 이건 철학을 선택하는 것이었다. 데이터가 조직 안에서 어떻게 흐르는지, 팀이 어떻게 협력하는지, 그리고 궁극적으로 회사가 어떻게 의사 결정을 내리는지를 선택하는 것이었다.</p>
+
+<p>두 플랫폼을 깊이 연구하고, 직접 실험해 보고, 실제 프로덕션 사용 사례를 분석한 끝에 나는 중요한 사실을 발견했다. Snowflake와 Databricks는 적이 아니다. <strong>이 둘은 서로 다른 두 가지 문제에 대한 두 가지 서로 다른 답이다.</strong></p>
+
+<h2>차이를 이해한 그날</h2>
+<p>두 플랫폼을 이해하기 위해 두 가지 다른 종류의 주방을 상상해 보자.</p>
+
+<p>첫 번째 주방은 럭셔리 호텔 안에 있다. 모든 게 깔끔하다. 정돈돼 있다. 구조화돼 있다. 셰프가 들어서면 모든 게 준비돼 있다. 재료가 손질됐고, 도구가 완벽하게 놓여 있어 요리가 수월하게 이루어진다. <strong>이게 Snowflake다.</strong></p>
+
+<p>두 번째 주방은 연구소 안에 있다. 재료가 여기저기 흩어져 있다. 실험 도구들. 날것의 재료들. 커스텀 장비들. 셰프는 실험하고, 새로운 레시피를 발명하고, 완전히 새로운 것을 창조할 완전한 자유를 갖는다. <strong>이게 Databricks다.</strong></p>
+
+<p>둘 다 강력하다. 하지만 각자 다른 목적에 봉사한다.</p>
+
+<h2>Snowflake: 단순함을 위해 태어났다</h2>
+<p>Snowflake는 처음부터 클라우드 네이티브 데이터 웨어하우스로 설계됐다. 핵심 목표는 단순했다. 분석을 쉽게 만드는 것. Snowflake 이전의 데이터 웨어하우스는 고통스러웠다. 엔지니어가 인프라를 관리하고, 스토리지를 수동으로 최적화하고, 스케일링을 걱정해야 했다. Snowflake는 그 모든 것을 제거했다.</p>
+
+<p>컴퓨팅과 스토리지를 분리해 각각 독립적으로 확장할 수 있게 했다. 혁명적이었다. 고속도로 시스템을 상상해 보자. 기존 웨어하우스는 단일 차선 도로였다. 차량이 늘면 모든 게 느려졌다. Snowflake는 여러 개의 독립적인 고속도로를 건설했다. 이제 분석 쿼리가 서로를 방해하지 않고 실행될 수 있게 됐다.</p>
+
+<p>비즈니스 팀은 인프라 복잡성을 걱정하지 않고 대시보드, 쿼리, 보고서를 실행할 수 있게 됐다. 이것이 Snowflake가 분석 팀 사이에서 엄청나게 인기를 얻은 이유다.</p>
+
+<h2>Databricks: 인텔리전스를 위해 태어났다</h2>
+<p>Databricks는 완전히 다른 세계에서 왔다. Apache Spark를 만든 원래 엔지니어들이 창업했다. 그 미션은 단순한 분석이 아니었다. 미션은 인텔리전스였다.</p>
+
+<p>Databricks가 집중한 문제들:</p>
+<ul>
+  <li>머신러닝</li>
+  <li>인공지능</li>
+  <li>실시간 스트리밍</li>
+  <li>대규모 데이터 처리</li>
+</ul>
+
+<p>Snowflake와 달리, Databricks는 데이터가 항상 깨끗하고 구조화돼 있을 것이라고 가정하지 않았다. 대신 혼돈을 끌어안았다. 구조화 데이터, 비구조화 데이터, 스트리밍 데이터, 이미지, 로그, 모두 다.</p>
+
+<p>이 유연성은 조직이 예측 시스템을 구축하게 해줬다. 무슨 일이 있었는지 분석하는 게 아니라, 무슨 일이 일어날지를 예측하는 것.</p>
+
+<blockquote>Snowflake는 과거를 설명한다. Databricks는 미래를 예측한다.</blockquote>
+
+<h2>실제로 다가온 순간</h2>
+<p>현대 시스템 아키텍처를 연구하다 보니 중요한 사실이 눈에 들어왔다. 현대 시스템은 엄청난 실시간 데이터를 생성한다. 클릭, 사용자 행동, 트랜잭션, 로그, 센서. 이 데이터는 깔끔한 행과 열로 도착하지 않는다. 원시적이고 지저분한 스트림으로 도착한다.</p>
+
+<p>Databricks는 이 세계를 다루기 위해 만들어졌다. Snowflake는 데이터가 구조화된 이후에 정돈된 데이터를 분석하기 위해 만들어졌다. 이 깨달음이 두 플랫폼을 바라보는 시각을 완전히 바꿨다. 경쟁하는 게 아니었다. 동일한 파이프라인의 서로 다른 단계를 해결하는 것이었다.</p>
+
+<h2>Netflix 스타일 아키텍처 사고로 보는 실제 사례</h2>
+<p>Netflix 스타일 마이크로서비스 아키텍처를 연구하면 핵심 패턴이 나타난다. 시스템은 레이어별로 진화한다. 원시 이벤트가 먼저 생성되고, 처리되고, 분석되고, 시각화된다. 각 레이어는 서로 다른 요구 사항이 있다.</p>
+
+<ul>
+  <li><strong>레이어 1: 원시 이벤트 수집</strong> → Databricks</li>
+  <li><strong>레이어 2: 데이터 변환</strong> → Databricks</li>
+  <li><strong>레이어 3: 분석 스토리지</strong> → Snowflake</li>
+  <li><strong>레이어 4: 대시보드</strong> → Snowflake</li>
+</ul>
+
+<p>이 분리는 자연스럽게 일어난다. 각 플랫폼이 서로 다른 책임에서 탁월하기 때문이다.</p>
+
+<h2>SQL 경험 vs 엔지니어링 경험</h2>
+<p>어느 날 두 플랫폼 모두에서 동일한 분석 쿼리 워크로드를 실행해 봤다. 차이가 즉시 명확해졌다.</p>
+
+<p>Snowflake는 노력 없이 느껴졌다. SQL을 작성했다. 작동했다. 자동으로 확장됐다. 인프라에 대해 생각할 필요가 없었다.</p>
+
+<p>반면 Databricks는 더 많은 제어권을 줬다. 하지만 더 많은 결정도 요구했다. 클러스터 크기, 최적화 설정, 리소스 튜닝. 분석보다는 엔지니어링처럼 느껴졌다.</p>
+
+<blockquote>Snowflake는 분석가를 위해 설계됐다. Databricks는 엔지니어를 위해 설계됐다.</blockquote>
+
+<p>조직은 두 종류 모두로 구성돼 있다. 이 구분은 매우 중요하다.</p>
+
+<h2>모든 것을 바꾼 호수 vs 창고 비유</h2>
+<p>물 저장 시스템으로 비유해 보자.</p>
+
+<p>Snowflake 같은 데이터 웨어하우스는 깨끗한 물탱크다. 물이 들어오기 전에 정수된다. 모든 게 구조화돼 있고, 깨끗하고, 바로 사용할 수 있다.</p>
+
+<p>Databricks 같은 데이터 레이크는 자연 호수다. 물이 자유롭게 들어온다. 날것 그대로, 정수되지 않은 채로. 하지만 이 호수는 더 깊은 탐구를 허용한다. 낚시, 연구, 발견.</p>
+
+<p>Databricks는 이후 레이크하우스(Lakehouse) 개념을 선보였다. 레이크의 유연성과 웨어하우스의 구조를 결합한 것이다. 뛰어난 혁신이었다. 별도 시스템을 유지할 필요성을 없앴다.</p>
+
+<h2>아무도 말하지 않는 비용 현실</h2>
+<p>많은 엔지니어가 Snowflake가 더 쉽기 때문에 더 싸다고 생각한다. 하지만 편함이 비효율을 숨길 수 있다.</p>
+
+<p>Snowflake는 쿼리 중 컴퓨팅 사용량에 과금한다. 쿼리가 잘못 최적화되면 비용이 조용히 늘어난다.</p>
+
+<p>반면 Databricks는 미리 클러스터 결정을 내려야 한다. 이것이 엔지니어를 신중하게 생각하도록 만든다. 보통 더 효율적인 리소스 사용으로 이어지지만, 기술이 필요하다.</p>
+
+<p>Snowflake는 엔지니어링 노력을 줄인다. Databricks는 아키텍처 한계를 줄인다. 이 트레이드오프가 중요하다.</p>
+
+<h2>거버넌스와 제어: 엔터프라이즈의 요구 사항</h2>
+<p>대기업들은 거버넌스를 매우 중요하게 여긴다. 누가 어떤 데이터에 언제 왜 접근했는지. 두 플랫폼 모두 이제 강력한 거버넌스 시스템을 제공한다.</p>
+
+<p>Snowflake는 구조화된 접근 제어 시스템을 제공한다. Databricks는 깊은 계보 추적이 가능한 Unity Catalog를 제공한다. 데이터 출처를 추적할 수 있어 컴플라이언스에 필수적이다. 특히 금융과 의료 분야에서.</p>
+
+<h2>숨겨진 진실: 대부분의 회사는 둘 다 쓴다</h2>
+<p>연구 중 가장 큰 놀라움이었다. 대부분의 대기업은 Snowflake나 Databricks 중 하나를 선택하지 않는다. <strong>둘 다 쓴다.</strong></p>
+
+<p>현대 데이터 파이프라인이 여러 단계를 갖기 때문이다. Databricks는 데이터 엔지니어링과 머신러닝을 다루고, Snowflake는 분석과 대시보드를 다룬다. 이 하이브리드 아키텍처가 매우 일반적이다. 두 플랫폼의 강점을 활용하기 때문이다.</p>
+
+<h2>미래: AI가 모든 것을 바꾸고 있다</h2>
+<p>지금 일어나고 있는 가장 큰 변화는 인공지능이다.</p>
+
+<p>Databricks는 AI 인프라에 대규모 투자를 하고 있다. 머신러닝 워크플로와 깊이 통합된다. Snowflake도 빠르게 진화하고 있다. AI 기능을 추가하고, 성능을 개선하고, 오픈 형식을 지원하고 있다.</p>
+
+<p>두 플랫폼은 수렴하고 있다. 하지만 핵심 강점은 다르게 유지된다. Snowflake는 분석가 중심으로 남아 있다. Databricks는 엔지니어 중심으로 남아 있다.</p>
+
+<h2>최종 깨달음: 도구를 선택하는 게 아니라 용도를 선택하는 것</h2>
+<p>처음엔 하나를 선택해야 한다고 생각했다. 하지만 그게 잘못된 질문이었다.</p>
+
+<p>진짜 질문은 이것이었다. <strong>각 플랫폼이 어디에 쓰여야 하는가?</strong></p>
+
+<p><strong>Snowflake가 완벽한 경우:</strong></p>
+<ul>
+  <li>비즈니스 분석</li>
+  <li>대시보드</li>
+  <li>보고서</li>
+  <li>SQL 기반 워크로드</li>
+</ul>
+
+<p><strong>Databricks가 완벽한 경우:</strong></p>
+<ul>
+  <li>머신러닝</li>
+  <li>데이터 엔지니어링</li>
+  <li>스트리밍 시스템</li>
+  <li>AI 워크로드</li>
+</ul>
+
+<p>이 깨달음이 모든 것을 단순하게 만들었다. 하나의 도구를 선택하는 대신, 올바른 작업에 올바른 도구를 선택하는 법을 배웠다.</p>
+
+<h2>항상 기억하는 단순한 비유</h2>
+<p>Snowflake는 럭셔리 전동 기차 같다. 빠르고, 효율적이고, 편하다. 하지만 고정된 레일 위에서만 달린다.</p>
+
+<p>Databricks는 전지형 차량 같다. 유연하고, 강력하고, 어디든 갈 수 있다. 하지만 숙련된 드라이버가 필요하다.</p>
+
+<p>둘 다 가치 있다. 둘 다 필요하다.</p>
+
+<h2>결론</h2>
+<p>진짜 승자는 둘 다를 이해하는 조직이다. 기술은 승자를 고르는 것이 아니다. 시스템을 지능적으로 설계하는 것이다.</p>
+
+<p>두 플랫폼을 깊이 연구하고, 실제 아키텍처를 분석하고, 현대 데이터 파이프라인을 이해한 후 내 시각은 완전히 바뀌었다.</p>
+
+<ul>
+  <li>Snowflake는 분석을 단순화한다. Databricks는 인텔리전스를 가능하게 한다.</li>
+  <li>Snowflake는 무슨 일이 있었는지 이해하는 데 도움을 준다. Databricks는 무슨 일이 일어날지 예측하는 데 도움을 준다.</li>
+  <li>그리고 현대 기업은 둘 다 필요하다. 유행이라서가 아니라, 현대 데이터 문제가 단일 도구로 해결하기엔 너무 복잡하기 때문이다.</li>
+</ul>
+</body>
+</html>

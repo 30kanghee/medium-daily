@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PySpark for Senior Data Engineers: The Concepts That Matter in Interviews</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href='/2026-06-15/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>PySpark for Senior Data Engineers: The Concepts That Matter in Interviews</h1>
+<div class="meta">A Ganapathiram · 3 min read · <a href="https://medium.com/pyspark-for-senior-data-engineers-the-concepts-that-matter-in-interviews">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/pyspark-for-senior-data-engineers-the-concepts-that-matter-in-interviews">freedium</a></div>
+<div class="summary">
+  <p class="oneline">시니어 데이터 엔지니어 면접에서 PySpark 실력을 검증하는 핵심 개념들 — 기초 문법이 아닌 분산 처리의 본질을 묻는다.</p>
+  <h3>요약</h3>
+  <p>PySpark 면접은 단순한 API 암기가 아니라 분산 컴퓨팅의 원리를 이해하는지를 검증한다. 시니어 데이터 엔지니어라면 SparkSession, DataFrame, RDD의 차이와 적절한 사용 시점을 명확히 설명할 수 있어야 한다. Lazy Evaluation과 DAG가 성능 최적화에 어떻게 작용하는지, 파티셔닝이 왜 핵심인지를 실무 관점에서 이야기해야 한다. Catalyst 옵티마이저, Shuffle 최적화, 브로드캐스트 조인, 윈도우 함수 등 고급 주제를 자유롭게 다루는 것이 시니어와 주니어를 가르는 기준이 된다.</p>
+</div>
+
+<h2>왜 PySpark 면접은 어려운가</h2>
+
+<p>PySpark를 배우는 것과 PySpark를 <em>이해하는</em> 것은 다르다. 면접관이 시니어 데이터 엔지니어에게 원하는 것은 코드 암기가 아니다. 그들은 다음을 원한다:</p>
+
+<ul>
+  <li>분산 처리의 근본 원리를 이해하는가</li>
+  <li>성능 병목이 어디서 오는지 진단할 수 있는가</li>
+  <li>대규모 프로덕션 파이프라인에서 발생하는 실제 문제를 해결할 수 있는가</li>
+</ul>
+
+<p>이 글에서는 시니어 데이터 엔지니어 면접에서 실제로 중요한 PySpark 개념들을 다룬다. API 목록이 아니라, 면접관이 진짜로 확인하고 싶은 것들이다.</p>
+
+<hr>
+
+<h2>1. SparkSession — 모든 것의 출발점</h2>
+
+<p><code>SparkSession</code>은 Spark 기능을 사용하기 위한 진입점이다. DataFrame 생성, SQL 처리, Spark 속성 설정, SparkContext 관리까지 모두 여기서 시작된다.</p>
+
+<pre><code>from pyspark.sql import SparkSession
+
+spark = SparkSession.builder \
+        .appName("MySparkApp") \
+        .master("local[*]") \
+        .getOrCreate()</code></pre>
+
+<p>면접에서 자주 나오는 질문: <em>"SparkContext와 SparkSession의 차이는?"</em></p>
+
+<p>SparkContext는 Spark 1.x 시절의 진입점으로 RDD 기반 작업에 사용된다. SparkSession은 Spark 2.0부터 도입된 통합 진입점으로, SparkContext를 내부적으로 포함하면서 DataFrame API와 SQL을 함께 제공한다. 실무에서는 SparkSession을 사용한다.</p>
+
+<hr>
+
+<h2>2. RDD vs DataFrame vs Dataset — 언제 무엇을 쓰는가</h2>
+
+<p>이 세 가지 차이는 시니어 면접의 단골 주제다. 단순히 "뭐가 다른지"가 아니라 "언제 무엇을 쓰는지"까지 답할 수 있어야 한다.</p>
+
+<table style="width:100%;border-collapse:collapse;font-size:.9em;">
+  <thead>
+    <tr style="background:#f6f8fa;">
+      <th style="padding:8px;border:1px solid #e1e4e8;text-align:left;">구분</th>
+      <th style="padding:8px;border:1px solid #e1e4e8;text-align:left;">RDD</th>
+      <th style="padding:8px;border:1px solid #e1e4e8;text-align:left;">DataFrame</th>
+      <th style="padding:8px;border:1px solid #e1e4e8;text-align:left;">Dataset</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:8px;border:1px solid #e1e4e8;">API 수준</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">저수준</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">고수준</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">고수준</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid #e1e4e8;">스키마</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">없음</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">있음</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">있음</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid #e1e4e8;">타입 안전성</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">없음</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">없음</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">있음 (Scala/Java)</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid #e1e4e8;">최적화</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">수동</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">Catalyst 자동 최적화</td>
+      <td style="padding:8px;border:1px solid #e1e4e8;">Catalyst 자동 최적화</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>RDD를 쓰는 경우:</strong> 비정형/반정형 데이터, 세밀한 제어가 필요한 커스텀 변환, 저수준 최적화가 필요한 경우.</p>
+
+<p><strong>DataFrame을 쓰는 경우:</strong> 대부분의 실무 데이터 처리. SQL 쿼리와 함께 쓰고 싶을 때, 스키마 기반 구조화 데이터를 다룰 때.</p>
+
+<pre><code>rdd = spark.sparkContext.parallelize([1, 2, 3, 4, 5])
+
+df = spark.read.csv("data.csv", header=True, inferSchema=True)
+df.show()</code></pre>
+
+<hr>
+
+<h2>3. Lazy Evaluation과 DAG — Spark 성능의 핵심</h2>
+
+<p>이것을 제대로 설명하지 못하면 시니어로 인정받기 어렵다.</p>
+
+<p><strong>Lazy Evaluation</strong>이란 트랜스포메이션(변환)을 즉시 실행하지 않고, 액션이 트리거될 때까지 실행을 미루는 전략이다.</p>
+
+<pre><code>df_filtered = df.filter(df.age &gt; 21)   # 트랜스포메이션 — 실행 안 됨
+df_filtered.show()                       # 액션 — 여기서 실제 실행</code></pre>
+
+<p>Spark는 트랜스포메이션들을 모아 <strong>DAG(Directed Acyclic Graph, 방향성 비순환 그래프)</strong>를 구성한다. 이 DAG는 Catalyst 옵티마이저를 통해 최적화된 후 실행 계획으로 변환된다.</p>
+
+<p><strong>왜 중요한가?</strong></p>
+<ul>
+  <li>불필요한 계산을 건너뛸 수 있다</li>
+  <li>파이프라인 최적화가 가능하다 (여러 좁은 변환을 하나의 스테이지로 합침)</li>
+  <li>Predicate Pushdown — 필터를 데이터 소스 레벨로 밀어 읽는 데이터 양을 줄인다</li>
+</ul>
+
+<blockquote>
+  면접 팁: "Spark는 왜 lazy evaluation을 쓰나요?"라는 질문에 "나중에 실행돼서요"가 아니라 "실행 계획 전체를 최적화할 수 있기 때문"이라고 답해야 한다.
+</blockquote>
+
+<hr>
+
+<h2>4. 파티셔닝 — 분산 처리의 단위</h2>
+
+<p>파티션은 Spark가 데이터를 나누는 단위다. 파티션 수가 너무 적으면 병렬 처리가 안 되고, 너무 많으면 스케줄링 오버헤드가 크다.</p>
+
+<pre><code># 파티션 수 재조정
+df = df.repartition(10)        # 셔플 발생, 균등 분배
+df = df.coalesce(5)            # 셔플 없음, 파티션 수 줄일 때 사용</code></pre>
+
+<p><strong><code>repartition()</code> vs <code>coalesce()</code>:</strong></p>
+<ul>
+  <li><code>repartition()</code>: 파티션 수를 늘리거나 줄일 때 모두 사용 가능. 셔플 발생. 균등 분배.</li>
+  <li><code>coalesce()</code>: 파티션 수를 줄일 때만 사용. 셔플 없음. 데이터 이동 최소화.</li>
+</ul>
+
+<p><strong>데이터 스큐(Data Skew)</strong>도 파티셔닝의 핵심 주제다. 특정 파티션에 데이터가 몰리면 그 태스크만 오래 걸린다. 해결책:</p>
+<ul>
+  <li>Salting — 키에 랜덤 접미사 추가로 편향 분산</li>
+  <li>Broadcast Join — 작은 테이블을 브로드캐스트해 셔플 제거</li>
+</ul>
+
+<hr>
+
+<h2>5. 브로드캐스트 변수 — 셔플 없는 조인</h2>
+
+<p>브로드캐스트 변수는 읽기 전용 데이터를 모든 워커 노드에 효율적으로 공유하는 메커니즘이다. 대용량 테이블과 소용량 테이블을 조인할 때 특히 유용하다.</p>
+
+<pre><code>from pyspark.sql.functions import broadcast
+
+# 작은 테이블을 브로드캐스트
+result = large_df.join(broadcast(small_df), "id", "inner")</code></pre>
+
+<p>브로드캐스트 없이 조인하면 양쪽 데이터가 모두 셔플된다. 브로드캐스트를 쓰면 작은 테이블이 각 워커로 복사되어 로컬 조인이 가능하다. 셔플 비용이 사라진다.</p>
+
+<hr>
+
+<h2>6. Catalyst 옵티마이저 — Spark SQL의 두뇌</h2>
+
+<p>Catalyst는 Spark SQL의 규칙 기반 쿼리 옵티마이저다. 사용자의 DataFrame 연산이나 SQL을 받아 최적화된 물리적 실행 계획으로 변환한다.</p>
+
+<p>최적화 단계:</p>
+<ol>
+  <li><strong>Logical Plan 생성</strong> — 사용자 코드를 논리적 계획으로 변환</li>
+  <li><strong>Logical Plan 최적화</strong> — Predicate Pushdown, Column Pruning 등 규칙 적용</li>
+  <li><strong>Physical Plan 생성</strong> — 여러 물리적 실행 계획 후보 생성</li>
+  <li><strong>Cost-Based Optimization</strong> — 통계 기반 최적 계획 선택</li>
+  <li><strong>Code Generation</strong> — Tungsten을 통한 바이트코드 생성</li>
+</ol>
+
+<p>면접에서 "Predicate Pushdown이 뭔가요?"라는 질문을 받으면: 필터 조건을 데이터 소스 레벨로 내려보내 읽는 데이터 양 자체를 줄이는 최적화다. Parquet 같은 컬럼형 포맷과 함께 쓸 때 특히 효과적이다.</p>
+
+<hr>
+
+<h2>7. 윈도우 함수 — 그룹 내 랭킹과 분석</h2>
+
+<p>윈도우 함수는 특정 행의 집합(윈도우)에 걸쳐 연산을 수행한다. <code>groupBy</code>가 그룹을 집계해 하나의 행으로 줄이는 것과 달리, 윈도우 함수는 원본 행을 유지하면서 추가 컬럼을 붙인다.</p>
+
+<pre><code>from pyspark.sql.window import Window
+from pyspark.sql.functions import row_number, rank, lag, lead
+
+# 부서별 급여 순위
+window = Window.partitionBy("department").orderBy("salary".desc())
+
+df.withColumn("rank", rank().over(window)) \
+  .withColumn("row_num", row_number().over(window)) \
+  .show()</code></pre>
+
+<p>자주 쓰는 윈도우 함수:</p>
+<ul>
+  <li><code>row_number()</code> — 파티션 내 순번 (동일 값도 다른 번호)</li>
+  <li><code>rank()</code> — 순위 (동일 값은 같은 순위, 다음 번호 건너뜀)</li>
+  <li><code>dense_rank()</code> — 순위 (동일 값은 같은 순위, 다음 번호 연속)</li>
+  <li><code>lag(col, n)</code> — n행 이전 값</li>
+  <li><code>lead(col, n)</code> — n행 이후 값</li>
+</ul>
+
+<hr>
+
+<h2>8. UDF vs 내장 함수 — 성능 함정</h2>
+
+<p>UDF(User-Defined Function)는 편리하지만 성능에 주의해야 한다.</p>
+
+<pre><code># Python UDF — 느림 (Python-JVM 직렬화 오버헤드)
+from pyspark.sql.functions import udf
+from pyspark.sql.types import IntegerType
+
+def add_one(x):
+    return x + 1
+
+add_one_udf = udf(add_one, IntegerType())
+df.withColumn("new_age", add_one_udf(df.age)).show()
+
+# Pandas UDF (벡터화 UDF) — 훨씬 빠름
+from pyspark.sql.functions import pandas_udf
+import pandas as pd
+
+@pandas_udf(IntegerType())
+def add_one_pandas(s: pd.Series) -> pd.Series:
+    return s + 1
+
+df.withColumn("new_age", add_one_pandas(df.age)).show()</code></pre>
+
+<blockquote>
+  시니어 면접 팁: "UDF를 쓰시나요?"라고 물으면 "가능한 내장 함수를 먼저 쓰고, 꼭 필요할 때는 Pandas UDF를 씁니다"라고 답하는 것이 정답이다. Python UDF는 Python-JVM 간 데이터 직렬화 비용이 크다.
+</blockquote>
+
+<hr>
+
+<h2>9. 결측값 처리 — 실무 필수</h2>
+
+<pre><code># 결측값이 있는 행 제거
+df.na.drop(how="any").show()
+
+# 특정 컬럼의 결측값을 특정 값으로 채우기
+df.na.fill({"age": 0, "name": "unknown"}).show()
+
+# 통계 기반 대체값 사용
+from pyspark.ml.feature import Imputer
+imputer = Imputer(
+    strategy="median",
+    inputCols=["price", "rooms"],
+    outputCols=["price_imputed", "rooms_imputed"]
+)
+model = imputer.fit(df)
+df_imputed = model.transform(df)</code></pre>
+
+<hr>
+
+<h2>10. Structured Streaming — 실시간 데이터 처리</h2>
+
+<p>면접에서 스트리밍을 언급하면 깊이가 있어 보인다.</p>
+
+<pre><code>df = spark.readStream \
+    .format("socket") \
+    .option("host", "localhost") \
+    .option("port", 9999) \
+    .load()
+
+query = df.writeStream \
+    .outputMode("append") \
+    .format("console") \
+    .start()
+
+query.awaitTermination()</code></pre>
+
+<p>시니어 면접에서 나올 수 있는 스트리밍 심화 질문:</p>
+<ul>
+  <li><strong>Exactly-Once Semantics</strong>: Kafka 소스와 체크포인팅으로 중복/누락 없는 처리</li>
+  <li><strong>Watermarking</strong>: 늦게 도착하는 데이터 처리를 위한 임계값 설정</li>
+  <li><strong>상태 관리(Stateful Processing)</strong>: 스트리밍에서 집계 상태를 유지하는 방법</li>
+</ul>
+
+<hr>
+
+<h2>11. 성능 최적화 — 시니어의 실력이 드러나는 영역</h2>
+
+<p>느린 PySpark 잡을 진단하고 최적화하는 능력이 시니어를 구분한다.</p>
+
+<h3>체크리스트</h3>
+
+<ol>
+  <li><strong>파티션 크기 확인</strong>: 너무 적거나 많은 파티션은 성능 저하. 기본 파티션 수를 워크로드에 맞게 튜닝.</li>
+</ol>
+
+<pre><code>spark.conf.set("spark.sql.shuffle.partitions", 200)</code></pre>
+
+<ol start="2">
+  <li><strong>캐싱 활용</strong>: 반복 사용되는 DataFrame은 캐시해 재계산 방지.</li>
+</ol>
+
+<pre><code>df.cache()
+# 또는 더 세밀하게
+from pyspark.storagelevel import StorageLevel
+df.persist(StorageLevel.MEMORY_AND_DISK)</code></pre>
+
+<ol start="3">
+  <li><strong>RDD 대신 DataFrame 사용</strong>: DataFrame은 Catalyst + Tungsten으로 자동 최적화된다.</li>
+  <li><strong>브로드캐스트 조인</strong>: 작은 테이블 조인 시 반드시 고려.</li>
+  <li><strong>적절한 파일 포맷 선택</strong>: Parquet을 기본으로. 컬럼형이라 필요한 컬럼만 읽고 압축 효율도 좋다.</li>
+  <li><strong>Narrow vs Wide 변환 이해</strong>: Wide 변환(groupBy, join, sortBy)은 셔플 발생. 셔플을 최소화하는 방향으로 설계.</li>
+</ol>
+
+<hr>
+
+<h2>12. 내결함성 — 프로덕션에서 중요한 것</h2>
+
+<p>시니어 면접에서 프로덕션 경험을 검증하는 질문이 나온다: "PySpark 잡이 실패하면 어떻게 처리하나요?"</p>
+
+<ul>
+  <li><strong>체크포인팅</strong>: 중간 상태를 디스크에 저장해 재시작 시 처음부터 재계산하지 않음</li>
+  <li><strong>데이터 복제</strong>: HDFS나 S3의 복제로 데이터 손실 방지</li>
+  <li><strong>WAL(Write-Ahead Logging)</strong>: 변경 전 로그 기록</li>
+  <li><strong>Spark 내장 재시도</strong>: 실패한 태스크를 자동으로 재시도</li>
+</ul>
+
+<pre><code># 체크포인팅 설정
+spark.sparkContext.setCheckpointDir("/path/to/checkpoint")
+df.checkpoint()</code></pre>
+
+<hr>
+
+<h2>면접에서 자주 나오는 시니어 레벨 질문</h2>
+
+<ul>
+  <li>"Narrow transformation과 Wide transformation의 차이를 예시와 함께 설명하라"</li>
+  <li>"데이터 스큐를 발견하고 해결한 경험이 있나요?"</li>
+  <li>"Spark UI에서 성능 병목을 어떻게 진단하나요?"</li>
+  <li>"동적 자원 할당(Dynamic Allocation)이 언제 유리한가요?"</li>
+  <li>"Delta Lake를 써본 경험이 있나요? ACID 트랜잭션이 어떻게 구현되나요?"</li>
+</ul>
+
+<hr>
+
+<h2>마무리</h2>
+
+<p>PySpark 시니어 면접에서 통과하려면 API를 외우는 것이 아니라 <strong>왜</strong>를 이해해야 한다.</p>
+
+<ul>
+  <li>왜 Lazy Evaluation인가 → 실행 계획 전체 최적화</li>
+  <li>왜 DataFrame인가 → Catalyst와 Tungsten의 자동 최적화</li>
+  <li>왜 브로드캐스트 조인인가 → 셔플 비용 제거</li>
+  <li>왜 Parquet인가 → 컬럼형 읽기 + 압축 효율</li>
+</ul>
+
+<p>이 "왜"들을 실무 경험과 연결해서 이야기할 수 있을 때 비로소 시니어 수준이 된다.</p>
+</body>
+</html>

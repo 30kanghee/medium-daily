@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>An Interviewer Asked Me Difference Between @Bean vs @Component — Here's the Real Answer</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  table{border-collapse:collapse;width:100%;margin:1.2em 0;}
+  th,td{border:1px solid #ddd;padding:8px 12px;text-align:left;}
+  th{background:#f6f8fa;font-weight:600;}
+</style>
+</head>
+<body>
+<a href='/2026-06-16/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>An Interviewer Asked Me Difference Between @Bean vs @Component — Here's the Real Answer</h1>
+<div class="meta">kaurharjeet122 · 3분 · <a href="https://medium.com/@kaurharjeet122/an-interviewer-asked-me-difference-between-bean-vs-component-heres-the-real-answer-4db9aab42b0f">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@kaurharjeet122/an-interviewer-asked-me-difference-between-bean-vs-component-heres-the-real-answer-4db9aab42b0f">freedium</a></div>
+<div class="summary">
+  <div class="oneline">면접관이 "@Bean과 @Component 차이" 질문으로 진짜 원하는 건 암기한 답이 아니라 Spring이 왜 두 방법을 모두 제공하는지 이해하는지 확인하는 것이다.</div>
+  <p>면접에서 <code>@Bean</code>과 <code>@Component</code>의 차이를 묻자 교과서적 답변을 했더니 면접관이 "그건 구글 답이고, 숙련된 개발자처럼 진짜 차이를 설명해 보라"고 했다. <code>@Component</code>는 Spring이 자동으로 스캔해 등록하는 반면, <code>@Bean</code>은 <code>@Configuration</code> 클래스 안에서 개발자가 직접 객체 생성 방식을 지정한다. 핵심 차이는 소유권과 제어권이다. 내 클래스면 <code>@Component</code>, 서드파티 라이브러리처럼 소스를 수정할 수 없는 클래스라면 <code>@Bean</code>을 써야 한다. 면접관이 정말 평가하는 것은 "Spring이 왜 같은 문제를 해결하는 방법을 두 가지 제공하는가"를 이해하는지 여부다.</p>
+</div>
+
+<blockquote>
+<p>"<code>@Bean</code>과 <code>@Component</code>의 차이가 뭐죠?"</p>
+</blockquote>
+
+<p>나는 표준 답변을 했습니다:</p>
+<ul>
+<li><code>@Component</code>는 Spring이 자동으로 감지합니다</li>
+<li><code>@Bean</code>은 <code>@Configuration</code> 클래스 안에서 수동으로 선언합니다</li>
+</ul>
+
+<p>면접관은 나를 바라보며 말했습니다:</p>
+<blockquote>
+<p><em>"그건 구글 답입니다. 이제 숙련된 개발자처럼 진짜 차이를 설명해 보세요."</em></p>
+</blockquote>
+
+<p>솔직히 말하면… 그 질문이 Spring을 진짜로 이해하는지, 아니면 애너테이션을 암기만 했는지를 드러내는 질문이었습니다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*2t0GZU1Ik6wOHCYs34fcSg.png"><figcaption>@Bean vs @Component 비교</figcaption></figure>
+
+<p>진짜 답은 이렇습니다 👇</p>
+
+<h2><code>@Bean</code> vs <code>@Component</code> — 진짜 차이</h2>
+
+<p>둘 다 Spring이 관리하는 객체(Bean)를 만드는 데 사용됩니다.</p>
+<p>하지만 Spring이 객체를 생성하고 제어하는 방식이 완전히 다릅니다.</p>
+
+<h3><code>@Component</code></h3>
+
+<p><code>@Component</code>를 사용하면 Spring이 자동으로 스캔해서 객체를 생성합니다.</p>
+
+<p>예시:</p>
+<pre><code>@Component
+public class PaymentService {
+}</code></pre>
+
+<p>컴포넌트 스캔이 활성화되어 있으면, Spring이 이 클래스를 자동으로 찾아 Bean으로 등록합니다.</p>
+<p>그래서 이것을 <strong>자동 감지(Auto-detection) 방식</strong>이라고 부릅니다.</p>
+
+<h3><code>@Bean</code></h3>
+
+<p><code>@Bean</code>은 설정 클래스(Configuration class) 안에서 사용하며, <strong>개발자가 직접</strong> Spring에게 어떤 객체를 만들지 알려줍니다.</p>
+
+<p>예시:</p>
+<pre><code>@Configuration
+public class AppConfig {
+
+    @Bean
+    public PaymentService paymentService() {
+        return new PaymentService();
+    }
+}</code></pre>
+
+<p>이것은 <strong>수동 Bean 생성(Manual bean creation) 방식</strong>입니다.</p>
+
+<h2>대부분의 개발자가 놓치는 진짜 면접 포인트</h2>
+
+<p>면접관이 이어서 물었습니다:</p>
+<blockquote>
+<p><em>"둘 다 Bean을 만드는데, Spring은 왜 두 가지가 필요한가요?"</em></p>
+</blockquote>
+
+<p>그게 진짜 논의의 시작이었습니다.</p>
+
+<h3><code>@Component</code>가 BEST인 경우</h3>
+
+<p><code>@Component</code>를 사용하세요:</p>
+<ul>
+<li>내가 소유한 클래스일 때</li>
+<li>클래스가 내 애플리케이션에 속할 때</li>
+<li>복잡한 객체 생성 로직이 필요 없을 때</li>
+</ul>
+
+<p>다음에 적합합니다:</p>
+<ul>
+<li>서비스(Services)</li>
+<li>리포지토리(Repositories)</li>
+<li>컨트롤러(Controllers)</li>
+<li>유틸리티 클래스(Utility classes)</li>
+</ul>
+
+<p>예시:</p>
+<pre><code>@Service
+@Repository
+@Controller</code></pre>
+
+<p>이것들은 모두 <code>@Component</code>의 특수화된 형태입니다.</p>
+
+<h3><code>@Bean</code>이 BEST인 경우</h3>
+
+<p><code>@Bean</code>을 사용하세요:</p>
+<ul>
+<li>내가 클래스를 소유하지 않을 때</li>
+<li>서드파티 라이브러리 객체를 Spring이 관리하게 해야 할 때</li>
+<li>커스텀 초기화가 필요할 때</li>
+</ul>
+
+<p>실제 사례 👇</p>
+<p>다음과 같은 서드파티 클래스는 수정할 수 없습니다:</p>
+
+<pre><code>ObjectMapper
+RestTemplate
+ModelMapper</code></pre>
+
+<p>그래서 직접 생성합니다:</p>
+<pre><code>@Bean
+public ObjectMapper objectMapper() {
+    return new ObjectMapper();
+}</code></pre>
+
+<p>이것이 <code>@Bean</code>의 가장 실용적인 사용 사례 중 하나입니다.</p>
+
+<h2>프로덕션 레벨의 차이</h2>
+
+<p>시니어 개발자들이 보통 알고 있는 것들:</p>
+
+<p><strong><code>@Component</code></strong> — Spring이 제어:</p>
+<ul>
+<li>객체 생성</li>
+<li>의존성 주입</li>
+<li>생명주기 자동 관리</li>
+</ul>
+<p>코드가 적습니다. 개발이 더 깔끔합니다.</p>
+
+<p><strong><code>@Bean</code></strong> — 개발자가 제어:</p>
+<ul>
+<li>객체가 어떻게 생성되는지</li>
+<li>생성자 값</li>
+<li>설정 로직</li>
+<li>서드파티 통합</li>
+</ul>
+<p>유연성이 더 높습니다. 제어력이 더 큽니다.</p>
+
+<h2>간단한 비유</h2>
+
+<p>면접관에게 이렇게 말했습니다:</p>
+
+<blockquote>
+<p><code>@Component</code>는 메뉴에서 음식을 바로 주문하는 것과 같습니다.</p>
+<p>Spring이 모든 걸 자동으로 준비합니다.</p>
+</blockquote>
+
+<p>하지만…</p>
+
+<blockquote>
+<p><code>@Bean</code>은 주방에 들어가서 원하는 방식으로 직접 요리하는 것과 같습니다.</p>
+</blockquote>
+
+<p>면접관은 웃으며 말했습니다: "드디어 실용적으로 설명하는 사람이 나왔네요."</p>
+
+<h2>빠른 요약</h2>
+
+<table>
+<thead>
+<tr><th>특징</th><th><code>@Component</code></th><th><code>@Bean</code></th></tr>
+</thead>
+<tbody>
+<tr><td>Bean 생성</td><td>자동</td><td>수동</td></tr>
+<tr><td>적용 위치</td><td>클래스</td><td>메서드</td></tr>
+<tr><td>최적 사용처</td><td>애플리케이션 클래스</td><td>서드파티 / 커스텀 객체</td></tr>
+<tr><td>유연성</td><td>낮음</td><td>높음</td></tr>
+<tr><td>제어 주체</td><td>Spring</td><td>개발자</td></tr>
+</tbody>
+</table>
+
+<h2>가장 큰 교훈</h2>
+
+<p>Spring Boot 면접에서 면접관은 거의 문법을 체크하지 않습니다.</p>
+<p>그들이 확인하는 것은:</p>
+
+<blockquote>
+<p><em>"Spring이 왜 같은 문제를 해결하는 방법을 여러 가지 제공하는지 이해하고 있는가?"</em></p>
+</blockquote>
+
+<p>그 관점이 바뀌면 대화 전체가 달라집니다.</p>
+
+</body>
+</html>

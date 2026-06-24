@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uber Architecture – Part 1: Why Tracking 5 Million Drivers Every Second Is One of Tech's Hardest Problems</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head><body>
+<a href='/2026-06-18/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>← 목록으로</a>
+<h1>Uber Architecture – Part 1: Why Tracking 5 Million Drivers Every Second Is One of Tech's Hardest Problems</h1>
+<div class="meta">Simranjeet Singh · AI in Plain English · 7분 읽기 · <a href="https://medium.com/@simranjeetsingh1497/uber-architecture-part-1-why-tracking-5-million-drivers-every-second-is-one-of-techs-hardest-6ca606892497">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@simranjeetsingh1497/uber-architecture-part-1-why-tracking-5-million-drivers-every-second-is-one-of-techs-hardest-6ca606892497">freedium</a></div>
+<div class="summary"><h3>요약</h3><p class="oneline">매초 5백만 명의 드라이버 위치를 추적하는 것이 왜 분산 시스템에서 가장 어려운 문제 중 하나인지, 그리고 Uber가 이를 어떻게 5개의 전용 레이어로 분해하여 해결했는지를 설명한다.</p><p>Uber는 피크 시간대에 초당 83,000건의 GPS 핑을 수신한다. 이 데이터는 단순히 저장하는 것만으로는 해결되지 않는다. 라이더 지도, 배차 엔진, 분석 파이프라인이라는 세 소비자가 각각 완전히 다른 지연 허용치와 접근 패턴을 요구하기 때문이다. 단일 저장 시스템은 쓰기 처리량, 읽기 지연, 저장 비용이라는 트레이드오프 삼각형을 동시에 만족시킬 수 없다. Uber는 이 문제를 수집 엣지, Kafka, Redis 링 버퍼, Cassandra, 배차 엔진, 지도 렌더링의 6개 레이어로 분해함으로써 해결했다. 이 접근법의 핵심 통찰은 "불가능해 보이는 하나의 큰 문제"를 각각 명확한 역할을 가진 여러 하위 문제로 재구성한 것이다.</p></div>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*2WUFpfYE-eAsv3g21WE2Vg.png" alt="Uber Architecture — Part 1: Why Tracking 5 Million Drivers Every Second Is One of Tech's Hardest Problems"><figcaption>Uber 아키텍처 — 파트 1: 초당 500만 드라이버 추적이 왜 기술 최난제 중 하나인가</figcaption></figure>
+
+<blockquote>
+<p>매초, 83,000명의 드라이버가 GPS 칩을 탭한다.</p>
+</blockquote>
+
+<p>매초, Uber의 서버는 수백 개 도시에 걸쳐 그 83,000개의 위치 정보를 수신하고, 검증하고, 라우팅하고, 저장하고, 당신의 스마트폰 지도에 부드럽게 렌더링한다.</p>
+
+<p>매. 초. 마다.</p>
+
+<p>데이터베이스, 메시지 큐, 또는 육각형 그리드를 이야기하기 전에, 이 문제가 왜 진정으로 어려운지 생각해보자. "구현하기 어려운" 수준이 아니다. 숙련된 엔지니어들이 잠시 멈추고 화이트보드를 집어 들어 트레이드오프 삼각형을 그리기 시작하게 만드는 그런 어려움이다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*2WUFpfYE-eAsv3g21WE2Vg.png" alt="아키텍처 다이어그램"><figcaption>아키텍처 개요</figcaption></figure>
+
+<p>이 문제에 대해 모든 엔지니어가 처음 떠올리는 직관은 완전히 틀렸기 때문이다. 그리고 그것이 왜 틀렸는지를 이해하는 것이 이후 모든 내용의 토대가 된다.</p>
+
+<h2>Uber 아키텍처 시리즈</h2>
+
+<ul>
+  <li>파트 1: 초당 500만 드라이버 추적이 왜 기술 최난제 중 하나인가 (현재 글)</li>
+  <li>파트 2: 수집 엣지 (The Ingestion Edge)</li>
+  <li>파트 3: 지리 기반 Kafka 파티셔닝과 육각형 그리드</li>
+  <li>파트 4: 링 버퍼와 Cassandra — 하나의 스트림, 두 가지 저장소</li>
+  <li>파트 5: 배차 엔진과 지도 렌더링</li>
+</ul>
+
+<h2>주니어 엔지니어가 스스로에게 하는 거짓말</h2>
+
+<p>"그냥 위도/경도 좌표잖아요. 데이터베이스에 저장하면 끝이죠."</p>
+
+<p>합리적으로 들린다. GPS 핑은 두 개의 부동소수점 숫자, 타임스탬프, 드라이버 ID다. 약 50바이트 정도의 데이터다. 얼마나 어렵겠어?</p>
+
+<p>실제로 얼마나 어려운지 살펴보자.</p>
+
+<p>아키텍처 이야기를 시작하기 전에, 순수한 수치만으로도 이렇다.</p>
+
+<p>Uber는 피크 시간대에 전 세계적으로 약 5백만 명의 활성 드라이버를 보유하고 있다. 앱이 활성화된 동안 각 드라이버의 앱은 매초 서버에 핑을 보낸다. 이는 분당 5백만 건의 쓰기 연산이며, 초당 83,000건으로 압축된다. 버스트 시에만이 아니다. 스파이크 때만도 아니다. 하루 24시간, 주 7일 지속되는 기준 부하로서다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*IGteDZGu3QuLx4BsbsPpCg.png" alt="초당 쓰기 규모 다이어그램"><figcaption>초당 쓰기 규모</figcaption></figure>
+
+<p>참고로, 좋은 하드웨어에서 잘 튜닝된 단일 Postgres 인스턴스는 이상적인 조건(단순 스키마, 인덱스 없음)에서 초당 최대 10,000~20,000건의 쓰기를 처리한다. Uber의 GPS 부하를 단일 데이터베이스로 처리하려면, 읽기 연산 고려 전, 복제 고려 전, 그리고 GPS 좌표가 지리공간적으로 쿼리될 때만 의미 있다는 사실 고려 전에, 구입 가능한 최고 사양의 단일 머신보다 4~8배 빠른 처리 속도가 필요하다.</p>
+
+<p>즉, "그냥 저장하자"는 직관은 거의 즉시 벽에 부딪힌다.</p>
+
+<p>하지만 쓰기 볼륨은 문제의 절반에 불과하다. 더 깊은 문제는 대부분의 엔지니어들이 예상하지 못한 것에서 온다.</p>
+
+<h2>진짜 문제: 하나의 스트림, 세 명의 주인</h2>
+
+<p>모든 GPS 핑에는 완전히 다른 세 소비자가 있으며, 각자 지금 당장, 그리고 전혀 다른 이유로 그 데이터를 필요로 한다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*73SQdrdCFqGT5iUs_5MnaQ.png" alt="세 소비자 다이어그램"><figcaption>하나의 GPS 스트림을 소비하는 세 소비자</figcaption></figure>
+
+<p><strong>첫 번째 소비자는 라이더의 지도다.</strong></p>
+
+<p>Uber를 열고 작은 자동차 아이콘이 당신 쪽으로 미끄러져 오는 것을 볼 때, 그것은 당신의 화면에 렌더링된 라이브 GPS 핑이며, 보통 1초 미만의 엔드-투-엔드 지연으로 처리된다. 이 소비자는 가능한 가장 최신 데이터를 필요로 하며, 읽기 지연이 극히 낮아야 하지만, 한 번에 한 드라이버만 신경 쓴다. 바로 당신의 드라이버. 이것은 포인트 룩업이다. 빠르고, 좁고, 지연에 극도로 민감하다.</p>
+
+<p><strong>두 번째 소비자는 배차 엔진이다.</strong></p>
+
+<p>이것은 들어오는 탑승 요청과 사용 가능한 드라이버를 매칭시키는 두뇌다. 당신이 탑승을 요청하면, 배차 엔진은 픽업 지점으로부터 합리적인 반경 내에 있는 모든 사용 가능한 드라이버를 찾고, ETA와 기타 신호로 순위를 매기고, 100밀리초 이내에 최적의 드라이버를 배정해야 한다. 이 소비자는 지리적 영역 내에서 여러 드라이버를 한번에 읽어야 한다. 포인트 룩업이 아닌 범위 쿼리다. 최신성 요건은 여전히 높지만, 접근 패턴은 지도 렌더링과 완전히 다르다.</p>
+
+<p><strong>세 번째 소비자는 분석 파이프라인이다.</strong></p>
+
+<p>Uber의 데이터 과학 팀은 드라이버 이동 패턴을 지속적으로 분석하여 서지 가격 모델, 수요 예측, 도시 수준 히트맵, 드라이버 수익 예측을 구동한다. 이 소비자는 몇 초의 지연을 허용할 수 있지만, 방대한 양의 역사적 GPS 데이터를 효율적으로 저장하고 쿼리할 수 있어야 한다. 밀리초 단위의 최신성보다 보존과 처리량을 중시하는 배치 및 스트림 처리 워크로드다.</p>
+
+<p>세 소비자. 세 가지 완전히 다른 접근 패턴. 세 가지 완전히 다른 지연 허용치. 초당 83,000건의 단일 수신 스트림.</p>
+
+<h2>핵심 긴장: 트레이드오프 삼각형</h2>
+
+<p>분산 시스템에는 모든 엔지니어가 결국 내면화하게 되는 근본적인 트레이드오프 삼각형이 있다.</p>
+
+<p>쓰기 처리량(데이터가 도착하는 속도로 수집하는 능력)을 최적화할 수 있다. 읽기 지연(데이터를 즉시 쿼리하는 능력)을 최적화할 수 있다. 저장 비용(인프라 비용이 천문학적으로 치솟지 않도록 유지)을 최적화할 수 있다. 문제는 나이브한 아키텍처에서는 최대 두 가지만 선택할 수 있다는 것이다.</p>
+
+<p>모든 것을 메모리에 버퍼링하여 쓰기를 최적화하면 빠른 수집과 빠른 읽기를 얻지만, 치명적인 데이터 손실 위험이 생긴다. 공간 인덱스에 모든 좌표를 사전 인덱싱하여 읽기를 최적화하면 즉시 쿼리할 수 있지만, 모든 삽입이 여러 인덱스 구조를 업데이트해야 하므로 쓰기가 느려진다. 오래된 GPS 데이터를 적극적으로 압축하고 아카이빙하여 저장을 최적화하면 분석 파이프라인은 만족하지만, 실시간 소비자들은 굶게 된다.</p>
+
+<p>단일 저장 시스템은 동일한 데이터 스트림에 대해 이 삼각형의 세 면을 동시에 우아하게 해결할 수 없다. 이것은 돈을 쏟아부어 해결할 수 있는 하드웨어 문제가 아니다. 근본적인 아키텍처 문제다.</p>
+
+<blockquote>
+<p>이렇게 생각해보면 도움이 된다:</p>
+</blockquote>
+<blockquote>
+<p>점심 러시 시간 레스토랑 주방을 상상해보라. 요리사들에게 주문을 전달하는 익스페디터는 즉각적인 정보가 필요하다. 다음에 어느 테이블을 안내할지 추적하는 매니저는 몇 분마다 업데이트되는 더 넓은 시야가 필요하다. 하루의 커버를 집계하는 회계사는 하루 종일 정확한 합계가 필요하다. 세 사람 모두 동일한 기본 정보가 필요하지만, 완전히 다른 속도, 세분성, 최신성 수준으로. 주방의 단일 칠판은 세 사람을 동시에 만족시킬 수 없다. 같은 소스에서 공급받는, 다양한 소비자를 위한 서로 다른 시스템이 필요하다.</p>
+</blockquote>
+
+<h2>아키텍처 패턴에 대한 간략한 메모</h2>
+
+<p>이 트레이드오프는 분산 시스템 문헌에서 이름이 있다. Nathan Marz가 처음 제시한 Lambda 아키텍처 문제라고 불린다. 빠른 경로는 실시간, 저지연 읽기를 처리한다. 배치 경로는 고처리량, 고정확도 역사적 쿼리를 처리한다. 서빙 레이어가 둘을 합친다.</p>
+
+<p>Uber의 현대적인 팀들은 대부분 Kappa 아키텍처 변형으로 이동했다. 단일 스트리밍 파이프라인(Kafka + Flink)이 실시간 소비자와 배치 소비자 모두를 지원하며, 두 개의 별도 처리 경로를 유지하는 운영 복잡성을 제거한다. 파트 3과 4에서 정확히 어떤 모습인지 볼 것이다.</p>
+
+<h2>모든 것을 바꾸는 통찰</h2>
+
+<p>그렇다면 Uber는 실제로 무엇을 하는가?</p>
+
+<p>그들은 문제를 분해한다.</p>
+
+<p>수집, 라우팅, 저장, 배차 서빙, 지도 렌더링을 한꺼번에 처리하려는 하나의 시스템을 구축하는 대신, 각각 하나의 하위 문제를 탁월하게 해결하고 다음으로 깔끔하게 넘겨주는 5개의 전용 레이어를 구축한다.</p>
+
+<figure><img src="https://freedium-mirror.cfd/img/700/1*ckGgQT3eX5cKfSlphJirIg.png" alt="5개 레이어 아키텍처 다이어그램"><figcaption>Uber의 5개 전용 레이어 아키텍처</figcaption></figure>
+
+<p>그 분해가 전체 통찰이다. 그리고 각 레이어는 그 자체로 하나의 엔지니어링 이야기다.</p>
+
+<p>각 레이어를 깊이 파고들기 전에, 전체 아키텍처를 한눈에 살펴보자:</p>
+
+<ul>
+  <li><strong>레이어 1 — 수집 엣지 (Ingestion Edge):</strong> 다운스트림이 보기 전에 들어오는 모든 핑을 검증하고, 중복 제거하고, 속도를 제어한다.</li>
+  <li><strong>레이어 2 — 지리 기반 Kafka:</strong> 드라이버가 누구인지가 아닌, 물리적으로 어디에 있는지를 기준으로 핑을 올바른 소비자에게 라우팅한다.</li>
+  <li><strong>레이어 3 — 링 버퍼 (Redis):</strong> 드라이버당 마지막 몇 개의 위치만 메모리에 저장하여 서브 밀리초 실시간 읽기를 제공한다.</li>
+  <li><strong>레이어 4 — Cassandra 내구성 저장:</strong> 순차 쓰기와 시간 범위 읽기에 최적화하여 모든 핑을 내구성 있게 저장한다.</li>
+  <li><strong>레이어 5 — 배차 엔진:</strong> 위의 모든 것을 사용하여 100밀리초 이내에 라이더와 드라이버를 매칭한다.</li>
+  <li><strong>레이어 6 — 지도 렌더링:</strong> 노이즈가 많고 불연속적인 GPS 데이터를 당신이 실제로 보는 부드러운 애니메이션으로 변환한다.</li>
+</ul>
+
+<p>6개의 레이어. 각각 정확히 하나의 문제를 해결한다. 각각이 다음 레이어의 작업을 가능하게 만든다.</p>
+
+<h2>아키텍처 전에 이 프레이밍이 왜 중요한가</h2>
+
+<p>대부분의 시스템 설계 콘텐츠는 기술 선택으로 곧장 건너뛴다 — Kafka, Redis, Cassandra, H3. 그리고 그 선택들은 매혹적이다. 하지만 문제를 이해하기 전에 도구를 배우면, 도구가 임의적으로 느껴진다. "Uber는 Cassandra를 사용한다"를 외우게 되지만, 왜 Cassandra인지, 더 중요하게는 왜 다른 것이 아닌지를 이해하지 못하게 된다.</p>
+
+<p>여기서 주장하는 논거는 특정 기술보다 더 단순하고 지속적이다: 문제가 불가능할 정도로 크게 보일 때, 보통은 그것을 하나의 문제로 바라보고 있기 때문이다.</p>
+
+<p>초당 83,000건 쓰기 문제는 하나의 문제가 아니다. 최소한 세 가지 문제이며, 소비자당 하나씩, 각각 다른 제약, 다른 수용 가능한 트레이드오프, 다른 이상적인 솔루션을 가진다. 그렇게 보는 순간, 아키텍처는 거의 스스로 그려진다. 각 레이어는 누군가가 이전 레이어로부터의 핸드오프를 보고 "여기서 시작되는 가장 어려운 하위 문제가 무엇인가?"를 물었기 때문에 존재한다. 그리고 그들은 그것을 위한 무언가를 구체적으로 구축했다.</p>
+
+<h2>마치며</h2>
+
+<p>아키텍처의 첫 줄을 그리기 전에, 가장 어려운 통찰은 단순히 이 문제를 하나의 문제로 해결할 수 없다는 것을 인정하는 것이다. 데이터에는 완전히 다른 세 가지 필요를 가진 세 명의 주인이 있다. 하나의 시스템으로 세 명 모두를 만족시키려는 시도를 멈추고 "각 소비자가 실제로 무엇을 필요로 하는가?"를 묻는 순간, 아키텍처는 명확해지기 시작한다.</p>
+
+<p>분해가 구현 세부사항이 아니다. 분해가 곧 아키텍처다.</p>
+
+<p>파트 2에서는 혼돈과 다른 모든 것 사이에 서는 것이 유일한 역할인 첫 번째 레이어인 수집 엣지 노드를 만난다. 그것은 정확히 세 가지 책임을 가진다. 다른 모든 것은 거부한다. 그 거부가 전체 시스템을 가능하게 만든다.</p>
+
+<blockquote>
+<p>파트 2를 위한 질문: 초당 83,000개의 GPS 핑이 Uber의 서버에 도달한다. 절대로 데이터베이스에 직접 닿게 할 수 없다면, 무엇을 앞에 두겠는가? 그리고 드라이버 앱을 절대 느리게 하지 않으면서 들어오는 데이터를 어떻게 검증하고, 중복 제거하고, 속도를 제어하겠는가?</p>
+</blockquote>
+
+</body></html>

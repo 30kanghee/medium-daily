@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spark Interview Question: 10 TB Fact Table + 1 GB Dimension Table &#8212; What Join?</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+
+</head><body>
+<a href='/2026-06-14/' style='color:#1a73e8;text-decoration:none;font-size:.9em'>&#8592; 목록으로</a>
+<h1>Spark Interview Question: 10 TB Fact Table + 1 GB Dimension Table &#8212; What Join?</h1>
+<div class="meta">Sriw World of Coding &middot; Data And Beyond &middot; 7 min read &middot; <a href="https://medium.com/data-and-beyond/spark-interview-question-10-tb-fact-table-1-gb-dimension-table-what-join-4c18c3f06b49">원문</a> &middot; <a href="https://freedium-mirror.cfd/https://medium.com/data-and-beyond/spark-interview-question-10-tb-fact-table-1-gb-dimension-table-what-join-4c18c3f06b49">freedium</a></div>
+<div class="summary"><p class="oneline">10 TB 팩트 테이블과 1 GB 디멘션 테이블을 조인할 때 어떤 Spark 조인 전략을 선택해야 하는지, 실무 면접 관점에서 브로드캐스트·SMJ·SHJ를 비교 분석한 글이다.</p><h3>요약</h3><p>이 글은 Spark 면접의 단골 시나리오인 대형 팩트-디멘션 테이블 조인을 다룬다. 1 GB 디멘션 테이블에 브로드캐스트 조인을 쓰면 드라이버 OOM 위험이 있고, 소트-머지 조인(SMJ)은 안전하지만 대규모 셔플이 발생한다. 셔플 해시 조인(SHJ)은 정렬 없이 해시 테이블을 활용해 중간적 선택이 된다. 데이터 스큐가 있다면 AQE(적응형 쿼리 실행)나 수동 솔팅이 필요하고, 반복 조인에는 버킷팅으로 셔플을 완전히 제거할 수 있다. 면접에서 중요한 것은 하나의 정답이 아니라 조건에 따라 추론하는 과정을 보여주는 것이다.</p></div>
+<h2>면접 시나리오: 10 TB 팩트 테이블 + 1 GB 디멘션 테이블</h2>
+<p>당신은 고압적인 Spark 면접 자리에 앉아 있다. 면접관이 말한다: "10 TB짜리 팩트 테이블을 1 GB 디멘션 테이블과 조인해야 합니다. 어떤 조인 전략을 선택하겠습니까?"</p>
+<p>이 질문은 단순히 API 지식을 묻는 게 아니다. 조인 전략을 잘못 선택하면 Spark 잡이 몇 시간씩 걸리거나 OOM(OutOfMemory) 오류로 실패할 수 있다는 걸 이해하는지 보는 것이다.</p>
+
+<h2>Spark의 조인 전략 개요</h2>
+<p>Spark는 크게 세 가지 조인 전략을 사용한다.</p>
+<ul>
+  <li><strong>브로드캐스트 해시 조인 (Broadcast Hash Join, BHJ)</strong></li>
+  <li><strong>셔플 해시 조인 (Shuffle Hash Join, SHJ)</strong></li>
+  <li><strong>소트-머지 조인 (Sort-Merge Join, SMJ)</strong></li>
+</ul>
+<p>각각의 동작 원리와 적합한 조건을 이해하는 것이 이 면접 질문의 핵심이다.</p>
+
+<h2>1 GB 디멘션 테이블 — 브로드캐스트는 맞는가?</h2>
+<p>첫 번째 본능은 "1 GB는 작으니 브로드캐스트하자"일 것이다. Spark의 기본 브로드캐스트 임계값은 10 MB이지만, 설정을 바꾸면 더 큰 테이블도 브로드캐스트할 수 있다.</p>
+<pre><code>from pyspark.sql import SparkSession
+from pyspark.sql.functions import broadcast
+
+spark = SparkSession.builder.appName("join-demo").getOrCreate()
+
+fact_df = spark.table("fact_sales")      # 10 TB
+dim_df  = spark.table("dim_customers")  # 1 GB
+
+# 브로드캐스트 힌트 명시
+result = fact_df.join(broadcast(dim_df), "customer_id")
+result.write.parquet("/output/result")</code></pre>
+<p>그런데 여기서 중요한 함정이 있다. 브로드캐스트 조인은 <em>드라이버가 소형 테이블을 메모리에 수집한 뒤 모든 익스큐터에 전송</em>한다. 1 GB 데이터를 드라이버가 수집하면 드라이버 OOM이 발생할 수 있다. 또한 100개의 익스큐터가 있다면 네트워크 전송 비용도 100 GB가 된다.</p>
+<blockquote>결론: 1 GB 디멘션 테이블에 브로드캐스트를 쓰려면 드라이버 메모리를 넉넉히 확보하고, spark.sql.autoBroadcastJoinThreshold를 명시적으로 올려야 한다. 실제 프로덕션에서는 주의가 필요하다.</blockquote>
+
+<h2>더 안전한 선택: 소트-머지 조인</h2>
+<p>10 TB 팩트 테이블에는 <strong>소트-머지 조인(SMJ)</strong>이 기본적으로 가장 안전한 선택이다. 양쪽 테이블을 조인 키로 셔플하고 정렬한 뒤 병렬로 머지한다.</p>
+<pre><code># 소트-머지 조인은 Spark가 자동으로 선택 (브로드캐스트 임계값 초과 시)
+spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "-1")  # 브로드캐스트 비활성화
+
+result = fact_df.join(dim_df, "customer_id")  # SMJ 자동 선택
+result.explain()  # == SortMergeJoin == 확인</code></pre>
+<p>SMJ의 장점은 메모리 효율성이다. 데이터를 정렬된 상태로 스트리밍 방식으로 처리하므로 OOM 위험이 낮다. 단점은 대용량 셔플이 발생한다는 것으로, 네트워크 I/O와 디스크 I/O가 많아진다.</p>
+
+<h2>셔플 해시 조인: 중간 지점</h2>
+<p>1 GB 디멘션 테이블이 파티션당 몇 MB 수준으로 나뉜다면 <strong>셔플 해시 조인(SHJ)</strong>도 좋은 선택이다. 정렬 없이 해시 테이블을 빌드하므로 SMJ보다 CPU 효율이 높다.</p>
+<pre><code>spark.conf.set("spark.sql.join.preferSortMergeJoin", "false")
+
+result = fact_df.join(dim_df, "customer_id")
+result.explain()  # ShuffleHashJoin 확인</code></pre>
+<p>단, 각 파티션의 디멘션 데이터가 익스큐터 메모리에 올라가야 하므로, 파티션 수와 익스큐터 메모리 설정이 중요하다.</p>
+
+<h2>데이터 스큐가 있다면?</h2>
+<p>10 TB 팩트 테이블에서 특정 <code>customer_id</code>가 수억 건을 차지한다면 조인 키 스큐(skew)가 발생한다. 이 경우 어떤 조인 전략도 한 익스큐터에 부하가 몰린다.</p>
+<pre><code># AQE(Adaptive Query Execution)로 자동 스큐 처리 (Spark 3.x)
+spark.conf.set("spark.sql.adaptive.enabled", "true")
+spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
+
+# 또는 수동 솔팅(salting)
+from pyspark.sql.functions import col, concat, lit, floor, rand
+
+SALT_BUCKETS = 50
+
+# 팩트 테이블에 솔트 키 추가
+fact_salted = fact_df.withColumn(
+    "salted_id",
+    concat(col("customer_id"), lit("_"), (floor(rand() * SALT_BUCKETS)).cast("string"))
+)
+
+# 디멘션 테이블을 솔트 버킷 수만큼 복제
+from pyspark.sql.functions import explode, array
+dim_exploded = dim_df.withColumn("salt", explode(array([lit(i) for i in range(SALT_BUCKETS)])))
+dim_exploded = dim_exploded.withColumn(
+    "salted_id",
+    concat(col("customer_id"), lit("_"), col("salt").cast("string"))
+)
+
+result = fact_salted.join(dim_exploded, "salted_id").drop("salted_id", "salt")</code></pre>
+
+<h2>모범 답안 정리</h2>
+<p>면접에서 기대하는 답변은 하나의 전략을 맹목적으로 선택하는 게 아니라, <strong>조건에 따라 추론하는 과정</strong>을 보여주는 것이다.</p>
+<ul>
+  <li>드라이버 메모리가 충분하고 익스큐터가 많지 않다면: 브로드캐스트 고려 (단, 1 GB는 임계값 조정 필요)</li>
+  <li>일반적인 프로덕션 환경: 소트-머지 조인 (안전, 예측 가능)</li>
+  <li>정렬 비용을 줄이고 싶고 파티션 메모리가 충분하다면: 셔플 해시 조인</li>
+  <li>스큐가 있다면: AQE 활성화 또는 수동 솔팅</li>
+</ul>
+<p>또한 버킷팅(bucketing)으로 미리 정렬해두면 반복 조인에서 셔플을 완전히 제거할 수 있다는 점도 언급하면 가산점이 된다.</p>
+<pre><code># 버킷팅으로 셔플 제거 (초기 한 번만 비용 지불)
+fact_df.write.bucketBy(200, "customer_id").sortBy("customer_id") \
+    .saveAsTable("fact_sales_bucketed")
+dim_df.write.bucketBy(200, "customer_id").sortBy("customer_id") \
+    .saveAsTable("dim_customers_bucketed")
+
+# 이후 조인은 셔플 없이 실행
+fact_b = spark.table("fact_sales_bucketed")
+dim_b  = spark.table("dim_customers_bucketed")
+result = fact_b.join(dim_b, "customer_id")
+result.explain()  # Exchange 없음 확인</code></pre>
+<p>조인 전략은 단순한 설정값 선택이 아니라 데이터 특성, 클러스터 자원, 접근 패턴을 종합적으로 이해해야 하는 엔지니어링 결정이다.</p>
+
+</body></html>
