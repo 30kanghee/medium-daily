@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apache Iceberg for Data Engineers</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Apache Iceberg for Data Engineers</h1>
+<div class="meta">MHAMDI Chiheb · 9 min read · <a href="https://medium.com/@chiheb.mhamdi/apache-iceberg-for-data-engineers-f8dc92cd3cb2" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@chiheb.mhamdi/apache-iceberg-for-data-engineers-f8dc92cd3cb2" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">Apache Iceberg는 데이터 레이크 위에 카탈로그 계층을 추가해 ACID 트랜잭션, 타임 트래블, 스키마 진화를 가능하게 하는 오픈 테이블 포맷이다.</p>
+  <p>S3에 Parquet 파일을 그냥 쌓는 방식은 부분 쓰기 실패, 동시 접근 충돌, 과거 데이터 재현 불가 등 고질적인 문제를 안고 있다. Iceberg는 쿼리 엔진이 아니라 테이블 포맷 명세로, 스냅샷·매니페스트·카탈로그로 구성된 메타데이터 계층을 통해 이 문제를 해결한다. MERGE INTO로 CDC 파이프라인을 구현하고, <code>TIMESTAMP AS OF</code>로 과거 시점 데이터를 조회하며, 데이터를 다시 쓰지 않고도 파티션 방식을 변경할 수 있다. Spark, Trino, Flink 등 여러 엔진이 동일 테이블을 공유할 수 있고, AWS Glue·Nessie·REST 카탈로그와 연동된다. 운영 관점에서는 소형 파일 컴팩션과 스냅샷 만료 정책이 필수이며, 이를 소홀히 하면 메타데이터 비대화로 성능이 급격히 저하된다.</p>
+</div>
+
+<h2>1. Iceberg가 해결하는 문제</h2>
+
+<p>창고에 수천 권의 책을 분류 없이 쌓아둔 도서관을 상상해보자. "2023년 출간된 추리 소설"을 찾으려면 상자를 일일이 열어 레이블을 확인해야 한다. 그 사이 누군가 책을 추가라도 하면 집계 결과가 틀려진다.</p>
+
+<p>데이터 레이크도 마찬가지다. S3에 Parquet 파일만 쌓아두면 안전한 업데이트, 효율적인 쿼리, 일관된 상태 유지 중 어느 것도 보장되지 않는다. Iceberg는 이 파일들 위에 신뢰할 수 있는 카탈로그 계층을 얹어 이 세 가지 문제를 한꺼번에 해결한다.</p>
+
+<p>Iceberg 없이 데이터를 관리하면 어떤 일이 벌어지는지 한 예를 보자.</p>
+
+<pre><code>s3://lake/orders/
+  year=2023/month=06/part-00001.parquet
+  year=2023/month=06/part-00002.parquet
+  year=2024/month=01/part-00001.parquet   ← job failed mid-write, corrupt state</code></pre>
+
+<p>이 상태에서는 다음 질문에 깔끔하게 답할 수 없다.</p>
+<ul>
+  <li>현재 테이블을 구성하는 파일이 정확히 어떤 것들인가?</li>
+  <li>어제 이 테이블은 어떤 모습이었는가?</li>
+  <li>두 작업자가 동시에 테이블을 수정해도 데이터가 깨지지 않는가?</li>
+</ul>
+
+<p>Iceberg는 이 세 질문 모두에 답한다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*51AbGgec5PPLHdjJgtrrLQ.png" alt="Iceberg가 해결하는 문제 개요">
+  <figcaption>Iceberg가 해결하는 문제 개요</figcaption>
+</figure>
+
+<h3>"그냥 Parquet on S3"의 한계</h3>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*eAKUz0Nuu71i7LytXF7ktw.png" alt="순수 Parquet on S3 방식의 문제점">
+  <figcaption>순수 Parquet on S3 방식의 문제점</figcaption>
+</figure>
+
+<p>Iceberg의 접근 방식은 다르다. 테이블을 "폴더 안에 있는 파일들의 집합"이 아니라, 메타데이터가 관리하는 버전화된 파일 집합으로 취급한다.</p>
+
+<h3>실무에서 Iceberg를 도입하는 시점</h3>
+
+<p>다음 상황에 해당한다면 Iceberg 도입을 진지하게 검토해야 한다.</p>
+<ul>
+  <li>Spark, Trino, Flink 등 여러 엔진이 동일 테이블을 공유해야 할 때</li>
+  <li>데이터 레이크에서 <code>MERGE INTO</code>, <code>DELETE</code>, <code>UPDATE</code>가 필요할 때</li>
+  <li>재무·컴플라이언스 팀에서 "3월 1일 기준 보고서를 그대로 재현해달라"고 요청할 때</li>
+  <li>Hive 스타일의 파티션 디렉터리 구조가 페타바이트 규모에서 감당이 안 될 때</li>
+</ul>
+
+<p>반면 아직 Iceberg가 필요 없을 수 있는 경우도 있다.</p>
+<ul>
+  <li>데이터 규모가 작고, 단일 작성자에 append-only 패턴, 단일 엔진만 사용할 때</li>
+  <li>BigQuery나 Snowflake 네이티브 테이블만 쓰고 오픈 레이크 스토리지는 전혀 사용하지 않을 때</li>
+</ul>
+
+<h2>2. Iceberg의 본질</h2>
+
+<p>MP3는 파일 포맷이고, Spotify는 그 포맷을 재생하는 앱이다. Iceberg도 마찬가지다. Iceberg는 포맷이지, Spark도 S3도 쿼리 엔진도 아니다.</p>
+
+<p>Iceberg는 오픈 테이블 포맷 명세다. 데이터 파일과 메타데이터를 구성하는 표준 방식을 정의하여, 호환되는 어떤 엔진이든 동일 테이블을 읽고 쓸 수 있게 한다.</p>
+
+<p>Iceberg가 아닌 것들을 명확히 해두자.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*GedqpTap1HxS_PIw7kCg5A.png" alt="Iceberg가 아닌 것들">
+  <figcaption>Iceberg가 아닌 것들</figcaption>
+</figure>
+
+<p>전체 스택은 다음과 같이 구성된다.</p>
+
+<pre><code>Query Engine (Spark / Trino / Flink)
+        ↓
+   Iceberg API
+        ↓
+   Catalog (Glue / Nessie / REST)
+        ↓
+   Metadata files (snapshots, manifests)
+        ↓
+   Data files (Parquet / ORC / Avro on S3)</code></pre>
+
+<h3>세 가지 계층</h3>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*ezgq4kgPfUGPmvSND1tpWw.png" alt="Iceberg 3계층 구조">
+  <figcaption>Iceberg 3계층 구조</figcaption>
+</figure>
+
+<p>테이블 식별자는 다음 형식을 따른다.</p>
+
+<pre><code>catalog_name.database_name.table_name
+-- e.g. glue.prod.orders</code></pre>
+
+<p>카탈로그는 최신 메타데이터 파일의 위치를 가리키는 포인터를 저장한다. 엔진은 카탈로그를 통해 테이블을 찾고, Iceberg 메타데이터를 읽어 실제로 스캔할 데이터 파일을 파악한다.</p>
+
+<h3>실무 현황</h3>
+
+<p>2024~2026년 기준으로 AWS Glue, Databricks(UniForm), Snowflake(외부 테이블), Apache Flink, Trino, Presto, ClickHouse 등이 Iceberg를 폭넓게 지원한다. 원래 Netflix와 Apple이 대규모 환경을 위해 이 설계를 주도했다.</p>
+
+<p>파일은 여전히 S3 위의 Parquet이다. Iceberg 메타데이터가 이식 가능한 계약 역할을 하므로, 독점 레이크 포맷 대비 벤더 종속 위험이 낮다.</p>
+
+<h2>3. Iceberg 내부 동작 방식</h2>
+
+<p>Iceberg는 데이터 테이블의 Git과 같다.</p>
+<ul>
+  <li>커밋 = 스냅샷 (특정 시점의 테이블 상태)</li>
+  <li>커밋의 파일 목록 = 매니페스트</li>
+  <li>커밋 히스토리 = 스냅샷 로그</li>
+</ul>
+
+<p>데이터를 복사하지 않고도 과거 커밋을 체크아웃할 수 있다(타임 트래블).</p>
+
+<h3>메타데이터 계층 구조</h3>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*WDuE-N6OVtu9PeOvjbikkQ.png" alt="Iceberg 메타데이터 계층 구조">
+  <figcaption>Iceberg 메타데이터 계층 구조</figcaption>
+</figure>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*OCdbiPlkiopRFWkZaSiDdw.png" alt="스냅샷과 매니페스트 관계">
+  <figcaption>스냅샷과 매니페스트 관계</figcaption>
+</figure>
+
+<h3>매니페스트가 성능에 미치는 영향</h3>
+
+<p>매니페스트 파일은 각 데이터 파일의 컬럼별 통계(최솟값/최댓값/null 개수)를 저장한다. 쿼리 엔진은 Parquet 파일을 직접 열기 전에 매니페스트를 먼저 읽어, 필터 조건을 만족할 수 없는 파일 전체를 건너뛴다.</p>
+
+<p>예를 들어 <code>WHERE order_date = '2024-06-01'</code>이라는 조건이 있을 때, 특정 파일의 <code>order_date</code> 최댓값이 <code>2024-05-30</code>이라면 Iceberg는 해당 파일을 Parquet 접근 전에 제거한다.</p>
+
+<h3>Copy-on-Write vs Merge-on-Read</h3>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*hxbRe1CmfYeFHj2eipSt9g.png" alt="COW vs MOR 비교">
+  <figcaption>Copy-on-Write(COW)와 Merge-on-Read(MOR) 비교</figcaption>
+</figure>
+
+<p>대부분의 프로덕션 배치 워크로드는 COW를 사용한다. 스트리밍 업서트에는 MOR을 쓰고 주기적으로 컴팩션을 수행하는 패턴이 일반적이다.</p>
+
+<h3>실무에서 자주 만나는 문제</h3>
+
+<ul>
+  <li><strong>메타데이터 비대화</strong> — 수백만 건의 소형 커밋이 쌓이면 쿼리 계획이 느려진다. <code>expire_snapshots</code>와 <code>rewrite_manifests</code>로 해결한다.</li>
+  <li><strong>소형 파일 문제</strong> — 수천 개의 1 MB짜리 파일이 쌓이면 매니페스트 오버헤드가 지배적이 된다. <code>rewrite_data_files</code>(컴팩션)로 해결한다.</li>
+  <li><strong>스냅샷 폭증</strong> — 스트리밍 마이크로배치가 분마다 스냅샷을 생성한다. 스냅샷 만료 정책과 쓰기 배치 처리로 대응한다.</li>
+</ul>
+
+<h3>낙관적 동시성 제어</h3>
+
+<p>두 작성자가 테이블을 잠그지 않고 동시에 커밋을 시도한다. 첫 번째가 성공하면 두 번째는 기반 스냅샷이 바뀐 것을 감지하고 재시도한다. 동시 쓰기가 많은 환경에서는 커밋 충돌이 빈번해지므로, 재시도 로직을 튜닝하거나 테이블별로 작성자를 직렬화해야 한다.</p>
+
+<h3>면접 대비 포인트</h3>
+
+<p>자주 나오는 질문들이다.</p>
+<ul>
+  <li>"Iceberg는 오브젝트 스토리지에서 ACID를 어떻게 달성하나요?"</li>
+  <li>"스냅샷이 무엇인가요?"</li>
+  <li>"Iceberg에서 파티션 프루닝은 어떻게 작동하나요?"</li>
+</ul>
+
+<p>핵심 답변: "Iceberg의 커밋은 원자적인 메타데이터 스왑이다. 스냅샷은 불변의 데이터 파일 집합이다. 리더는 항상 단일 스냅샷을 사용하므로 부분 쓰기를 절대 보지 않는다. 매니페스트는 파일 수준 통계를 저장하므로, 디렉터리 전체를 나열하지 않고도 파일을 프루닝할 수 있다."</p>
+
+<h2>4. 데이터 엔지니어가 매일 쓰는 핵심 기능</h2>
+
+<p>버전 히스토리와 실행 취소 기능이 있고, 기존 시트를 깨뜨리지 않고 컬럼을 추가할 수 있는 스프레드시트를 떠올리면 된다.</p>
+
+<h3>ACID 트랜잭션</h3>
+
+<p>쓰기 작업은 새 스냅샷을 생성하고, 카탈로그 포인터가 원자적으로 전환된다. 리더는 절대 절반만 쓰인 데이터를 보지 않는다.</p>
+
+<pre><code>Writer A: snapshot 101 → 102  ✓
+Writer B: based on 101 → conflict, retry from 102
+Reader:   always reads exactly one snapshot (e.g. 102)</code></pre>
+
+<h3>타임 트래블</h3>
+
+<p>스냅샷 ID나 타임스탬프를 기준으로 과거 시점의 테이블을 조회할 수 있다.</p>
+
+<pre><code>-- Spark SQL
+SELECT * FROM prod.orders TIMESTAMP AS OF '2024-06-01 00:00:00';
+SELECT * FROM prod.orders VERSION AS OF 48291347;</code></pre>
+
+<p>감사, 버그 재현, 모델 백테스트, 컴플라이언스 등 다양한 용도로 활용된다.</p>
+
+<h3>스키마 진화</h3>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*C9m_iOgz-1qtry_52Blg6g.png" alt="스키마 진화 지원 범위">
+  <figcaption>스키마 진화 지원 범위</figcaption>
+</figure>
+
+<p>Iceberg는 컬럼 인덱스가 아닌 컬럼 ID로 스키마를 추적한다. 따라서 컬럼 순서를 바꿔도 기존 파일이 깨지지 않는다.</p>
+
+<h3>파티션 진화</h3>
+
+<p>Hive에서의 문제를 생각해보자. <code>days(order_date)</code>로 파티셔닝했다가 월별로 바꾸고 싶어졌다. 기존 데이터는 일별 폴더에 그대로 갇혀있다.</p>
+
+<p>Iceberg에서는 새로운 쓰기에만 월별 파티션 스펙을 적용하면 된다. 기존 데이터는 기존 스펙을 유지한 채 하나의 테이블 안에 공존하며, 쿼리도 정상적으로 작동한다.</p>
+
+<h3>히든 파티셔닝</h3>
+
+<p>사용자는 단순하게 쿼리를 작성한다.</p>
+
+<pre><code>WHERE order_date = DATE '2024-06-01'</code></pre>
+
+<p>Iceberg가 자동으로 파티션 변환(<code>day(order_date)</code>)을 적용한다. 물리적 경로 <code>order_date_day=2024-06-01</code>을 알 필요가 없다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*VXamMsyudc6f6X9JTdM1rA.png" alt="히든 파티셔닝 동작 방식">
+  <figcaption>히든 파티셔닝 동작 방식</figcaption>
+</figure>
+
+<h3>MERGE INTO — CDC 파이프라인의 핵심</h3>
+
+<pre><code>MERGE INTO prod.orders AS target
+USING staging.orders_updates AS source
+ON target.order_id = source.order_id
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *</code></pre>
+
+<p>Debezium/Kafka CDC 스트림이 멱등성 업서트로 레이크에 안착하는 방식이 바로 이것이다.</p>
+
+<p>주의해야 할 부분도 있다.</p>
+<ul>
+  <li><strong>소스 스키마 드리프트</strong> — CDC가 컬럼을 추가하면 MERGE가 실패한다. 스키마 진화 정책과 계약 테스트로 대응한다.</li>
+  <li><strong>만료된 스냅샷에서의 타임 트래블</strong> — 삭제된 데이터는 조회할 수 없다. 컴플라이언스 요건에 맞는 보존 정책을 수립해야 한다.</li>
+  <li><strong>스키마 진화 남용</strong> — 500개 컬럼 중 대부분이 미사용 상태. 거버넌스 정책이 필요하다.</li>
+</ul>
+
+<h3>면접 대비 포인트</h3>
+
+<p>CDC 파이프라인 구현 방법을 물어볼 때의 핵심 답변 구조는 이렇다: Kafka → Flink/Spark 스트리밍 → 기본키 기반 Iceberg MERGE → 스케줄 컴팩션 → 보존 정책에 따른 오래된 스냅샷 만료.</p>
+
+<p>정확히 한 번(exactly-once) 처리에 대한 후속 질문도 자주 나온다. Iceberg + Flink 2단계 커밋, 또는 Spark 구조적 스트리밍 체크포인트 + 멱등성 MERGE가 답이다. 완전한 exactly-once는 어렵고, at-least-once + 멱등성 MERGE가 실무의 기본값이다.</p>
+
+<h3>실습 예제</h3>
+
+<pre><code>-- Create table (Spark SQL)
+CREATE TABLE glue.prod.orders (
+    order_id    BIGINT,
+    customer_id BIGINT,
+    order_date  DATE,
+    amount      DECIMAL(12,2)
+)
+USING iceberg
+PARTITIONED BY (months(order_date))
+TBLPROPERTIES ('format-version' = '2');
+
+-- Time travel
+SELECT COUNT(*) FROM glue.prod.orders VERSION AS OF 42;
+SELECT * FROM glue.prod.orders TIMESTAMP AS OF '2024-06-01 08:00:00' LIMIT 10;
+
+-- Schema evolution
+ALTER TABLE glue.prod.orders ADD COLUMN discount DECIMAL(5,2);
+ALTER TABLE glue.prod.orders RENAME COLUMN amount TO total_amount;
+
+-- Incremental read (streaming)
+-- Spark Structured Streaming: read stream from Iceberg table
+-- Flink: Iceberg source with start snapshot / timestamp
+
+# PySpark — read Iceberg table
+df = spark.read.format("iceberg").load("glue.prod.orders")
+
+# Write append
+df.writeTo("glue.prod.orders").append()
+
+# Overwrite one partition
+(
+    df.filter("order_date = '2024-06-01'")
+    .writeTo("glue.prod.orders")
+    .overwritePartitions()
+)
+
+-- Maintenance (Spark procedures or engine-specific syntax)
+CALL glue.system.rewrite_data_files('prod.orders');      -- compact small files
+CALL glue.system.expire_snapshots('prod.orders',          -- drop old history
+  TIMESTAMP '2024-01-01 00:00:00');
+CALL glue.system.remove_orphan_files('prod.orders');     -- clean failed writes</code></pre>
+
+<h2>5. Iceberg vs Delta Lake vs Hudi vs Hive</h2>
+
+<p>같은 창고의 상자들을 관리하는 네 가지 카탈로그 시스템이라고 생각하면 된다. 모두 "저렴한 스토리지 위의 파일 관리"라는 문제를 해결하지만, 강점과 생태계가 다르다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*wpK4BflE2wsrFc91IBbFFQ.png" alt="Iceberg vs Delta Lake vs Hudi vs Hive 비교">
+  <figcaption>Iceberg vs Delta Lake vs Hudi vs Hive 비교표</figcaption>
+</figure>
+
+<p>어떤 하나가 절대적으로 우월하지 않다. 다음 기준으로 선택한다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*Dkj0rJnnz6pvLWxa4Pk33A.png" alt="포맷 선택 기준">
+  <figcaption>포맷 선택 기준</figcaption>
+</figure>
+
+<h3>실무 현황</h3>
+
+<p>상호운용성 트렌드를 보면 Databricks UniForm, Snowflake 외부 Iceberg 테이블, AWS Glue 카탈로그 등 오픈 스토리지의 표준으로 Iceberg가 수렴하고 있다.</p>
+
+<p>Hive에서 마이그레이션하는 경로는 간단하다.</p>
+
+<pre><code>-- Spark: migrate Hive table to Iceberg in place (simplified)
+CALL catalog.system.migrate('db.hive_orders');</code></pre>
+
+<p>마이그레이션 후에는 스냅샷 확인, 행 수 검증, 컴팩션 재실행, 다운스트림 파이프라인 업데이트 순서로 진행한다.</p>
+
+<p>포맷을 계속 비교만 하다 시간을 낭비하지 말자. 동일 데이터에 두 포맷을 병행하는 비용이 하나를 잘 운영하는 것보다 훨씬 크다.</p>
+
+<h3>면접 대비 포인트</h3>
+
+<p>"Iceberg vs Delta Lake?" 질문에 대한 핵심 답변: "둘 다 오브젝트 스토리지 위에 ACID와 타임 트래블을 제공한다. Iceberg는 엔진 중립성이 더 강하고 파티션 진화와 히든 파티셔닝이 뛰어나다. Delta는 Databricks 생태계에서 성숙도가 높다. 멀티 엔진 오픈 레이크하우스라면 Iceberg를, Databricks 중심 조직이라면 Delta를 선택하되 UniForm이 간극을 메워줄 수 있는지 확인하겠다."</p>
+
+<h2>6. 카탈로그, 엔진, 레이크하우스 스택</h2>
+
+<p>모든 독자(엔진)에게 최신 챕터(메타데이터 파일)의 위치를 알려주는 목차라고 생각하면 된다.</p>
+
+<p>카탈로그가 없으면 엔진들이 각자 경로를 추측해야 한다. 카탈로그가 있으면 모두가 <code>glue.prod.orders</code>라는 이름으로 현재 메타데이터 위치를 합의한다.</p>
+
+<h3>주요 카탈로그</h3>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*u12TeXnW-zxvhRHf82Xxbg.png" alt="주요 카탈로그 목록">
+  <figcaption>주요 카탈로그 종류와 특징</figcaption>
+</figure>
+
+<h3>전형적인 레이크하우스 스택</h3>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*rKKZQkqzuh0EAU4puJUcCg.png" alt="전형적인 레이크하우스 스택 구성">
+  <figcaption>전형적인 레이크하우스 스택 구성</figcaption>
+</figure>
+
+<h3>Nessie 브랜칭 (고급)</h3>
+
+<p>테이블을 위한 git 브랜치처럼 동작한다. <code>dev.orders</code>에서 실험하고 <code>main.orders</code>로 머지한다. 페타바이트를 복사하지 않고 격리된 환경에서 테스트할 수 있어 유용하다.</p>
+
+<h3>실무 주의사항</h3>
+
+<p>카탈로그는 거버넌스의 병목 지점이다. IAM 정책, 테이블 접근 제어 목록, 감사 로그가 모두 여기에 있다. 카탈로그 접근 권한을 잃으면 S3 파일이 멀쩡해도 테이블을 쓸 수 없다.</p>
+
+<p>크로스 계정/크로스 리전 구성에서는 데이터 파일 복제와 카탈로그 메타데이터 동기화를 함께 처리해야 하며, S3 복제 시 일관성 순서에도 주의해야 한다.</p>
+
+<h2>7. 운영 관리 — 컴팩션, 스냅샷 만료, 유지 보수</h2>
+
+<p>계절마다 정리가 필요한 옷장과 같다. 마이크로배치 파일(새 옷)이 계속 쌓이고, 오래된 스냅샷(안 입는 옷)은 자리를 차지한다. 한 달에 한 번은 정리하고 비워야 한다.</p>
+
+<h3>유지 보수 작업의 종류</h3>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*1FojVDdWwkj9uAePl5UmjQ.png" alt="Iceberg 유지 보수 작업 종류">
+  <figcaption>Iceberg 유지 보수 작업 종류</figcaption>
+</figure>
+
+<p>파일 크기 목표값은 쿼리 패턴에 따라 다르지만, S3 위의 Parquet 기준으로 보통 256 MB ~ 1 GB를 권장한다.</p>
+
+<h3>보존 기간 트레이드오프</h3>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*It7ILVIGSn-V0JDUFBAXuw.png" alt="스냅샷 보존 기간 트레이드오프">
+  <figcaption>스냅샷 보존 기간 트레이드오프</figcaption>
+</figure>
+
+<h3>실무 운영 패턴</h3>
+
+<p>유지 보수는 반드시 자동화해야 한다. 컴팩션을 방치한 테이블은 느려지고 비용이 증가한다. Iceberg 자체의 문제가 아니라 운영 일정을 잡지 않은 결과다.</p>
+
+<p>전형적인 Airflow/dbt 유지 보수 스케줄은 다음과 같다.</p>
+
+<pre><code>Sunday 02:00  → rewrite_data_files (all tier-1 tables)
+Sunday 03:00  → expire_snapshots (retain 60 days)
+Sunday 04:00  → remove_orphan_files (with dry-run first)</code></pre>
+
+<p>흔히 발생하는 문제들도 있다.</p>
+<ul>
+  <li><strong>과도한 orphan 파일 정리</strong> — 아직 진행 중인 쓰기의 파일을 삭제할 수 있다. 반드시 최소 연령 기준을 설정해야 한다.</li>
+  <li><strong>피크 타임 컴팩션</strong> — I/O 경합이 발생한다. 비피크 시간대에 스케줄링한다.</li>
+  <li><strong>스냅샷 만료 후 타임 트래블</strong> — 보존 기간 밖의 스냅샷을 조회하는 쿼리가 실패한다. BI 툴링의 사용 패턴을 보존 정책과 맞춰야 한다.</li>
+</ul>
+
+<h3>실습 예제</h3>
+
+<pre><code># PySpark maintenance job (conceptual)
+spark.sql("""
+    CALL glue.system.rewrite_data_files(
+        table => 'prod.orders',
+        options => map('min-file-size-bytes', '134217728',
+                       'target-file-size-bytes', '536870912')
+    )
+""")
+
+-- Check table health (Spark)
+SELECT * FROM glue.prod.orders.files;       -- data files + sizes
+SELECT * FROM glue.prod.orders.snapshots;   -- snapshot history
+SELECT * FROM glue.prod.orders.partitions;  -- partition stats</code></pre>
+
+<h2>면접 치트 시트</h2>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/medium/700/1*1XeHBir4_qJBioplwQgnzQ.png" alt="Iceberg 면접 치트 시트">
+  <figcaption>Iceberg 핵심 개념 요약</figcaption>
+</figure>
+
+<h2>마치며</h2>
+
+<p>Apache Iceberg는 마법 같은 스토리지가 아니다. 저렴한 Parquet 파일 위에 올려진 규율 있는 메타데이터 관리 체계다. 테이블 포맷 없는 데이터 레이크가 결국 무너지는 이유는 명확하다. 부분 쓰기, 재현 불가능한 보고서, 파티션 폴더 난립, 조인을 조용히 망가뜨리는 스키마 변경이 그 이유다.</p>
+
+<p>데이터 엔지니어에게 중요한 것들을 정리하면 이렇다.</p>
+<ul>
+  <li><strong>왜</strong> — S3의 raw 파일만으로는 ACID, 타임 트래블, 안전한 진화가 불가능하다.</li>
+  <li><strong>무엇</strong> — 오픈 테이블 포맷: 카탈로그 + 메타데이터 + 데이터 파일.</li>
+  <li><strong>어떻게</strong> — 스냅샷, 매니페스트, 낙관적 동시성, 히든 파티셔닝.</li>
+  <li><strong>일상 활용</strong> — CDC를 위한 MERGE, 스키마/파티션 진화, 감사를 위한 타임 트래블.</li>
+  <li><strong>운영</strong> — 컴팩션과 스냅샷 만료는 선택이 아니라 제품의 일부다.</li>
+</ul>
+
+<p>Iceberg는 이미 알고 있어야 할 기반 기술들 위에 올려진다. 오브젝트 스토리지(S3), 컬럼형 파일(Parquet), 데이터 모델링에서의 그레인과 스키마 계약, 파이프라인 설계에서의 at-least-once와 멱등성 쓰기. 이 기반 없이 Iceberg부터 파고들면, 아무도 유지 보수할 수 없는 테이블을 만드는 Spark 잡을 양산하게 된다. 수천 개의 소형 파일, 감사를 망가뜨리는 만료된 스냅샷, 커밋을 두고 서로 싸우는 MERGE 잡들이 그 결과다.</p>
+
+<p>Iceberg 전에 Parquet과 파티셔닝을 익혀라. MERGE INTO 전에 데이터 모델링을 배워라. CDC 전에 파이프라인 멱등성을 이해하라.</p>
+
+<p>기초를 탄탄히 하면, Iceberg는 Stack Overflow에서 복붙하는 블랙박스가 아니라 자신 있게 운영하는 도구가 된다.</p>
+
+</body>
+</html>

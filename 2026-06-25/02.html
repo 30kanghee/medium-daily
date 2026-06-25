@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>I Compared 6 Python AI Agent Frameworks So You Don&#x27;t Have To: LangGraph vs CrewAI vs PydanticAI vs OpenAI SDK vs Smolagents vs Google ADK</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  table{border-collapse:collapse;width:100%;font-size:.85em;margin:1.5em 0;overflow-x:auto;display:block;}
+  th,td{border:1px solid #ddd;padding:8px 12px;text-align:left;}
+  th{background:#f6f8fa;font-weight:600;}
+  tr:nth-child(even){background:#fafafa;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>I Compared 6 Python AI Agent Frameworks So You Don&#x27;t Have To: LangGraph vs CrewAI vs PydanticAI vs OpenAI SDK vs Smolagents vs Google ADK</h1>
+<div class="meta">The Dev Loop · Towards AI · 11 min read · <a href="https://medium.com/@thedevloop/i-compared-6-python-ai-agent-frameworks-so-you-dont-have-to-langgraph-vs-crewai-vs-pydanticai-vs-d8a5e6e43262" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@thedevloop/i-compared-6-python-ai-agent-frameworks-so-you-dont-have-to-langgraph-vs-crewai-vs-pydanticai-vs-d8a5e6e43262" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">LangGraph, CrewAI, PydanticAI, OpenAI Agents SDK, Smolagents, Google ADK — 6개 AI 에이전트 프레임워크를 동일한 과제로 직접 비교한 실전 분석</p>
+  <p>저자는 클라이언트 프로젝트에 쓸 에이전트 프레임워크를 고르기 위해 주말을 통째로 투자해 같은 과제(웹 검색 → SQLite 조회 → JSON 요약 생성)를 6개 프레임워크로 각각 구현했다. 측정 항목은 코드 줄 수, 토큰 사용량, 지연 시간, 첫 프로토타입까지 걸린 시간, 그리고 새벽 2시에 장애를 추적하기 얼마나 쉬운지였다. LangGraph는 제어력과 디버깅에서 압도적이고, CrewAI는 빠른 프로토타이핑에 최적이지만 토큰 비용이 높다. PydanticAI는 타입 안전성과 코드 가독성이 뛰어나고, OpenAI Agents SDK는 예상을 깬 실속 있는 선택지다. Smolagents는 코드 생성 방식으로 최소 코드를 달성하고, Google ADK는 평가 도구가 강점이지만 Gemini 의존도가 높다. 결론적으로 프레임워크보다 프롬프트 엔지니어링과 도구 설계가 더 중요하며, 저자의 개인 스택은 단일 에이전트엔 PydanticAI, 복잡한 워크플로에는 LangGraph다.</p>
+</div>
+
+<h2>이 글을 쓰게 된 계기</h2>
+<p>지난달, 팀에서 클라이언트 프로젝트에 쓸 에이전트 프레임워크를 결정해야 했다. PDF에서 데이터를 뽑고, 데이터베이스와 교차 검증하고, 요약을 만들어 이메일로 보내는 문서 분석 파이프라인이었다. 2026년 기준으로는 꽤 평범한 작업이다.</p>
+<p>실수가 있었다. Twitter에 어떤 프레임워크를 써야 하냐고 물었더니, 한 시간 만에 47개의 답글이 달렸다. 저마다 다른 도구를 자신 있게 추천했고, 절반은 서로 모순이었다. 누군가는 LangGraph를 "쓸데없이 복잡한 쓰레기"라 했고, 다른 누군가는 "유일한 진지한 선택지"라고 했다. 세 번째 사람은 둘 다 틀렸고 raw API 호출만 쓰면 된다고 했다.</p>
+<p>결국 합리적인 방법을 택했다. 주말을 통째로 막아두고, 6개 주요 프레임워크를 설치한 뒤, 각각에서 똑같은 에이전트를 만들었다. 같은 과제, 같은 모델, 같은 도구, 같은 평가 기준. 그 결과가 여기 있다. 양쪽 팬보이들이 듣고 싶어 하지 않는 내용이다.</p>
+
+<h2>테스트 설계: 내가 실제로 만든 것</h2>
+<p>과제는 이렇다. 회사 이름을 받아 최근 뉴스를 웹에서 검색하고, 핵심 재무 데이터를 추출한 뒤, 로컬 SQLite 데이터베이스와 교차 검증해 구조화된 JSON 요약을 만드는 리서치 에이전트다. 도구 3개, 에이전트 1개, 출력 스키마 1개.</p>
+<p>이 과제를 선택한 이유는 현실적일 만큼 평범하기 때문이다. 첫 번째 프로덕션 배포에 자율 코딩 에이전트를 쓰는 팀은 없다. 실제 에이전트 작업의 대부분은 약간의 추론이 들어간 API 오케스트레이터다. 모든 프레임워크가 이 정도는 잘 처리해야 한다.</p>
+<p>모델은 6개 모두 GPT-4o(가능한 경우)를 사용했다. 측정한 항목은 구현에 필요한 코드 줄 수, 실행당 토큰 사용량(10회 평균), 평균 지연 시간, 첫 동작 프로토타입까지 걸린 시간, 그리고 "새벽 2시 디버깅 점수" — 문제가 생겼을 때 원인을 찾기 얼마나 쉬운지다. 문제는 언제나 생기니까.</p>
+
+<h2>프레임워크 1: LangGraph — 통제광을 위한 낙원</h2>
+<ul>
+  <li>코드 줄 수: 약 210줄</li>
+  <li>첫 동작 에이전트까지: 3시간</li>
+  <li>실행당 평균 토큰: 2,847</li>
+</ul>
+<p>LangGraph는 분산 시스템 엔지니어 팀이 에이전트 프레임워크를 만들면 어떻게 되는지 보여주는 결과물이다. 상태를 정의하고, 노드를 정의하고, 노드 사이에 엣지를 연결하고, 컴파일한다. AI 에이전트를 만드는 것보다 데이터 파이프라인을 설계하는 느낌에 가깝다. 그리고 그게 칭찬이다.</p>
+<p>처음 한 시간은 학습 곡선이 가팔랐다. <code>StateGraph</code>, <code>add_node</code>, <code>add_conditional_edges</code>를 보면서 도구 3개짜리 에이전트에 이게 너무 형식적이라고 생각했다. 거의 포기하고 다음 프레임워크로 넘어갈 뻔했다.</p>
+<p>그런데 무언가가 딸깍 하고 맞아떨어졌다. 에이전트가 실패했을 때 — 세 번째 테스트 쿼리에서 화려하게 실패했다 — LangSmith를 열어 전체 실행 흐름을 단계별로 추적했다. 어느 노드가 잘못된 결정을 내렸는지, 그 시점의 상태가 무엇인지, 왜 검색 도구보다 데이터베이스 도구를 먼저 호출하기로 했는지 정확히 볼 수 있었다.</p>
+<p>아무도 잘 언급하지 않는 핵심 기능은 바로 내구성 있는 실행(durable execution)이다. 에이전트가 실행 중에 죽으면 마지막 체크포인트부터 재개한다. 주말 실험에선 편리한 기능이지만, 밤새 문서 1만 건을 처리하는 프로덕션 파이프라인에선 새벽 3시에 호출을 받느냐 마느냐의 차이다.</p>
+<p>LangGraph는 테스트 전반에서 토큰 소비가 가장 낮았다. 그래프 구조가 제어 흐름을 명시적으로 정하도록 강제하기 때문에, 다음에 무엇을 해야 할지 LLM이 결정하는 데 토큰을 낭비하지 않는다. 이미 개발자가 정해줬기 때문이다.</p>
+<p>단점이 있다면, 워크플로를 미리 충분히 생각해야 한다는 것이다. "그냥 지시를 던지고 기다리는" 방식은 없다. 문제가 잘 정의돼 있으면 LangGraph가 보상해 준다. 프로토타이핑 중이라 워크플로 모양을 아직 모른다면, 기능을 만드는 시간보다 그래프를 그리는 시간이 더 길어진다.</p>
+<p><strong>새벽 2시 디버깅 점수: 9/10.</strong> LangSmith는 진짜다. 다른 어떤 프레임워크보다 빠르게 문제를 진단할 수 있었다.</p>
+
+<h2>프레임워크 2: CrewAI — 빠른 프로토타입의 왕</h2>
+<ul>
+  <li>코드 줄 수: 약 340줄</li>
+  <li>첫 동작 에이전트까지: 45분</li>
+  <li>실행당 평균 토큰: 4,216</li>
+</ul>
+<p>45분. <code>pip install crewai</code>부터 올바른 출력을 내는 에이전트까지 걸린 시간이다. CrewAI의 추상화 방식은 목록의 다른 것들과 다르다. 에이전트를 만드는 게 아니라 팀을 조립하는 것이다. 각 에이전트에 역할, 목표, 배경 설명을 붙이고, 팀에 과제를 할당하면 알아서 누가 무엇을 할지 정한다.</p>
+<pre><code>researcher = Agent(
+    role="Financial Research Analyst",
+    goal="Find and verify recent financial data",
+    backstory="You're a senior analyst at a hedge fund...",
+)</code></pre>
+<p>솔직히 말하면, <code>backstory</code> 파라미터를 처음 봤을 때 억지스럽다고 생각했다. 그런데 CrewAI 에이전트의 출력이 같은 프롬프트로 raw API를 쓴 것보다 훨씬 풍부하다는 걸 알아챘다. 역할 설정이 실제로 모델의 과제 접근 방식을 바꾼다.</p>
+<p>하지만 속도에는 대가가 따른다. CrewAI는 같은 작업에서 LangGraph보다 토큰을 약 48% 더 썼다. 멀티 에이전트 오버헤드는 실재한다. 기술적으로 에이전트 하나로 충분한 작업에도 CrewAI 아키텍처는 두세 개가 협력한다고 가정한다. 리서처와 라이터로 구성된 "팀"이 에이전트 하나가 처리할 수 있는 일을 하면서 위임 왕복마다 토큰을 소모했다.</p>
+<p>또 다른 문제는 CrewAI가 내부적으로 동기(synchronous)라는 점이다. async FastAPI 백엔드와 함께 쓰려면 <code>run_in_executor</code>로 감싸야 했다. 결정적인 단점은 아니지만, 언급할 만큼 불편했다.</p>
+<p>한 비교 연구에 따르면 CrewAI 테스트 비용이 1,088달러인 반면 동등한 PydanticAI 구현은 390달러였다. 에이전트가 하루 수천 번 실행되면 그 차이는 눈덩이처럼 불어난다.</p>
+<p><strong>새벽 2시 디버깅 점수: 5/10.</strong> 잘 돌아갈 때는 아름답다. 안 돌아갈 때는 에이전트 위임 체인이 블랙박스가 된다. 에이전트가 과제를 다른 에이전트에 위임하고, 그 에이전트가 다시 되돌려 보내는 상황을 40분 동안 디버깅했다.</p>
+
+<h2>프레임워크 3: PydanticAI — 조용한 초과 달성자</h2>
+<ul>
+  <li>코드 줄 수: 약 130줄</li>
+  <li>첫 동작 에이전트까지: 1.5시간</li>
+  <li>실행당 평균 토큰: 2,912</li>
+</ul>
+<p>LangGraph가 통제광을 위한 것이고 CrewAI가 스피드를 원하는 사람을 위한 것이라면, PydanticAI는 6개월 후에 코드를 다시 읽었을 때 이해하고 싶은 개발자를 위한 프레임워크다. Pydantic 팀이 만들었으며, FastAPI를 써봤다면 API의 절반은 이미 아는 셈이다. 에이전트는 타입이 붙고, 출력은 검증되고, 의존성은 주입된다.</p>
+<pre><code>agent = Agent(
+    "openai:gpt-4o",
+    result_type=CompanyAnalysis,  # Pydantic model
+    system_prompt="You are a financial research assistant.",
+)</code></pre>
+<p><code>result_type</code> 파라미터는 보이는 것보다 훨씬 많은 일을 한다. PydanticAI는 모든 LLM 응답을 스키마에 대해 자동으로 검증한다. 모델이 잘못된 JSON을 반환하면 — 언젠가는 반드시 그런다 — 프레임워크가 잡아내고 재시도한다. 유효성 검사 코드를 한 줄도 쓰지 않았다.</p>
+<p>PydanticAI는 같은 애플리케이션을 약 160줄로 구현했다. LangGraph는 280줄, CrewAI는 420줄이 필요했다. 줄 수가 적다고 항상 좋은 건 아니지만, 이 경우엔 얼마나 빨리 각 구현의 의도를 파악할 수 있는지와 완벽하게 일치했다.</p>
+<p>단점은 단일 에이전트 프레임워크라는 점이다. 멀티 에이전트 오케스트레이션, 핸드오프 패턴, 에이전트 위임 기능이 내장돼 있지 않다. 에이전트 세 개가 협업해야 한다면 조율 로직을 직접 짜야 한다.</p>
+<p><strong>새벽 2시 디버깅 점수: 8/10.</strong> 타입 오류가 일찍 드러나고 IDE가 런타임 전에 잡아낸다. 실제로 무언가 깨지면 스택 트레이스가 정확한 위치를 가리킨다.</p>
+
+<h2>예상을 깬 세 프레임워크</h2>
+<p>세 번째 프레임워크까지 완료하고 패턴이 보이기 시작했다. 각 프레임워크가 서로 다른 트레이드오프를 택하고, 각자 최적화한 영역에서 진짜 잘한다는 것. 그런데 다음 세 개는 의외였다.</p>
+
+<h2>프레임워크 4: OpenAI Agents SDK — 의외의 강자</h2>
+<ul>
+  <li>코드 줄 수: 약 150줄</li>
+  <li>첫 동작 에이전트까지: 1시간</li>
+  <li>실행당 평균 토큰: 2,791</li>
+</ul>
+<p>거의 포함하지 않을 뻔했다. "OpenAI 자체 프레임워크"라는 말이 벤더 종속을 리본으로 포장한 것처럼 들렸다. API 래퍼 수준일 거라 예상했다. 틀렸다.</p>
+<p>Agents SDK는 OpenAI가 이전 실험(Swarm)을 돌아보고 프로덕션용으로 다시 만든 결과물이다. 기본 요소는 단순하다. Agent, Handoff, Tool, Guardrail. 네 가지 개념이 전부다.</p>
+<p>핸드오프 패턴이 돋보인다. 복잡한 오케스트레이션 로직을 짜는 대신, 어떤 에이전트가 어떤 에이전트에게 "넘길" 수 있는지 정의하면 프레임워크가 라우팅을 처리한다. LangGraph의 그래프 모델만큼 유연하진 않지만, 멀티 에이전트 사용 사례의 80%엔 충분하고 훨씬 단순하다.</p>
+<pre><code>agent = Agent(
+    name="Researcher",
+    instructions="You are a financial research assistant.",
+    tools=[search_tool, db_tool],
+    handoffs=[summary_agent],
+)</code></pre>
+<p>예상 밖의 사실이 있었다. "OpenAI의 SDK"임에도 이제 제공자 독립적이다. any-llm 어댑터를 통해 100개 이상의 LLM을 지원한다. Claude로 실행했더니 코드 수정 없이 작동했다. 토큰 효율도 LangGraph와 거의 동일했다. 두 가지가 테스트에서 가장 낮았다.</p>
+<p>단점은 생태계가 작다는 것이다. LangGraph는 수년간 쌓인 커뮤니티 도구, 튜토리얼, 검증된 패턴이 있다. OpenAI Agents SDK는 더 새롭고, 엣지 케이스에 부딪히면 혼자 해결해야 할 때가 많다.</p>
+<p><strong>새벽 2시 디버깅 점수: 7/10.</strong> 추적 기능이 내장돼 있고 유용하다. 오류 메시지도 명확하다. 하지만 문서에 빈자리가 있어 소스 코드를 읽는 일이 원하는 것보다 잦았다.</p>
+
+<h2>프레임워크 5: Smolagents — 오픈소스 순수주의자의 꿈</h2>
+<ul>
+  <li>코드 줄 수: 약 95줄</li>
+  <li>첫 동작 에이전트까지: 30분</li>
+  <li>실행당 평균 토큰: 3,340</li>
+</ul>
+<p>95줄, 30분. 오타가 아니다. HuggingFace의 에이전트 프레임워크 Smolagents는 최소주의를 진지하게 추구한다. 전체 핵심 로직이 약 1,000줄의 Python에 들어간다. 오후 한 나절이면 전부 읽을 수 있다. LangGraph로 그렇게 해보라.</p>
+<p>하지만 Smolagents가 단순히 작은 것만은 아니다. 철학적으로 다르다. 목록의 다른 모든 프레임워크가 JSON 기반 도구 호출을 사용하는 반면 — 에이전트가 "이 함수를 이 인자로 호출하라"는 JSON 덩어리를 출력한다 — Smolagents의 <code>CodeAgent</code>는 과제를 수행하기 위해 실제 Python 코드를 작성한다.</p>
+<pre><code>agent = CodeAgent(
+    tools=[search_tool, db_tool],
+    model=InferenceClientModel(),
+)
+result = agent.run("Analyze recent financial news for Acme Corp")</code></pre>
+<p>코드 생성 방식은 에이전트가 도구를 자연스럽게 조합할 수 있음을 뜻한다. for 루프를 쓸 수 있고, 조건문도 쓸 수 있으며, JSON 도구 호출로는 표현할 수 없는 방식으로 작업을 연결할 수 있다. 연구 결과도 이를 뒷받침한다. 코드 에이전트가 대부분의 벤치마크에서 JSON 기반 에이전트를 앞선다.</p>
+<p>트레이드오프는 보안이다. 에이전트가 Python 코드를 작성하고 실행한다. Smolagents는 E2B, Docker, Pyodide를 통한 샌드박싱을 지원하지만 직접 설정해야 한다. 기본 <code>LocalPythonExecutor</code>는 보안 경계가 아니라고 문서에 명시돼 있다.</p>
+<p>토큰 사용량도 LangGraph나 OpenAI SDK보다 높다. 코드 생성은 장황하다. 모델이 압축된 JSON이 아닌 Python을 쓰다 보니 변수 선언과 import 문마다 토큰이 든다.</p>
+<p>Gemini나 GPT를 쓴다면 Smolagents가 작동하긴 하지만 맞지 않는 느낌이다. HuggingFace 모델과 인프라에서 가장 빛난다. Hub 통합 — 에이전트를 모델처럼 공유하고 불러오기 — 은 매력적이지만, 그 생태계 안에 있을 때만 해당된다.</p>
+<p><strong>새벽 2시 디버깅 점수: 8/10.</strong> 에이전트가 생성한 코드를 읽는 것이 JSON 도구 호출 체인을 분석하는 것보다 무한히 쉽다. 코드가 실패하면 Python 트레이스백이 나온다. 익숙한 영역이다.</p>
+
+<h2>프레임워크 6: Google ADK — 기업용 다크호스</h2>
+<ul>
+  <li>코드 줄 수: 약 180줄</li>
+  <li>첫 동작 에이전트까지: 2시간</li>
+  <li>실행당 평균 토큰: 3,102</li>
+</ul>
+<p>Google의 Agent Development Kit은 2025년에 조용히 출시됐고, 내가 아는 대부분의 Python 개발자가 써본 적이 없다. 실수다. ADK는 Google이 내부 도구를 만들 때처럼 구축됐다. 구조에 대해선 의견이 강하지만 실행에 대해선 유연하다. Agent를 모델, 이름, 지시사항, 도구로 정의하는데 OpenAI Agents SDK 방식과 비슷하다. 여기에 워크플로 에이전트(Sequential, Parallel, Loop)와 멀티 에이전트 조율을 위한 AgentTeam API가 더해진다.</p>
+<pre><code>from google.adk.agents import Agent
+root_agent = Agent(
+    model="gemini-2.5-flash",
+    name="financial_analyst",
+    instruction="You are a financial research assistant.",
+    tools=[search_tool, db_tool],
+)</code></pre>
+<p>ADK를 나머지와 구분 짓는 것은 내장 평가 프레임워크다. 테스트 케이스를 JSON으로 작성하고 <code>adk eval</code>을 실행하면 에이전트 동작이 기대치와 맞는지 구조화된 리포트를 얻는다. 목록의 다른 어떤 프레임워크도 이 수준의 평가 도구를 기본으로 제공하지 않는다.</p>
+<p>배포도 Google Cloud 위에서는 매끄럽다. Vertex AI Agent Engine이 스케일링, 모니터링, 세션 관리를 처리한다. 하지만 "Google Cloud 위에서"라는 조건이 상당히 많은 부분을 담당하고 있다는 점을 기억해야 한다.</p>
+<p>ADK는 Gemini에 최적화돼 있다. 다른 모델을 LiteLLM을 통해 지원하지만 문서, 예제, 도구 모두 Gemini를 가정한다. GPT-4o로 실행했을 때 문서에 없는 엣지 케이스에 45분을 소비했다.</p>
+<p><strong>새벽 2시 디버깅 점수: 6/10.</strong> 내장 개발 UI(<code>adk web</code>)는 디버깅에 유용하다. 하지만 에이전트가 이상하게 행동할 때 오류 메시지가 불분명한 경우가 있다. Google 스타일 문서 — 포괄적이지만 탐색하기 어렵다.</p>
+
+<h2>최종 결론: "상황에 따라 다르다" — 하지만 구체적으로</h2>
+<p>주말 동안 같은 에이전트를 여섯 번 만든 뒤 내가 실제로 쓸 판단 기준이 생겼다.</p>
+<ul>
+  <li><strong>이번 주 금요일까지 프로덕션에 올려야 한다면?</strong> CrewAI 또는 Smolagents. 팀이 Python 코드 실행 이슈를 디버깅하기 어려운 환경이면 CrewAI, 아니라면 Smolagents.</li>
+  <li><strong>몇 달간 안정적으로 운영할 시스템을 만든다면?</strong> LangGraph 또는 PydanticAI. 분기 로직, 휴먼 인 더 루프, 내구성 있는 실행이 필요하면 LangGraph, 단일 에이전트에 구조화된 출력이 중심이고 미래의 자신이 코드를 이해해야 한다면 PydanticAI.</li>
+  <li><strong>특정 생태계에 이미 투자했다면?</strong> OpenAI 플랫폼이라면 OpenAI Agents SDK, GCP라면 Google ADK.</li>
+</ul>
+<p>아무도 큰 소리로 말하지 않는 불편한 진실이 있다. 대부분의 프로젝트에서 프레임워크는 프롬프트 엔지니어링과 도구 설계보다 중요하지 않다. 시스템 프롬프트와 도구 설명에 시간을 쏟으면 6개 프레임워크 모두에서 거의 동일한 출력 품질을 얻었다. 차이는 개발자 경험, 디버깅 용이성, 운영 오버헤드에 있었다.</p>
+<p>내 개인 프로덕션 스택은 단일 에이전트 과제엔 PydanticAI, 워크플로가 진짜 복잡할 때는 LangGraph다. 두 프레임워크를 쓴다는 것에 더 이상 사과하지 않는다.</p>
+
+<h2>전체 비교표</h2>
+<table>
+  <thead>
+    <tr><th>지표</th><th>LangGraph</th><th>CrewAI</th><th>PydanticAI</th><th>OpenAI SDK</th><th>Smolagents</th><th>Google ADK</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>코드 줄 수</td><td>~210</td><td>~340</td><td>~130</td><td>~150</td><td>~95</td><td>~180</td></tr>
+    <tr><td>프로토타입까지</td><td>3시간</td><td>45분</td><td>1.5시간</td><td>1시간</td><td>30분</td><td>2시간</td></tr>
+    <tr><td>평균 토큰/실행</td><td>2,847</td><td>4,216</td><td>2,912</td><td>2,791</td><td>3,340</td><td>3,102</td></tr>
+    <tr><td>멀티 에이전트</td><td>Yes (그래프)</td><td>Yes (팀)</td><td>수동</td><td>Yes (핸드오프)</td><td>Yes (계층)</td><td>Yes (AgentTeam)</td></tr>
+    <tr><td>타입 안전성</td><td>TypedDict</td><td>Pydantic config</td><td>Full generics</td><td>Generic context</td><td>최소</td><td>Standard</td></tr>
+    <tr><td>모델 독립성</td><td>Yes</td><td>Yes</td><td>Yes (20+)</td><td>Yes (100+)</td><td>Yes (LiteLLM)</td><td>Gemini 우선</td></tr>
+    <tr><td>최고 디버거</td><td>LangSmith</td><td>로그</td><td>IDE/타입</td><td>내장 추적</td><td>코드 출력</td><td>ADK Web UI</td></tr>
+    <tr><td>GitHub 스타</td><td>~48K</td><td>~44K</td><td>~15K</td><td>~16K</td><td>~26K</td><td>~23K</td></tr>
+    <tr><td>새벽 2시 점수</td><td>9/10</td><td>5/10</td><td>8/10</td><td>7/10</td><td>8/10</td><td>6/10</td></tr>
+  </tbody>
+</table>
+
+<h2>시작하기 전에 알았더라면 좋았을 것</h2>
+<p>6개 프레임워크 모두에 공통점이 하나 있다. 누구도 따라잡기 버거울 만큼 빠르게 진화하고 있다는 것이다. 이 글을 쓰는 동안 LangGraph가 주요 업데이트를 배포했다. 지난주 CrewAI의 엔터프라이즈 티어에 새 통합이 추가됐다. PydanticAI는 A2A 프로토콜 지원을 추가했다. Google ADK는 3일 전에 SkillToolset 기능을 출시했다.</p>
+<p>여기 적힌 모든 내용에 유효 기간이 있다. 6개월 후엔 성능 격차가 좁혀질 수도 있다. 지금 빠진 기능이 출시될 수도 있다. 지금 외면하는 프레임워크가 명백한 선택지가 될 수도 있다.</p>
+<p>최고의 프레임워크는 팀이 파이프라인이 끊기고 클라이언트가 기다릴 때 새벽 2시에 실제로 디버깅할 수 있는 것이다. GitHub 스타가 아닌 그 기준으로 골라라.</p>
+
+</body>
+</html>

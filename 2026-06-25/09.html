@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stop Designing REST APIs Like a Mid-Level Dev: 4 Advanced Patterns Senior Engineers Use Instead</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Stop Designing REST APIs Like a Mid-Level Dev: 4 Advanced Patterns Senior Engineers Use Instead</h1>
+<div class="meta">HabibWahid · Stackademic · 7분 · <a href="https://medium.com/@habib11wahid/stop-designing-rest-apis-like-a-mid-level-dev-4advanced-patterns-senior-engineers-use-instead-c8ecbd116b27" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@habib11wahid/stop-designing-rest-apis-like-a-mid-level-dev-4advanced-patterns-senior-engineers-use-instead-c8ecbd116b27" target="_blank">freedium</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">버전, 페이지네이션, 유효성 검사를 갖춘 "괜찮은" API와 실제 분산 환경의 압력을 버티는 API 사이를 가르는 4가지 패턴.</p>
+  <p>백엔드 개발 8개월 차에 저자는 결제 서비스 API 리뷰에서 수석 엔지니어로부터 핵심 질문을 받았다. 클라이언트가 실패한 요청을 재시도하면 어떻게 되냐, 두 클라이언트가 동시에 같은 레코드를 수정하면 어떻게 되냐는 것이었다. 이 글은 그 질문에서 배운 4가지 패턴을 다룬다. 쓰기 작업에 멱등성 키를 붙여 재시도 중복을 막는 법, PUT 대신 PATCH로 부분 업데이트를 올바르게 구현하는 법, ETag로 동시 수정 충돌을 드러내는 법, 필드 선택 파라미터로 클라이언트가 필요한 데이터만 받아가게 하는 법이다. 각 패턴은 코드 예시와 함께 "이 API가 개발 환경에선 멀쩡한데 왜 실서비스에선 고장 나는가"라는 질문에 구체적으로 답한다.</p>
+</div>
+
+<p>백엔드 경력 8개월 차, 나는 REST를 다 파악했다고 생각했다. DTO, 적절한 상태 코드, 페이지네이션, 버전 관리까지. 관련 글을 읽고 패턴을 적용했으며 코드 리뷰도 다 통과했다.</p>
+
+<p>그런데 수석 엔지니어가 내 결제 서비스 API를 리뷰하면서 무엇이 잘못됐는지를 지적하는 대신 질문을 던졌다. "클라이언트가 실패한 결제 요청을 재시도하면 어떻게 됩니까? 두 클라이언트가 같은 레코드를 동시에 수정하면 어떻게 됩니까? 엔드포인트가 사라질 때 클라이언트에게 무엇을 알려줍니까?"</p>
+
+<p>답이 없었다. API는 독립적으로는 완벽하게 작동했지만, 분산된 클라이언트, 동시 요청, 변하는 계약이라는 실서비스의 현실을 견디도록 설계된 적이 없었다. 그 대화에서 나는 만들어진 API와 설계된 API의 차이를 배웠다.</p>
+
+<h2>이른바 "괜찮은 API"의 문제</h2>
+
+<p>기초를 넘어선 개발자들이 대부분 짜는 API는 이런 모습이다.</p>
+
+<pre><code>@RestController
+@RequestMapping("/api/v1/orders")
+public class OrderController {
+
+    @PostMapping
+    public ResponseEntity&lt;OrderResponse&gt; createOrder(
+            @Valid @RequestBody CreateOrderRequest request) {
+        Order order = orderService.create(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse.from(order));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity&lt;OrderResponse&gt; updateOrder(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateOrderRequest request) {
+        Order order = orderService.update(id, request);
+        return ResponseEntity.ok(OrderResponse.from(order));
+    }
+}</code></pre>
+
+<p>주니어보다는 낫다. 하지만 여전히 심각한 문제가 있다.</p>
+
+<ul>
+  <li>멱등성 보호가 없어 POST 재시도마다 주문이 중복 생성된다.</li>
+  <li>PUT이 전체를 교체하므로 의도치 않게 필드가 날아간다.</li>
+  <li>동시성 제어가 없어 두 클라이언트의 동시 수정이 조용히 덮어쓴다.</li>
+  <li>필드 선택이 없어 클라이언트는 2개만 필요해도 15개를 모두 받는다.</li>
+</ul>
+
+<h2>실수 1: 쓰기 작업에 멱등성이 없다</h2>
+
+<p>문제를 구체적으로 보자. 모바일 클라이언트가 결제를 요청한다. 응답이 오기 전에 네트워크가 끊긴다. 클라이언트가 재시도한다. 서버는 결제를 두 번 처리한다. 사용자는 두 번 청구된다. 서버 측에서는 이것을 감지할 방법이 없다.</p>
+
+<pre><code>// 멱등성 없음 — 재시도할 때마다 새 주문 생성
+@PostMapping("/orders")
+public ResponseEntity&lt;OrderResponse&gt; createOrder(
+        @Valid @RequestBody CreateOrderRequest request) {
+    Order order = orderService.create(request);
+    return ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse.from(order));
+    // 네트워크 타임아웃으로 클라이언트가 재시도?
+    // 주문 두 개, 결제 두 번. 알 방법 없음.
+}</code></pre>
+
+<p>시니어 엔지니어의 해법은 모든 쓰기 작업에 클라이언트가 생성한 멱등성 키를 요구하는 것이다. 최초 실행 결과를 저장하고, 중복 요청에 대해서는 로직을 다시 돌리지 않고 그 결과를 그대로 돌려준다.</p>
+
+<pre><code>// 멱등성 키로 중복 처리 방지
+@PostMapping("/orders")
+public ResponseEntity&lt;OrderResponse&gt; createOrder(
+        @RequestHeader("Idempotency-Key") String idempotencyKey,
+        @Valid @RequestBody CreateOrderRequest request) {
+    // 이미 처리됐다면 캐시된 결과를 즉시 반환
+    return idempotencyService.findResult(idempotencyKey)
+        .map(cached -&gt; ResponseEntity.ok(cached))
+        .orElseGet(() -&gt; {
+            Order order = orderService.create(request);
+            OrderResponse response = OrderResponse.from(order);
+            // 이 키로 결과를 캐시 — 24시간 후 만료
+            idempotencyService.save(idempotencyKey, response);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        });
+}
+
+@Service
+@RequiredArgsConstructor
+public class IdempotencyService {
+    private final IdempotencyRepository repository;
+
+    public Optional&lt;OrderResponse&gt; findResult(String key) {
+        return repository.findByKey(key).map(IdempotencyRecord::getResponse);
+    }
+
+    public void save(String key, OrderResponse response) {
+        repository.save(new IdempotencyRecord(key, response,
+            LocalDateTime.now().plusHours(24)));
+    }
+}</code></pre>
+
+<p>이 패턴이 중요한 이유는 명확하다. 모바일 클라이언트와 로드 밸런서는 실패한 요청을 재시도한다. 멱등성 없이는 재시도가 위험하다. 키는 클라이언트가 생성하므로 서버는 재시도와 새 요청을 구분할 필요가 없다. 동일 키 + 동일 요청 = 동일 응답, 재처리 없음. Stripe, PayPal 등 모든 주요 결제 API가 멱등성 키를 요구하는 것은 업계 표준이다.</p>
+
+<h2>실수 2: PATCH가 필요한 곳에 PUT을 쓴다</h2>
+
+<p>PUT은 리소스 전체를 교체한다. 클라이언트가 바꾸고 싶은 필드만 담아 PUT 요청을 보내면, 포함되지 않은 모든 필드가 조용히 null로 설정된다. 부분 업데이트에는 PATCH가 존재한다.</p>
+
+<pre><code>// PUT은 전부 교체 — 빠진 필드는 null이 됨
+@PutMapping("/users/{id}")
+public ResponseEntity&lt;UserResponse&gt; updateUser(
+        @PathVariable Long id,
+        @RequestBody UpdateUserRequest request) {
+    // 클라이언트가 {"email": "new@email.com"}만 보냄
+    // username, phone, address → 모두 조용히 null로
+    return ResponseEntity.ok(UserResponse.from(userService.update(id, request)));
+}</code></pre>
+
+<p>시니어 엔지니어는 <code>JsonMergePatch</code>를 사용한 PATCH로 부분 업데이트를 구현한다. 요청에 포함된 필드만 수정되고, 없는 필드는 그대로 유지된다.</p>
+
+<pre><code>// PATCH: 클라이언트가 보낸 것만 업데이트
+@PatchMapping(value = "/users/{id}", consumes = "application/merge-patch+json")
+public ResponseEntity&lt;UserResponse&gt; patchUser(
+        @PathVariable Long id,
+        @RequestBody JsonMergePatch patch) {
+    // 현재 상태 로드
+    User existing = userService.findById(id);
+    UserRequest currentRequest = UserRequest.from(existing);
+
+    // 패치에 있는 필드만 적용
+    UserRequest patched = applyPatch(patch, currentRequest);
+    return ResponseEntity.ok(UserResponse.from(userService.update(id, patched)));
+}
+
+private UserRequest applyPatch(JsonMergePatch patch, UserRequest target)
+        throws JsonPatchException, JsonProcessingException {
+    JsonNode targetNode = objectMapper.valueToTree(target);
+    JsonNode patchedNode = patch.apply(targetNode);
+    return objectMapper.treeToValue(patchedNode, UserRequest.class);
+}</code></pre>
+
+<p>이제 클라이언트는 바뀐 것만 보내면 된다.</p>
+
+<pre><code>PATCH /users/42
+Content-Type: application/merge-patch+json
+
+{"email": "new@email.com"}
+
+// username, phone, address — 그대로. 이메일만 업데이트.</code></pre>
+
+<p>PUT과 PATCH는 의미상 다른 HTTP 메서드다. 부분 업데이트에 PUT을 쓰는 건 잘못된 REST 적용이다. <code>application/merge-patch+json</code>은 RFC 7396 표준 Content-Type이며, 클라이언트는 업데이트 전에 전체 리소스를 가져올 필요가 없다. 누락된 필드로 인한 우발적 데이터 손실이 구조적으로 불가능해진다.</p>
+
+<h2>실수 3: 업데이트에 동시성 제어가 없다</h2>
+
+<p>두 클라이언트가 같은 리소스를 동시에 로드한다. 둘 다 수정한다. 첫 번째가 먼저 저장한다. 두 번째가 그 위에 저장한다. 조용히. 에러 없이. 첫 번째 클라이언트의 변경이 사라진다.</p>
+
+<pre><code>// 마지막 쓰기가 이긴다 — 첫 번째 클라이언트의 변경이 조용히 덮어씌워짐
+@PutMapping("/products/{id}")
+public ResponseEntity&lt;ProductResponse&gt; updateProduct(
+        @PathVariable Long id,
+        @RequestBody UpdateProductRequest request) {
+    // 클라이언트 A: 버전 1 로드, 가격을 $20으로 변경
+    // 클라이언트 B: 버전 1 로드, 재고를 50으로 변경
+    // A 저장 → 버전 2, 가격 $20, 재고 원본
+    // B 저장 → 버전 2, 가격 원본, 재고 50
+    // A의 가격 변경이 사라졌다. 에러 없음. 경고 없음.
+    return ResponseEntity.ok(ProductResponse.from(productService.update(id, request)));
+}</code></pre>
+
+<p>시니어 엔지니어는 낙관적 동시성 제어에 ETag를 사용한다. 서버는 모든 응답에 ETag를 보낸다. 클라이언트는 업데이트 시 이것을 포함해야 한다. 클라이언트가 로드한 이후 리소스가 바뀌었다면, 서버는 412로 업데이트를 거부한다.</p>
+
+<pre><code>// ETag 기반 동시성 — 오래된 업데이트를 깔끔하게 거부
+@GetMapping("/products/{id}")
+public ResponseEntity&lt;ProductResponse&gt; getProduct(@PathVariable Long id) {
+    Product product = productService.findById(id);
+    String eTag = "\"" + product.getVersion() + "\"";
+    return ResponseEntity.ok()
+        .eTag(eTag)  // 응답 헤더에 ETag: "5" 전송
+        .body(ProductResponse.from(product));
+}
+
+@PutMapping("/products/{id}")
+public ResponseEntity&lt;ProductResponse&gt; updateProduct(
+        @PathVariable Long id,
+        @RequestHeader("If-Match") String ifMatch,
+        @Valid @RequestBody UpdateProductRequest request) {
+    Product product = productService.findById(id);
+    String currentETag = "\"" + product.getVersion() + "\"";
+
+    // 클라이언트의 ETag가 현재 버전과 다르면 — 로드 이후 리소스가 변경됨
+    if (!currentETag.equals(ifMatch)) {
+        return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED)
+            .body(null);  // 412 — "다른 사람이 바꿨습니다. 다시 불러와서 시도하세요."
+    }
+    return ResponseEntity.ok(ProductResponse.from(productService.update(id, request)));
+}</code></pre>
+
+<p>동시성 제어가 없는 API에서는 업데이트 유실이 조용히 일어난다. ETag는 그것을 가시화한다. 412 Precondition Failed는 클라이언트에게 다시 불러와서 충돌을 해소하라는 명확한 신호를 준다. <code>product.getVersion()</code>은 JPA의 <code>@Version</code> 필드와 직결되므로 별도 인프라가 필요 없다. GitHub, Google Drive 등 모든 협업 API가 ETag를 쓰며, 클라이언트는 이미 다루는 법을 안다.</p>
+
+<h2>실수 4: 필드 선택 없이 항상 모든 것을 보낸다</h2>
+
+<p>모바일 클라이언트가 사용자 목록에서 <code>id</code>와 <code>name</code>만 필요하다. API는 15개 필드를 모두 돌려준다. 주소, 설정, 메타데이터까지. 모든 필드가 직렬화되고, 전송되고, 파싱된다. 즉시 버려질 것들도 포함해서.</p>
+
+<pre><code>// 클라이언트가 무엇을 필요로 하든 모든 필드 반환
+@GetMapping("/users")
+public ResponseEntity&lt;Page&lt;UserResponse&gt;&gt; getUsers(Pageable pageable) {
+    return ResponseEntity.ok(userService.findAll(pageable).map(UserResponse::from));
+    // 모바일 클라이언트는 2개 필요. 15개를 받는다. 13개 낭비.
+}</code></pre>
+
+<p>시니어 엔지니어는 <code>fields</code> 쿼리 파라미터를 받아서 요청된 필드만 돌려준다. 클라이언트는 가벼운 페이로드를 얻고, 대역폭과 파싱 시간이 급감한다.</p>
+
+<pre><code>// Sparse fieldsets — 클라이언트가 정확히 필요한 것만 요청
+@GetMapping("/users")
+public ResponseEntity&lt;Page&lt;Map&lt;String, Object&gt;&gt;&gt; getUsers(
+        Pageable pageable,
+        @RequestParam(required = false) Set&lt;String&gt; fields) {
+    Page&lt;User&gt; users = userService.findAll(pageable);
+    Page&lt;Map&lt;String, Object&gt;&gt; response = users.map(user -&gt; {
+        Map&lt;String, Object&gt; full = Map.of(
+            "id", user.getId(),
+            "name", user.getName(),
+            "email", user.getEmail(),
+            "role", user.getRole(),
+            "createdAt", user.getCreatedAt()
+        );
+        // fields 미지정 시 전체 반환 — 기존 클라이언트와 하위 호환
+        if (fields == null || fields.isEmpty()) return full;
+        return full.entrySet().stream()
+            .filter(e -&gt; fields.contains(e.getKey()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    });
+    return ResponseEntity.ok(response);
+}</code></pre>
+
+<p>이제 클라이언트는 필요한 것만 요청하면 된다.</p>
+
+<pre><code>GET /users?fields=id,name
+
+[
+  {"id": 1, "name": "Alice"},
+  {"id": 2, "name": "Bob"}
+]
+// 2개 필드. 15개가 아니라.</code></pre>
+
+<p>느린 연결의 모바일 클라이언트는 렌더링하는 것만 내려받아 응답 크기가 80% 이상 줄 수 있다. 단일 엔드포인트가 필드 요건이 다른 여러 클라이언트를 모두 수용하므로 엔드포인트 수가 늘지 않는다. 이 패턴은 GraphQL의 기반이며, REST에서는 쿼리 파라미터 하나로 구현할 수 있다. <code>fields</code>를 선택 사항으로 만들면 이 파라미터를 보내지 않는 기존 클라이언트는 전체 응답을 그대로 받는다.</p>
+
+<h2>괜찮은 API에서 계약 수준의 API로</h2>
+
+<p>괜찮은 API와 계약 수준의 API의 차이는 작동하느냐가 아니다. 실제 분산 시스템이 만드는 조건들을 감당하느냐다. 재시도, 동시 수정, 부분 업데이트, 대역폭 제약이 그것이다.</p>
+
+<pre><code>// 이전: 실서비스의 현실에 무방비
+@PostMapping("/orders")
+public ResponseEntity&lt;OrderResponse&gt; createOrder(
+        @Valid @RequestBody CreateOrderRequest request) {
+    return ResponseEntity.status(201).body(OrderResponse.from(orderService.create(request)));
+    // 재시도 = 주문 중복. 동시 수정 = 업데이트 유실.
+    // 모바일 페이로드 = 15개 필드.
+}</code></pre>
+
+<pre><code>// 이후: 계약 수준의 API
+@PostMapping("/orders")
+public ResponseEntity&lt;OrderResponse&gt; createOrder(
+        @RequestHeader("Idempotency-Key") String key,  // 재시도 안전
+        @Valid @RequestBody CreateOrderRequest request) {
+    return idempotencyService.findResult(key)
+        .map(ResponseEntity::ok)
+        .orElseGet(() -&gt; {
+            OrderResponse response = OrderResponse.from(orderService.create(request));
+            idempotencyService.save(key, response);  // 재시도용 캐시
+            return ResponseEntity.status(201).body(response);
+        });
+    // PATCH로 부분 업데이트 — 우발적 null 덮어쓰기 없음
+    // GET/PUT에 ETag — 동시 수정은 412 반환, 조용한 데이터 손실 없음
+    // ?fields=id,name — 모바일은 2개 필드만 받음, 15개가 아니라
+}</code></pre>
+
+<h2>실행 계획</h2>
+
+<p>한꺼번에 다 적용하려 하지 마라. 영향이 큰 순서대로.</p>
+
+<ul>
+  <li>1주 차: 생성하거나 결제하는 모든 POST 엔드포인트에 <code>Idempotency-Key</code>를 추가한다. 헤더 하나가 중복 처리 버그 전체를 막는다.</li>
+  <li>2주 차: 모든 PUT 엔드포인트를 감사하고, 부분 업데이트는 <code>JsonMergePatch</code>를 쓰는 PATCH로 교체한다.</li>
+  <li>3주 차: 가장 많이 수정되는 엔티티에 <code>@Version</code>을 달고, GET과 PUT 엔드포인트에 ETag 헤더를 연결한다.</li>
+  <li>4주 차: 트래픽이 가장 많은 목록 엔드포인트에 <code>?fields=</code> 지원을 추가하고, 페이로드 크기 감소를 측정한다.</li>
+</ul>
+
+<p>다음에 <code>@PostMapping</code>을 쓸 때 스스로에게 물어라. "이 요청이 두 번 도착하면 어떻게 되나?" 이 질문 하나가 모든 수준에서 API를 설계하는 방식을 바꿀 것이다.</p>
+
+<p>이 패턴들이 고급인 건 복잡함을 위해서가 아니다. 개발 환경에서는 멀쩡하지만 분산 클라이언트, 불안정한 네트워크, 의존하는 팀을 깨지 않고 진화해야 하는 시스템의 현실 앞에서 버티는 API와 그렇지 못한 API의 차이이기 때문이다.</p>
+</body>
+</html>

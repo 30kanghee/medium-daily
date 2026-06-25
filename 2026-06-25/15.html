@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Google launches Data Engineer Agent for BigQuery</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Google launches Data Engineer Agent for BigQuery</h1>
+<div class="meta">Christianlauer · Codex · 2분 · <a href="https://medium.com/@christianlauer90/google-launches-data-engineer-agent-for-bigquery-d119c4e5872c" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@christianlauer90/google-launches-data-engineer-agent-for-bigquery-d119c4e5872c" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">구글이 BigQuery에 데이터 엔지니어 에이전트를 정식 출시해 자연어로 파이프라인을 자동 생성하고 장애까지 진단한다.</p>
+  <p>구글 클라우드는 Gemini 기반의 데이터 엔지니어링 에이전트를 BigQuery Pipelines와 Dataform에 내장해 정식으로 제공하기 시작했다. 이 에이전트는 자연어 프롬프트 하나로 스타 스키마 파이프라인 전체를 생성하고, <code>GEMINI.md</code> 파일에 저장된 사내 가이드라인을 자동으로 읽어 네이밍 규칙과 품질 기준을 준수한다. 파이프라인 장애 시에는 실행 로그를 자동으로 스캔해 근본 원인과 해결 방안을 제시하며, CLI와 API를 통해 수백 개의 파이프라인에 동일한 템플릿을 일괄 적용할 수도 있다. 데이터 엔지니어의 역할은 사라지지 않지만, 반복적인 SQL 작성과 로그 분석에서 벗어나 데이터 아키텍처와 비즈니스 인사이트 발굴에 집중할 수 있게 된다.</p>
+</div>
+
+<p>데이터는 현대 기업의 생명줄이지만, 그것을 실제로 쓸 수 있는 형태로 만드는 과정에는 늘 마찰이 따른다. 데이터 엔지니어와 분석가, 데이터 과학자들은 반복적이고 부가가치가 낮은 작업에 지나치게 많은 시간을 쏟는다. 구글은 이 현실을 바꾸겠다며 BigQuery Pipelines와 Dataform에 특화된 데이터 엔지니어링 에이전트를 직접 내장해 정식으로 제공하기 시작했다. 이 자율 보조 도구는 실제로 무엇을 할 수 있을까? 그리고 인간 데이터 엔지니어의 자리를 빼앗을 것인가?</p>
+
+<h2>데이터 엔지니어링 에이전트란 무엇인가</h2>
+
+<p>데이터 엔지니어링 에이전트는 Gemini의 고급 기능을 기반으로 구축된 구글 클라우드의 기본 탑재 AI 보조 도구다. 코드를 처음부터 수작업으로 작성하거나 파이프라인을 처음부터 구성하는 대신, 팀은 이제 자연어 인터페이스를 통해 BigQuery Studio 안에서 데이터 인프라와 직접 대화할 수 있다. 에이전트는 복잡한 조직 요건을 이해하고 사람의 프롬프트를 실제로 작동하는 데이터 아키텍처로 변환한다.</p>
+
+<h2>에이전트가 할 수 있는 일</h2>
+
+<p>데이터 엔지니어링 에이전트의 기능은 단순한 SQL 제안을 훨씬 뛰어넘는다. 일상적인 데이터 엔지니어링 워크플로부터 복잡한 작업까지 자율적으로 처리한다.</p>
+
+<h3>파이프라인 자동 생성</h3>
+
+<p>"택시 트립 스타 스키마용 차원 테이블을 만들어줘" 같은 간단한 자연어 프롬프트만으로 에이전트가 스키마 추론과 데이터 변환을 포함한 완전한 파이프라인을 생성한다.</p>
+
+<h3>거버넌스와 모범 사례 자동 준수</h3>
+
+<p>기업은 중앙에 <code>GEMINI.md</code> 파일을 저장해둘 수 있다. 에이전트는 이 가이드라인을 자동으로 읽어 생성하는 모든 테이블이 사내 네이밍 규칙(예: 스테이징 테이블 접두사 <code>stg_</code>)과 품질 기준(날짜 필드 형식, 유효하지 않은 값 제거 등)을 정확히 따르도록 보장한다.</p>
+
+<h3>지능형 장애 분석</h3>
+
+<p>파이프라인이 실패하면 Gemini Cloud Assist와 통합된 에이전트가 자동으로 실행 로그를 스캔한다. 관찰 내용, 유력한 근본 원인, 문제 해결을 위한 실행 가능한 권고사항이 담긴 보고서를 빠르게 제공한다.</p>
+
+<h3>CLI와 API를 통한 대규모 적용</h3>
+
+<p>미리 정의된 지침이나 템플릿을 API를 통해 수십 개에서 수백 개의 파이프라인에 동시에 적용할 수 있다.</p>
+
+<h2>인간 데이터 엔지니어는 여전히 필요한가</h2>
+
+<p>짧게 답하면, 그렇다. 절대적으로. 다만 역할이 크게 바뀐다. 데이터 엔지니어링 에이전트는 인간을 대체하는 것이 아니라 엄청난 생산성 촉매제다. 자동화는 초점의 근본적인 이동을 만들어낸다.</p>
+
+<h3>파이프라인 빌더에서 아키텍트로</h3>
+
+<p>데이터 엔지니어는 이제 루틴 SQL을 수작업으로 작성하거나 오류가 많은 CSV 파일을 파싱하는 시간을 줄이게 된다. 대신 전략적 모범 사례, 글로벌 데이터 모델, 에이전트가 자동으로 구현하는 비즈니스 로직을 정의하는 데 집중한다.</p>
+
+<h3>사람이 루프에 남는다</h3>
+
+<p>최종 책임은 여전히 사람에게 있다. 에이전트는 단계 계획과 코드 블록을 제안하지만, SCD Type 2 차원 같은 복잡한 데이터 모델링은 전문가의 검토와 승인이 여전히 필요하다.</p>
+
+<h3>가치 창출에 집중</h3>
+
+<p>단조로운 유지 보수 작업과 지루한 로그 분석을 제거함으로써 데이터 팀은 마침내 더 깊은 비즈니스 인사이트를 발굴하고 혁신적인 데이터 제품을 만드는 데 집중할 수 있게 된다.</p>
+
+<p>BigQuery 데이터 엔지니어링 에이전트는 데이터 엔지니어의 종말을 알리지 않는다. 반복적인 데이터 삽질의 종말을 알릴 뿐이다. 앞으로 성공하는 사람은 파이프라인을 직접 벽돌 하나씩 쌓지 않고, 궂은일을 대신 하는 영리한 AI 에이전트를 오케스트레이션하는 사람이 될 것이다.</p>
+
+</body>
+</html>
