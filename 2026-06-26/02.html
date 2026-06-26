@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7 SQL Hacks Every Developer Should Know to Make Queries 100% Faster</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>7 SQL Hacks Every Developer Should Know to Make Queries 100% Faster</h1>
+<div class="meta">Lets Learn Now · Stackademic · 3분 읽기 · <a href="https://medium.com/@letslearnnow/7-sql-hacks-every-developer-should-know-to-make-queries-100-faster-08b55ef00a16" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@letslearnnow/7-sql-hacks-every-developer-should-know-to-make-queries-100-faster-08b55ef00a16" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">잘못 작성된 SQL 쿼리는 조용히 숨어 있다가 트래픽이 늘어나는 순간 서버를 무너뜨린다. 지금 당장 적용할 수 있는 7가지 실전 기법으로 이를 막을 수 있다.</p>
+  <p>실제 금요일 밤 장애 사례에서 시작해, 5000만 건 테이블을 전체 스캔하던 쿼리 하나가 서버 CPU를 95%까지 끌어올린 경험을 소개한다. 올바른 복합 인덱스 사용, <code>SELECT *</code> 대신 필요한 컬럼만 조회, WHERE 절에서 인덱스 컬럼에 함수를 씌우지 않기, OFFSET 기반 페이지네이션 대신 커서 방식 사용, JOIN 전에 미리 집계하기, IN 대신 EXISTS 사용, 그리고 Redis나 요약 테이블을 활용한 결과 캐싱 등이 핵심 기법이다. 각 기법마다 실제 성능 개선 수치가 제시되어 있어, 이론이 아닌 현장에서 검증된 조언임을 확인할 수 있다.</p>
+</div>
+
+<h2>사건: 금요일 오후 7시 45분</h2>
+
+<p>조용한 금요일 저녁이었다. 대시보드는 모두 초록불이었다. 고객 활성 트랜잭션을 PostgreSQL 데이터베이스에서 조회하는 리포팅 화면, 새 기능이 막 배포된 참이었다.</p>
+
+<p>그런데 Slack에 불이 켜졌다.</p>
+
+<blockquote>DB CPU 95% / 결제 API 쿼리 타임아웃 / Grafana 알림 폭주</blockquote>
+
+<p>원인은 단 하나. SELECT 쿼리 하나가 호출될 때마다 5000만 건의 행을 전부 스캔하고 있었다. 코드 리뷰도 통과했고, 스테이징도 넘겼고, 초기 프로덕션 테스트도 문제없었다. 숨어 있던 성능 함정을 아무도 보지 못했을 뿐이다.</p>
+
+<blockquote><strong>교훈:</strong> 나쁜 SQL은 트래픽이 쌓이기 전까지 조용하다. 좋은 SQL은 데이터가 아무리 늘어도 빠름을 유지한다.</blockquote>
+
+<h2>1. 인덱스는 올바른 것을 써야 한다 — 아무 인덱스나 추가하면 안 된다</h2>
+
+<p><strong>개선 전</strong></p>
+
+<pre><code>SELECT *
+FROM transactions
+WHERE status = 'ACTIVE' AND created_at >= '2025-01-01';
+-- transactions 테이블에 5000만 건
+-- status, created_at에 인덱스 없음
+-- 매번 전체 테이블 스캔</code></pre>
+
+<p><strong>개선 후</strong></p>
+
+<pre><code>CREATE INDEX idx_transactions_status_created_at
+ON transactions (status, created_at);
+
+SELECT *
+FROM transactions
+WHERE status = 'ACTIVE' AND created_at >= '2025-01-01';</code></pre>
+
+<p><strong>왜 효과적인가:</strong> <code>(status, created_at)</code> 복합 인덱스를 쓰면 데이터베이스가 테이블 전체를 훑는 대신 해당 행으로 바로 찾아간다.</p>
+
+<p><strong>실제 효과:</strong> 이 인덱스 하나를 추가하자 CPU가 95%에서 20%로 떨어졌다.</p>
+
+<p><strong>팁:</strong> <code>EXPLAIN</code> 또는 <code>EXPLAIN ANALYZE</code>로 쿼리가 실제로 인덱스를 타는지 확인하라.</p>
+
+<h2>2. 필요한 컬럼만 조회하라</h2>
+
+<p><strong>개선 전</strong></p>
+
+<pre><code>SELECT *
+FROM users
+WHERE last_login > NOW() - INTERVAL '7 days';</code></pre>
+
+<p>모든 컬럼을 가져오면 BLOB, JSON 같은 무거운 필드까지 딸려온다. 디스크 I/O와 네트워크 전송 양쪽에서 손해다.</p>
+
+<p><strong>개선 후</strong></p>
+
+<pre><code>SELECT id, name, email
+FROM users
+WHERE last_login > NOW() - INTERVAL '7 days';</code></pre>
+
+<p><strong>왜 효과적인가:</strong> 읽고 직렬화하고 전송할 데이터가 줄어든다. 트래픽이 많은 API에서는 결정적인 차이를 만든다.</p>
+
+<p><strong>실제 효과:</strong> 500만 건 테이블에서 쿼리 시간이 1.8초에서 250밀리초로 줄었다.</p>
+
+<p>프로덕션 쿼리에서 <code>SELECT *</code>는 쓰지 않는다 — 특히 API에서는 절대로.</p>
+
+<h2>3. WHERE 절에서 인덱스 컬럼에 함수를 씌우지 마라</h2>
+
+<p><strong>개선 전</strong></p>
+
+<pre><code>SELECT *
+FROM orders
+WHERE DATE(order_timestamp) = '2025-10-08';</code></pre>
+
+<p>컬럼에 <code>DATE()</code>를 적용하면 인덱스를 쓸 수 없어 전체 스캔이 강제된다.</p>
+
+<p><strong>개선 후</strong></p>
+
+<pre><code>SELECT *
+FROM orders
+WHERE order_timestamp >= '2025-10-08 00:00:00'
+  AND order_timestamp &lt; '2025-10-09 00:00:00';</code></pre>
+
+<p><strong>왜 효과적인가:</strong> 이렇게 쓰면 <code>order_timestamp</code> 인덱스를 그대로 활용할 수 있다.</p>
+
+<p><strong>실제 효과:</strong> 일별 배치 쿼리가 18초에서 120밀리초로 줄었다.</p>
+
+<p>비교식에서 계산은 항상 오른쪽(값 쪽)에 밀어넣어라.</p>
+
+<h2>4. 페이지네이션은 스마트하게 해야 한다</h2>
+
+<p><strong>개선 전</strong></p>
+
+<pre><code>SELECT *
+FROM products
+ORDER BY id
+LIMIT 20 OFFSET 100000;</code></pre>
+
+<p><code>OFFSET</code>은 목표 지점까지 행을 전부 스캔하고 버린다. 시간 복잡도가 O(n)이다.</p>
+
+<p><strong>개선 후</strong></p>
+
+<pre><code>SELECT *
+FROM products
+WHERE id &gt; 100000
+ORDER BY id
+LIMIT 20;</code></pre>
+
+<p><strong>왜 효과적인가:</strong> 커서 기반 페이지네이션(일명 "seek method")은 불필요한 행을 아예 읽지 않는다.</p>
+
+<p><strong>실제 효과:</strong> 리포트 페이지 로딩이 6초에서 200밀리초로 줄었다.</p>
+
+<p>무한 스크롤이나 API 페이지네이션에서는 이 방식이 판도를 바꾼다.</p>
+
+<h2>5. JOIN 전에 미리 집계하라</h2>
+
+<p><strong>개선 전</strong></p>
+
+<pre><code>SELECT c.name, COUNT(o.id)
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+WHERE o.status = 'COMPLETED'
+GROUP BY c.name;</code></pre>
+
+<p>데이터가 많을 때 이 JOIN + GROUP BY 조합은 처리 비용이 폭발적으로 늘어난다.</p>
+
+<p><strong>개선 후</strong></p>
+
+<pre><code>-- 서브쿼리에서 미리 집계
+SELECT c.name, agg.order_count
+FROM customers c
+JOIN (
+  SELECT customer_id, COUNT(*) AS order_count
+  FROM orders
+  WHERE status = 'COMPLETED'
+  GROUP BY customer_id
+) agg ON c.id = agg.customer_id;</code></pre>
+
+<p><strong>왜 효과적인가:</strong> 먼저 집계해서 JOIN 대상 데이터 크기를 대폭 줄인다.</p>
+
+<p><strong>실제 효과:</strong> 40초짜리 리포팅 쿼리가 700밀리초 대시보드 위젯으로 바뀌었다.</p>
+
+<p>데이터베이스처럼 생각하라 — JOIN 전에 데이터를 줄여라.</p>
+
+<h2>6. 대용량 서브쿼리에서 IN 대신 EXISTS를 써라</h2>
+
+<p><strong>개선 전</strong></p>
+
+<pre><code>SELECT *
+FROM users
+WHERE id IN (SELECT user_id FROM orders WHERE amount > 1000);</code></pre>
+
+<p>서브쿼리 결과가 크면 <code>IN</code>은 거대한 목록을 메모리에 올려야 한다.</p>
+
+<p><strong>개선 후</strong></p>
+
+<pre><code>SELECT *
+FROM users u
+WHERE EXISTS (
+  SELECT 1
+  FROM orders o
+  WHERE o.user_id = u.id AND o.amount &gt; 1000
+);</code></pre>
+
+<p><strong>왜 효과적인가:</strong> <code>EXISTS</code>는 조건이 충족되는 첫 번째 행을 찾는 즉시 멈춘다. 상관 서브쿼리를 더 효율적으로 활용한다.</p>
+
+<p><strong>실제 효과:</strong> 2000만 건 고객-주문 쿼리에서 12초에서 400밀리초로 개선됐다.</p>
+
+<h2>7. 비싼 쿼리는 캐시하라 — 매번 다시 계산하지 마라</h2>
+
+<p>모든 성능 문제가 SQL 안에서 해결되는 것은 아니다. 때로는 쿼리 자체를 실행하지 않는 것이 답이다.</p>
+
+<ul>
+  <li>일별 리포트 → 미리 계산해 요약 테이블에 저장</li>
+  <li>인기 순위 목록 → Redis에 몇 분간 캐싱</li>
+  <li>무거운 JOIN → 구체화된 뷰(materialized view) 활용</li>
+</ul>
+
+<p><strong>실제 사례:</strong> 리프레시마다 8개 테이블을 조인하던 대시보드가 있었다. 야간 요약 테이블을 만들고 상위 10개 목록을 캐싱하자 25초에서 300밀리초로 줄었다.</p>
+
+<p>캐싱은 쿼리의 터보차저라고 생각하면 된다.</p>
+
+<h2>빠른 점검 체크리스트</h2>
+
+<ul>
+  <li>WHERE 절 조건 컬럼에 복합 인덱스가 있는가?</li>
+  <li><code>SELECT *</code> 대신 필요한 컬럼만 명시했는가?</li>
+  <li>인덱스 컬럼에 함수나 연산을 씌우지 않았는가?</li>
+  <li>깊은 페이지에서 OFFSET 대신 커서 기반 페이지네이션을 쓰고 있는가?</li>
+  <li>JOIN 전에 집계해서 데이터 크기를 줄이고 있는가?</li>
+  <li>대용량 서브쿼리에 IN 대신 EXISTS를 쓰고 있는가?</li>
+  <li>자주 쓰는 무거운 쿼리 결과를 캐시하고 있는가?</li>
+</ul>
+
+<h2>마무리하며</h2>
+
+<p>느린 SQL은 운명이 아니다. 대부분 조금만 고치면 된다.</p>
+
+<p>데이터베이스 성능 문제라고 불리는 것들의 대다수는 실제로는 데이터베이스 탓이 아니다. 실제 트래픽 앞에서 겹겹이 쌓이는 작은 안티패턴들이 원인이다. 이 7가지 기법을 손에 익히면 서버를 무너뜨리던 쿼리가 피크 부하에서도 거침없이 달리는 쿼리로 바뀐다.</p>
+
+</body>
+</html>

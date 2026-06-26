@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 Kafka Design Patterns for Every Backend Engineer</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>11 Kafka Design Patterns for Every Backend Engineer</h1>
+<div class="meta">Vineet Sharma · 14분 읽기 · <a href="https://medium.com/@mvineetsharma/11-kafka-design-patterns-for-every-backend-engineer-f053bdadd99e" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@mvineetsharma/11-kafka-design-patterns-for-every-backend-engineer-f053bdadd99e" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">백엔드 엔지니어라면 반드시 알아야 할 Kafka 핵심 설계 패턴 11가지를 AWS 환경 예시와 함께 체계적으로 정리한 실전 가이드다.</p>
+  <p>Apache Kafka는 현대 이벤트 스트리밍 아키텍처의 표준으로 자리 잡았지만, 단순히 메시지를 주고받는 것을 넘어 검증된 설계 패턴이 있어야 안정적인 시스템을 구축할 수 있다. 이 글은 Event Sourcing, CQRS, Event Carried State Transfer, Claim Check, DLQ, Idempotent Consumer, Transactional Outbox, Compacted Topic, Partition Key, Stream-Table Duality, Saga(Choreography) 등 11가지 패턴 각각에 대해 개념, 사용 시점, AWS 적용 방법, 코드 예시를 제공한다. 패턴들은 크게 신뢰성·순서 보장, 데이터·상태 관리, 성능·통합이라는 세 범주로 나뉘며, 향후 시리즈에서 각 범주를 심층적으로 다룰 예정이다.</p>
+</div>
+
+<h2>들어가며</h2>
+
+<p>AWS 기반 Apache Kafka는 스타트업부터 대기업까지 현대 아키텍처에서 이벤트 스트리밍의 실질적인 중추 역할을 하고 있다. 그러나 Kafka를 제대로 활용하려면 메시지를 생산하고 소비하는 것 이상이 필요하다. 메시지 순서 보장, 정확히 한 번(exactly-once) 처리, 대용량 페이로드 처리, 장애 복구, 그리고 MSK·S3·DynamoDB·Lambda 등 AWS 서비스와의 연동을 안정적으로 다루려면 실전에서 검증된 설계 패턴이 필수다.</p>
+
+<p>이 4부작 시리즈는 11가지 필수 Kafka 패턴을 다룬다. 각 패턴마다 AWS 실사용 예시, 다이어그램, Java와 Python 코드 예시를 함께 제공한다. 각 패턴을 언제 써야 하는지, AWS에서 어떻게 구현하는지, 그리고 흔히 저지르는 실수는 무엇인지 배울 수 있다.</p>
+
+<p>온프레미스 Kafka에서 Amazon MSK로 마이그레이션하든, 이벤트 기반 마이크로서비스를 구축하든, 데이터 파이프라인을 설계하든 — 이 패턴들이 시스템을 더 탄탄하고 확장 가능하며 유지보수하기 쉽게 만들어 줄 것이다.</p>
+
+<h2>1. Event Sourcing (이벤트 소싱)</h2>
+
+<p><strong>개념:</strong> 엔티티의 현재 상태만 저장하는 대신(예: 데이터베이스의 특정 행), 상태를 변경하는 모든 이벤트를 Kafka에 변경 불가능한 시계열 로그로 기록한다. 현재 상태는 처음부터 모든 이벤트를 재생함으로써 도출된다. Kafka의 로그 기반 저장 방식이 이 패턴에 자연스럽게 들어맞는다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>모든 변경 이력에 대한 완전한 감사 기록이 필요할 때</li>
+  <li>이력을 재생하여 과거 상태를 재구성하거나 문제를 디버깅하고 싶을 때</li>
+  <li>"어제 오후 3시에 주문 상태가 어땠지?"와 같은 시간 기반 쿼리가 필요할 때</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> 무기한 보존 설정으로 MSK 토픽을 생성하거나, MSK Connect S3 Sink Connector를 통해 S3에 백업한다. 컨슈머는 가장 초기 오프셋부터 읽어 상태를 재구성한다. ksqlDB를 활용해 이벤트 로그에서 뷰를 구체화(materialize)할 수 있다.</p>
+
+<pre><code># 프로듀서 - 추가 전용(append-only)
+event = {"event_type": "OrderCreated", "order_id": "123", "amount": 100, "status": "pending"}
+producer.send("order_events", key="123", value=json.dumps(event))
+
+# 컨슈머 - 이벤트 재생으로 상태 재구성
+state = {}
+for msg in consumer:
+    event = json.loads(msg.value)
+    order_id = event["order_id"]
+    if order_id not in state:
+        state[order_id] = {}
+    # 현재 상태에 이벤트 적용
+    if event["event_type"] == "OrderCreated":
+        state[order_id] = {"amount": event["amount"], "status": "pending"}
+    elif event["event_type"] == "OrderPaid":
+        state[order_id]["status"] = "paid"</code></pre>
+
+<p><strong>AWS 팁:</strong> Glue Schema Registry를 사용하면 이벤트 스키마를 안전하게 진화시킬 수 있다. 컴플라이언스 요구 사항에 따라 <code>retention.bytes</code> 또는 <code>retention.ms</code>를 설정하라.</p>
+
+<h2>2. CQRS (명령·조회 책임 분리)</h2>
+
+<p><strong>개념:</strong> 상태를 변경하는 쓰기 경로(커맨드)와 데이터를 조회하는 읽기 경로(쿼리)를 분리한다. 커맨드는 Kafka로 전달되고, Kafka는 비동기적으로 하나 이상의 읽기 최적화 모델을 갱신한다. 이를 통해 읽기와 쓰기를 독립적으로 확장하고, 서로 다른 자료구조를 사용할 수 있다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>읽기와 쓰기의 확장 요구 사항이 다를 때 (예: 초당 쓰기 1,000건, 읽기 100,000건)</li>
+  <li>모바일 앱·대시보드·분석 등 다양한 용도에 맞는 여러 읽기 모델이 필요할 때</li>
+  <li>읽기 경로에서 복잡한 JOIN을 피하기 위해 전용 테이블에 데이터를 미리 조인해 두고 싶을 때</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> 커맨드를 MSK 토픽에 기록한다. Lambda·Kafka Streams·ksqlDB 등의 컨슈머가 DynamoDB·Aurora·OpenSearch Service에 읽기 모델을 갱신한다. 읽기 요청은 소스가 아닌 이 최적화된 저장소로 직접 향한다.</p>
+
+<pre><code>@KafkaListener(topics = "order_events")
+public void updateReadModels(OrderEvent event) {
+    // 사용자 대시보드용 DynamoDB 읽기 최적화 테이블 업데이트
+    DashboardView view = new DashboardView();
+    view.setOrderId(event.getOrderId());
+    view.setAmount(event.getAmount());
+    view.setStatus(event.getStatus());
+    dynamoDbMapper.save(view);
+
+    // 분석용 OpenSearch도 함께 업데이트
+    IndexRequest request = new IndexRequest("orders")
+        .id(event.getOrderId())
+        .source(Map.of("amount", event.getAmount(), "status", event.getStatus()));
+    openSearchClient.index(request);
+}</code></pre>
+
+<p><strong>AWS 팁:</strong> 다양한 쿼리 패턴에는 DynamoDB 글로벌 보조 인덱스를 활용하라. 스로틀링을 방지하려면 Lambda 컨슈머의 배치 크기와 동시성 제한을 적절히 설정해야 한다.</p>
+
+<h2>3. Event Carried State Transfer (이벤트에 상태 포함하기)</h2>
+
+<p><strong>개념:</strong> 이벤트에 식별자만 담는 것이 아니라, 다운스트림 컨슈머가 필요로 하는 완전한 상태 정보를 함께 실어 보낸다. 이를 통해 컨슈머가 소스 서비스에서 추가 데이터를 조회할 필요가 없어지고, 서비스 간 결합도와 네트워크 호출, 지연 시간이 줄어든다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>컨슈머가 이벤트와 함께 동일한 맥락 데이터를 자주 필요로 할 때</li>
+  <li>이벤트 계약만 유지되면 프로듀서가 변경되어도 컨슈머가 영향을 받지 않도록 서비스를 느슨하게 결합하고 싶을 때</li>
+  <li>추가 네트워크 홉 하나하나가 중요한 저지연 시스템을 구축할 때</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> 이벤트 페이로드를 넉넉하게 설계하라. Glue Schema Registry로 버전 관리를 하면 컨슈머가 여러 이벤트 버전을 유연하게 처리할 수 있다. 메시지 크기도 주의하여 MSK 기본 한도인 1MB를 넘지 않도록 하라.</p>
+
+<pre><code># user_id만 보내는 대신 전체 상태를 담아 전송
+event = {
+    "event_type": "UserUpdated",
+    "user_id": "123",
+    "name": "Alice Chen",
+    "email": "alice@example.com",
+    "timezone": "America/New_York",
+    "preferences": {
+        "notifications_enabled": True,
+        "email_digest": "daily"
+    },
+    "last_login_ts": 1700000000
+}
+producer.send("user_events", key="123", value=json.dumps(event))
+
+# 컨슈머 - 별도 조회 없이 바로 처리
+def handle_user_update(event):
+    send_email(event["email"], "Your profile was updated")
+    if event["preferences"]["notifications_enabled"]:
+        send_push_notification(event["user_id"])</code></pre>
+
+<p><strong>AWS 팁:</strong> Glue Schema Registry의 호환성을 <code>BACKWARD</code> 또는 <code>FORWARD</code>로 설정하면 기존 컨슈머를 깨뜨리지 않고 이벤트 스키마를 진화시킬 수 있다. 메시지 크기는 CloudWatch로 모니터링하라.</p>
+
+<h2>4. Claim Check (대용량 페이로드 외부 저장)</h2>
+
+<p><strong>개념:</strong> 이미지, 동영상, 대용량 JSON 같은 무거운 페이로드를 S3 같은 외부 저장소에 저장한다. Kafka 메시지에는 그 외부 데이터를 가리키는 참조(claim check)만 담는다. 컨슈머는 이 참조를 받아 필요할 때 외부 저장소에서 실제 데이터를 가져온다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>메시지가 Kafka 기본 한도인 1MB(또는 설정한 <code>max.message.bytes</code>)를 초과할 때</li>
+  <li>브로커의 디스크 I/O와 네트워크 트래픽을 줄이고 싶을 때</li>
+  <li>페이로드는 크지만 컨슈머가 드물게 접근하는 경우</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> 고유한 키로 S3에 대용량 데이터를 업로드한다. Kafka 메시지에는 S3 URI와 선택적 메타데이터, 필요하다면 사전 서명된(presigned) URL을 담는다. 컨슈머는 이 참조를 이용해 S3에서 데이터를 내려받는다. S3 수명 주기 정책으로 오래된 데이터를 자동으로 삭제하도록 설정하라.</p>
+
+<pre><code>import boto3
+from uuid import uuid4
+
+s3 = boto3.client('s3')
+s3_key = f"order-attachments/{uuid4()}/invoice.pdf"
+s3.upload_file("/tmp/invoice.pdf", "my-kafka-bucket", s3_key)
+
+# 사전 서명된 URL 생성 (선택, 1시간 유효)
+presigned_url = s3.generate_presigned_url(
+    'get_object', Params={'Bucket': 'my-kafka-bucket', 'Key': s3_key}, ExpiresIn=3600
+)
+
+# 참조만 담은 작은 메시지 전송
+claim_check = {
+    "order_id": "123",
+    "s3_bucket": "my-kafka-bucket",
+    "s3_key": s3_key,
+    "presigned_url": presigned_url,
+    "size_bytes": 10485760
+}
+producer.send("order_attachments", key="123", value=json.dumps(claim_check))</code></pre>
+
+<p><strong>AWS 팁:</strong> S3 수명 주기 규칙으로 7일 후 객체를 삭제하도록 설정하라. IAM 권한 없이 컨슈머가 직접 접근해야 할 때만 사전 서명된 URL을 생성하라. 비용 최적화를 위해 S3 Intelligent-Tiering 도입도 고려해 볼 만하다.</p>
+
+<h2>5. Dead Letter Queue (DLQ, 처리 실패 메시지 격리)</h2>
+
+<p><strong>개념:</strong> 컨슈머가 모든 재시도 후에도 메시지 처리에 실패하면, 해당 메시지를 잃거나 메인 토픽을 막는 대신 별도의 "dead letter" 토픽으로 보낸다. DLQ는 문제 있는 메시지를 격리해 수동으로 검토하거나 나중에 재처리할 수 있는 공간 역할을 한다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>항상 오류를 유발하는 이상 메시지(poison pill)가 있을 때</li>
+  <li>재시도로는 해결되지 않는 방식으로 다운스트림 의존성이 실패할 때 (예: 스키마 불일치)</li>
+  <li>파이프라인을 멈추지 않으면서 실패한 메시지에 대한 운영 가시성이 필요할 때</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> 각 메인 토픽마다 DLQ 토픽을 만든다 (명명 규칙 예: <code>main-topic.dlq</code>). 컨슈머가 예외를 잡아 실패 메시지를 DLQ로 보내고, 오프셋을 커밋해 계속 진행하도록 구성한다. CloudWatch 알람으로 DLQ의 메시지 수를 모니터링하라.</p>
+
+<pre><code>def consume_with_dlq():
+    dlq_producer = KafkaProducer(bootstrap_servers='msk-broker:9092')
+    for msg in consumer:
+        try:
+            process_message(msg)
+            consumer.commit()
+        except MalformedDataError as e:
+            # 이상 메시지 - DLQ로 보내고 커밋
+            dlq_producer.send(f"{msg.topic}.dlq", msg.value, key=msg.key)
+            consumer.commit()
+            logger.error(f"Sent malformed message to DLQ: {e}")
+        except TransientError as e:
+            # 백오프 재시도 후 최대 횟수 초과 시 DLQ로
+            if retry_count[msg.offset] &gt; MAX_RETRIES:
+                dlq_producer.send(f"{msg.topic}.dlq", msg.value)
+                consumer.commit()</code></pre>
+
+<p><strong>AWS 팁:</strong> Lambda를 컨슈머로 사용한다면 Lambda 이벤트 소스 매핑에서 DLQ 설정을 활성화하라. Lambda는 재시도가 소진된 후 자동으로 실패 메시지를 SQS DLQ 또는 SNS 토픽으로 전송한다. MSK 컨슈머를 직접 구현하는 경우에는 애플리케이션 수준에서 DLQ 로직을 구현해야 한다.</p>
+
+<h2>6. Idempotent Consumer (멱등 컨슈머)</h2>
+
+<p><strong>개념:</strong> 동일한 메시지를 여러 번 처리해도 부작용이 중복되지 않는 컨슈머다 (신용카드 이중 청구, 환영 이메일 두 번 발송, 카운터 두 번 증가 등을 방지). Kafka는 기본적으로 적어도 한 번(at-least-once) 전달을 보장하기 때문에 이 패턴이 필수적이다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>컨슈머가 멱등성이 없는 작업을 수행할 때 (데이터베이스 쓰기, 이메일 발송, 결제 API 호출 등)</li>
+  <li>Kafka의 정확히 한 번(exactly-once) 시맨틱(트랜잭션 프로듀서와 특정 컨슈머 설정 필요)을 사용할 수 없을 때</li>
+  <li>복잡한 분산 트랜잭션 없이 단순하고 멱등적인 비즈니스 로직을 원할 때</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> 멱등성 저장소를 유지한다 (TTL이 있는 DynamoDB 또는 Redis ElastiCache). 각 메시지 키 + 파티션 + 오프셋에 대해, 오프셋을 커밋하기 전에 처리 완료 마커를 저장한다. 조건부 쓰기를 사용해 단 한 번만 처리되도록 보장한다.</p>
+
+<p><strong>AWS 팁:</strong> 가변적인 처리량에는 DynamoDB 온디맨드 모드를 사용하라. 재처리 허용 기간(예: 7일) 이후 오래된 멱등성 레코드를 자동 정리하려면 TTL을 설정하라. 더 높은 처리량이 필요하면 <code>SETNX</code> 명령을 지원하는 Redis용 ElastiCache를 검토하라.</p>
+
+<h2>7. Transactional Outbox (트랜잭션 아웃박스)</h2>
+
+<p><strong>개념:</strong> 데이터베이스 갱신과 Kafka 메시지 발행을 원자적으로 보장하는 이중 쓰기 문제를 해결하는 패턴이다. 두 시스템에 동시에 하나의 트랜잭션으로 쓰는 것은 불가능하므로, 대신 데이터베이스와 동일한 로컬 트랜잭션 안에서 "outbox" 테이블에도 함께 기록한다. 별도의 프로세스가 outbox를 주기적으로 폴링하여 Kafka에 발행하고, 레코드를 발행 완료로 표시한다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>데이터베이스와 Kafka 사이의 정확히 한 번 시맨틱이 필요할 때</li>
+  <li>Kafka 트랜잭션을 사용할 수 없을 때 (예: 프로듀서가 무상태이거나 여러 데이터베이스에 걸쳐 있을 때)</li>
+  <li>이중 쓰기의 경쟁 조건과 부분 실패를 피하고 싶을 때</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> outbox 테이블이 있는 RDS(PostgreSQL, MySQL) 또는 Aurora를 사용한다. Lambda 함수(또는 ECS의 경량 폴러)가 주기적으로 outbox를 폴링하고, MSK에 발행한 뒤 outbox 상태를 업데이트한다. 규모가 커지면 Debezium과 MSK Connect를 함께 사용해 CDC로 outbox 변경 사항을 스트리밍하라.</p>
+
+<pre><code># 애플리케이션 내부 - 동일한 DB 트랜잭션
+with db.transaction():
+    # 비즈니스 데이터
+    db.execute("INSERT INTO orders (id, amount, status) VALUES (%s, %s, %s)",
+               (order_id, 100, 'created'))
+    # Outbox 레코드
+    outbox_payload = json.dumps({
+        "event_type": "OrderCreated",
+        "order_id": order_id,
+        "amount": 100
+    })
+    db.execute("INSERT INTO outbox (id, payload, status, created_at) VALUES (%s, %s, %s, %s)",
+               (uuid4(), outbox_payload, 'pending', datetime.utcnow()))</code></pre>
+
+<pre><code># 폴러 - Lambda
+def lambda_handler(event, context):
+    # Outbox 테이블 폴링
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, payload FROM outbox WHERE status='pending' ORDER BY created_at LIMIT 100")
+    rows = cursor.fetchall()
+    for row in rows:
+        # MSK에 발행
+        kafka_producer.send('order_events', value=row['payload'])
+        # 발행 완료로 표시
+        cursor.execute("UPDATE outbox SET status='sent', sent_at=NOW() WHERE id=%s", (row['id'],))
+    conn.commit()</code></pre>
+
+<p><strong>AWS 팁:</strong> 폴링 없이 CDC를 활용하려면 MSK Connect의 Debezium을 사용하라. Debezium이 outbox 테이블 변경 사항을 캡처해 Kafka로 직접 스트리밍한다. outbox 테이블 증가(발행 문제의 징후)를 감지하는 CloudWatch 알람을 설정하라.</p>
+
+<h2>8. Compacted Topic (압축 토픽)</h2>
+
+<p><strong>개념:</strong> <code>cleanup.policy=compact</code>로 설정된 Kafka 토픽이다. 시간이나 크기 기준으로 오래된 메시지를 삭제하는 대신, Kafka는 각 키에 대해 가장 최근 메시지만 유지한다. 이전 값들은 로그 압축 과정에서 결국 제거된다. 이를 통해 토픽이 분산되고 복제되며 장애 허용성이 있는 키-값 저장소로 변모한다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>각 엔티티의 최신 상태를 재구성해야 할 때 (예: 현재 사용자 프로필, 상품 가격, 설정 값)</li>
+  <li>전체 이력을 재생하지 않고 신규 컨슈머가 가장 최신 상태로 바로 시작하게 하고 싶을 때</li>
+  <li>데이터베이스 테이블의 변경 로그를 구축할 때 (Debezium CDC가 압축 토픽을 사용함)</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> MSK 토픽에 <code>cleanup.policy=compact</code>를 설정한다. 압축 빈도를 제어하려면 선택적으로 <code>min.cleanable.dirty.ratio</code>도 설정한다. 컨슈머는 이 토픽을 테이블처럼 사용할 수 있다. 끝에서부터 읽으면 키별 최신 값만 얻을 수 있다.</p>
+
+<pre><code># 이 토픽에서는 키별 최신값만 의미 있음
+producer.send("user_profiles", key="user123", value='{"name":"Alice","theme":"dark"}')
+producer.send("user_profiles", key="user123", value='{"name":"Alice","theme":"light"}')
+producer.send("user_profiles", key="user123", value='{"name":"Alice","theme":"light","email":"alice@x.com"}')
+
+# 끝에서 읽는 컨슈머는 최신값만 얻음
+consumer.assign([TopicPartition("user_profiles", 0)])
+consumer.seek_to_end()  # 최신 위치로 이동
+msg = consumer.poll()
+# msg.value = {"name":"Alice","theme":"light","email":"alice@x.com"}</code></pre>
+
+<p><strong>AWS 팁:</strong> Kafka의 log-lag 지표로 압축 지연을 모니터링하라. 툼스톤(null 값을 가진 메시지)이 얼마나 유지될지 <code>delete.retention.ms</code>로 제어하라. 압축 토픽은 ksqlDB의 <code>CREATE TABLE</code> 구문과 잘 어울린다.</p>
+
+<h2>9. Partition Key / Ordering Pattern (파티션 키와 순서 보장)</h2>
+
+<p><strong>개념:</strong> Kafka는 단일 파티션 내에서만 순서를 보장한다. 메시지 키를 설정하면 동일한 키를 가진 모든 메시지가 같은 파티션으로 전달되어 순서가 유지된다. 이는 엔티티별 순서가 중요한 이벤트 소싱 시스템(예: 주문 #123의 모든 이벤트는 순서대로 처리되어야 함)의 기본 원리다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>엔티티(주문, 사용자, 기기, 세션)별 엄격한 순서 보장이 필요할 때</li>
+  <li>서로 다른 엔티티의 처리는 병렬로 진행하면서 엔티티별 순서는 보존하고 싶을 때</li>
+  <li>동일한 키의 이벤트가 반드시 순차적으로 처리되어야 하는 상태 기반 애플리케이션을 구축할 때</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> 높은 카디널리티를 가진 키를 선택하라(예: <code>order_id</code>, <code>user_id</code>, <code>device_id</code>). 카디널리티가 매우 낮은 키(예: <code>status=active</code>처럼 값이 두 가지뿐인 경우)는 피해야 한다. 핫 파티션이 생길 수 있기 때문이다. 파티션 수는 예상 최대 컨슈머 수 이상으로 충분히 설정하라.</p>
+
+<pre><code># 동일한 order_id의 이벤트는 같은 파티션으로 → 순서 보장
+producer.send("order_events", key="order_123", value=json.dumps({"event": "created", "ts": 100}))
+producer.send("order_events", key="order_123", value=json.dumps({"event": "paid", "ts": 200}))
+producer.send("order_events", key="order_123", value=json.dumps({"event": "shipped", "ts": 300}))
+
+# 다른 order_id는 다른 파티션으로 갈 수 있음 → 병렬 처리
+producer.send("order_events", key="order_456", value=json.dumps({"event": "created", "ts": 150}))</code></pre>
+
+<pre><code>// Kafka는 파티션 내에서 메시지 순서를 보장한다
+// order_123의 모든 이벤트는 동일한 컨슈머에 의해 순차적으로 처리된다
+@KafkaListener(topics = "order_events", concurrency = "3")
+public void listen(ConsumerRecord&lt;String, String&gt; record) {
+    String orderId = record.key(); // "order_123"
+    // 이 주문의 이벤트를 엄격한 순서로 처리
+}</code></pre>
+
+<p><strong>AWS 팁:</strong> CloudWatch 지표(<code>BytesInPerPartition</code>)로 파티션 쏠림을 모니터링하라. 특정 파티션이 과부하 상태라면 키에 솔팅(예: <code>order_123_part0</code>, <code>order_123_part1</code>)을 적용하거나 파티션 수를 늘리는 방법을 검토하라. MSK는 클러스터당 수천 개의 파티션을 지원한다.</p>
+
+<h2>10. Stream-Table Duality (스트림-테이블 이중성)</h2>
+
+<p><strong>개념:</strong> Kafka는 스트림(개별 이벤트의 시계열)과 테이블(키별 현재 상태) 두 가지로 볼 수 있다. 이 이중성은 Kafka Streams와 ksqlDB의 근간이다. 스트림은 움직이는 테이블이고, 테이블은 정지된 스트림이다. 둘 사이를 변환할 수 있다. 스트림을 집계해 테이블로 만들거나(예: 사용자별 누적 합계), 테이블의 변경 이력을 스트림으로 내보낼 수 있다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>실시간 이벤트 스트림을 서서히 변하는 참조 데이터와 조인해야 할 때 (예: 클릭 스트림 + 사용자 프로필 테이블)</li>
+  <li>새 이벤트가 도착할 때마다 갱신되는 구체화된 뷰(materialized view)를 유지하고 싶을 때</li>
+  <li>실시간 대시보드나 모니터링 시스템을 구축할 때</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> AWS Marketplace에서 제공하는 Confluent Cloud의 ksqlDB를 사용하거나, ECS/EKS에서 Kafka Streams 애플리케이션을 실행한다. SQL과 유사한 문법으로 스트림과 테이블을 정의한다. Kafka Streams는 상태 저장소로 로컬 RocksDB를 사용하고, ksqlDB는 구체화된 뷰를 압축 토픽에 저장한다.</p>
+
+<pre><code>-- 압축 토픽에서 테이블 생성 (사용자별 최신값)
+CREATE TABLE user_profiles (
+    user_id VARCHAR PRIMARY KEY,
+    name VARCHAR,
+    email VARCHAR,
+    preferences STRUCT&lt;notifications BOOLEAN&gt;
+) WITH (
+    KAFKA_TOPIC = 'user_changes',
+    VALUE_FORMAT = 'JSON'
+);
+
+-- 일반 토픽에서 스트림 생성
+CREATE STREAM clickstream (
+    user_id VARCHAR,
+    page VARCHAR,
+    timestamp BIGINT
+) WITH (
+    KAFKA_TOPIC = 'clicks',
+    VALUE_FORMAT = 'JSON'
+);
+
+-- 스트림-테이블 조인: 클릭에 사용자 정보 추가
+CREATE STREAM enriched_clicks AS
+SELECT
+    c.user_id,
+    c.page,
+    c.timestamp,
+    u.name,
+    u.email
+FROM clickstream c
+JOIN user_profiles u ON c.user_id = u.user_id
+EMIT CHANGES;</code></pre>
+
+<pre><code>KTable&lt;String, UserProfile&gt; userTable = builder.table("user_changes");
+KStream&lt;String, ClickEvent&gt; clickStream = builder.stream("clicks");
+KStream&lt;String, EnrichedClick&gt; enriched = clickStream.join(
+    userTable,
+    (click, profile) -&gt; new EnrichedClick(click, profile),
+    Joined.with(Serdes.String(), clickSerde, profileSerde)
+);</code></pre>
+
+<p><strong>AWS 팁:</strong> 관리형 서비스를 원한다면 Confluent Cloud의 ksqlDB를 사용하라. 자체 관리가 필요하다면 ECS Fargate에서 EBS 기반 RocksDB 상태 저장소와 함께 Kafka Streams를 실행하라. 상태 저장소 크기와 변경 로그 토픽 지연을 모니터링하라.</p>
+
+<h2>11. Saga (Choreography) — 사가 패턴</h2>
+
+<p><strong>개념:</strong> 각 로컬 트랜잭션이 다른 서비스의 다음 트랜잭션을 트리거하는 이벤트를 발행하는 분산 트랜잭션 패턴이다. 중앙 조정자가 없다. 어떤 단계가 실패하면, 이전 서비스들이 실패 이벤트를 수신하여 보상 트랜잭션(취소 작업)을 실행한다. Kafka가 이 소통의 중추 역할을 한다.</p>
+
+<p><strong>사용 시점:</strong></p>
+<ul>
+  <li>2단계 커밋(2PC) 없이 마이크로서비스 간 분산 트랜잭션이 필요할 때</li>
+  <li>서비스들이 느슨하게 결합되어 있고 각각 다른 팀이 소유할 때</li>
+  <li>트랜잭션이 오래 실행되어(분, 시간 단위) 2PC 방식으로는 락이 너무 오래 유지될 때</li>
+</ul>
+
+<p><strong>AWS 적용 방법:</strong> 각 서비스는 Kafka 토픽을 수신하고, 로컬 작업을 수행한 뒤 성공/실패 이벤트를 발행한다. 실패 시에는 보상 이벤트를 발행한다. 복잡한 사가의 경우 AWS Step Functions를 조합할 수 있지만, 코레오그래피 패턴은 Kafka만 사용한다.</p>
+
+<pre><code># 주문 서비스 - 사가 시작
+def create_order(order):
+    db.insert(order, status="PENDING")
+    producer.send("order_events", value={"event": "OrderCreated", "order_id": order.id})
+
+# 결제 서비스 - 이벤트 수신 후 필요시 보상
+def handle_order_created(event):
+    try:
+        charge_credit_card(event.order_id)
+        producer.send("payment_events", value={"event": "PaymentProcessed", "order_id": event.order_id})
+    except InsufficientFunds:
+        # 보상: 실패 이벤트 발행
+        producer.send("payment_events", value={"event": "PaymentFailed", "order_id": event.order_id})
+        producer.send("order_events", value={"event": "OrderCancelled", "order_id": event.order_id})
+
+# 주문 서비스 - 보상 처리
+def handle_order_cancelled(event):
+    db.update(event.order_id, status="CANCELLED")
+    refund_any_pre_authorizations(event.order_id)</code></pre>
+
+<p><strong>AWS 팁:</strong> 코레오그래피 방식에서는 서비스별 MSK 토픽(order_events, payment_events, inventory_events)을 사용하라. 실패한 사가 단계를 확인하려면 dead-letter 토픽을 모니터링하라. 분기나 합류가 있는 복잡한 사가에는 MSK와 연동한 AWS Step Functions 기반의 오케스트레이션 패턴을 고려하라.</p>
+
+<h2>다음 단계</h2>
+
+<p>이제 11가지 Kafka 패턴 모두를 상세한 설명과 코드 예시와 함께 살펴봤다. 다음 파트에서는 각 범주별로 실제 프로덕션 수준의 심층 내용을 다룬다.</p>
+
+<ul>
+  <li><strong>파트 2 — 신뢰성 &amp; 순서 보장 패턴</strong> (Outbox, Idempotent Consumer, Partition Key, DLQ, Retry with Backoff) → 전체 코드, AWS IAM 정책, CloudWatch 알람, 파티션 크기 전략</li>
+  <li><strong>파트 3 — 데이터 &amp; 상태 패턴</strong> (Event Sourcing, CQRS, Compacted Topic, Event Carried State Transfer) → Glue를 활용한 스키마 진화, ksqlDB 구체화 뷰, 스냅샷 전략</li>
+  <li><strong>파트 4 — 성능 &amp; 통합 패턴</strong> (Claim Check, Stream-Table Duality, Saga Choreography) → S3 수명 주기 관리, Kafka Streams 상태 저장소, Step Functions 연동</li>
+</ul>
+
+</body>
+</html>

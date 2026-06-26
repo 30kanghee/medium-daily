@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DESIGN.md — The Complete Guide</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>DESIGN.md — The Complete Guide</h1>
+<div class="meta">Marco Kotrotsos · Autocomplete · 9분 읽기 · <a href="https://medium.com/@kotrotsos/design-md-the-complete-guide-ac8c5cd0d14d" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@kotrotsos/design-md-the-complete-guide-ac8c5cd0d14d" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">DESIGN.md는 AI 코딩 에이전트가 매 세션마다 읽어 디자인 시스템을 일관되게 적용할 수 있도록 Google이 오픈소스로 공개한 파일 포맷이다.</p>
+  <p>AI 코딩 에이전트는 세션이 끝나면 디자인 관련 맥락을 모두 잊어버려, 매번 임의의 색상과 폰트로 UI를 생성한다. DESIGN.md는 YAML 프론트매터(정확한 토큰 값)와 마크다운 본문(디자인 철학과 사용 지침)을 한 파일에 담아 에이전트가 세션 시작 시 읽게 함으로써 이 문제를 해결한다. Google Labs가 Stitch 내부에서 개발한 뒤 2026년 4월 Apache 2.0으로 오픈소스화했다. CLAUDE.md나 .cursorrules에 참조 지시를 추가하면 Claude Code, Cursor, Codex 등 주요 AI 도구 모두에서 즉시 활용할 수 있다. <code>@google/design.md</code> npm 패키지는 린트·비교(diff)·익스포트 등 CLI 도구도 제공한다.</p>
+</div>
+
+<h2>DESIGN.md가 해결하는 문제</h2>
+
+<p>AI 코딩 에이전트는 디자인 시스템을 세션 사이에 기억하지 못한다. Claude Code에 로그인 페이지를 만들어달라고 하면 에이전트는 자신의 기본값을 꺼낸다. 파란 버튼, 회색 배경, 시스템 폰트. 수정해 주면 그 세션에서는 반영한다. 다음 날이면 또 잊어버린다.</p>
+
+<p>DESIGN.md는 이 문제를 해결한다. 에이전트가 매 세션 시작 시 읽는 파일에 정확한 색상, 타이포그래피, 간격, 컴포넌트, 그리고 각 선택의 이유를 담아두는 것이다. 에이전트는 브랜드를 추측하지 않고 읽는다.</p>
+
+<p>Google Labs가 AI 디자인 도구인 Stitch 내부에서 이 포맷을 개발한 뒤, 어떤 플랫폼의 어떤 에이전트도 읽을 수 있도록 2026년 4월 21일 오픈소스로 공개했다. 스펙은 Apache 2.0이다. DESIGN.md는 직접 손으로 작성하거나, Stitch에서 생성하거나, 커뮤니티에서 미리 만들어진 것을 가져다 쓸 수 있다.</p>
+
+<h2>포맷의 구조</h2>
+
+<p>DESIGN.md 파일은 두 층으로 이루어진다.</p>
+
+<p>YAML 프론트매터는 맨 위 <code>---</code> 펜스 사이에 위치한다. 에이전트가 프로그래밍 방식으로 파싱하는 기계 가독 부분으로, 색상은 hex 코드로, 타이포그래피는 폰트 패밀리와 크기로, 간격은 픽셀 값으로, 컴포넌트는 토큰 참조로 기술된다.</p>
+
+<p>마크다운 본문은 프론트매터 뒤에 이어진다. 사람이 읽는 부분으로 <code>##</code> 섹션으로 구성되며, 디자인 철학, 토큰 사용 시점, 금지 사항을 설명한다. 스펙에서 말하듯: "토큰은 에이전트에게 정확한 값을 준다. 본문은 그 값이 왜 존재하는지, 어떻게 적용해야 하는지를 알려준다."</p>
+
+<p>최소한의 예시는 다음과 같다.</p>
+
+<pre><code>---
+name: Acme Corp
+colors:
+  primary: "#1A1C1E"
+  secondary: "#6C7278"
+  tertiary: "#B8422E"
+  neutral: "#F7F5F2"
+  surface: "#FFFFFF"
+  on-surface: "#1A1C1E"
+  error: "#D32F2F"
+typography:
+  headline-lg:
+    fontFamily: Public Sans
+    fontSize: 2.5rem
+    fontWeight: 700
+    lineHeight: 1.2
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 1rem
+    fontWeight: 400
+    lineHeight: 1.6
+  label-caps:
+    fontFamily: Space Grotesk
+    fontSize: 0.75rem
+    fontWeight: 600
+    letterSpacing: 0.08em
+rounded:
+  sm: 4px
+  md: 8px
+  lg: 16px
+spacing:
+  xs: 4px
+  sm: 8px
+  md: 16px
+  lg: 24px
+  xl: 48px
+components:
+  button-primary:
+    backgroundColor: "{colors.tertiary}"
+    textColor: "{colors.neutral}"
+    typography: "{typography.label-caps}"
+    rounded: "{rounded.sm}"
+    padding: 12px 24px
+  button-primary-hover:
+    backgroundColor: "#9A3521"
+  card:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.md}"
+    padding: "{spacing.lg}"
+---
+## Overview
+Acme Corp's design language is industrial and confident. Deep ink tones with a "Boston Clay" accent that draws the eye without shouting. Typography is clean and functional, never decorative. White space does the heavy lifting.
+## Colors
+The primary palette is deliberately restrained. Deep charcoal (`primary`) for text, warm stone gray (`secondary`) for supporting elements, and a single warm accent (`tertiary`, Boston Clay) reserved for CTAs and emphasis. The neutral cream (`neutral`) warms the background without clinical white.
+Never use tertiary for large surfaces. It's an accent, not a background.
+## Typography
+Two families. Public Sans for everything structural (headlines, body, captions). Space Grotesk for labels and interactive elements where a slightly geometric character helps with scannability.
+The type scale has nine levels. For most pages, you'll use headline-lg, body-md, and label-caps. Reach for the others when you need hierarchy within a section.
+## Components
+### Buttons
+Primary buttons use the Boston Clay accent with cream text. The hover state darkens the clay by roughly 15%. Padding is generous (12px vertical, 24px horizontal) to give the label breathing room.
+Secondary buttons are outlined: 1px border in secondary, transparent background, secondary text. On hover, the background fills to neutral.
+### Cards
+Cards sit on the surface color with medium rounding and generous internal padding. No drop shadows by default. Use a 1px border in the neutral color if cards need visual separation from the background.
+## Do's and Don'ts
+- Do use the tertiary accent sparingly. One accent per viewport section maximum.
+- Do maintain the spacing scale. Don't invent spacing values between the defined steps.
+- Don't use secondary as a text color on dark backgrounds. It fails WCAG AA contrast.
+- Don't mix Space Grotesk into body text. It's for labels and interactive elements only.</code></pre>
+
+<p>파일 전체가 이것이다. 프로젝트 루트에 두면 에이전트는 완전한 디자인 시스템을 갖추게 된다.</p>
+
+<h2>토큰 시스템 상세</h2>
+
+<h3>Colors</h3>
+
+<p>sRGB 형식의 hex 값으로, <code>#</code> 접두사를 붙인다. 스펙은 다음 시맨틱 이름을 권장한다: <code>primary</code>, <code>secondary</code>, <code>tertiary</code>, <code>neutral</code>, <code>surface</code>, <code>on-surface</code>, <code>error</code>. 커스텀 이름도 유효한 문자열이면 모두 사용 가능하지만, 린트를 통과하려면 최소한 <code>primary</code>는 포함해야 한다.</p>
+
+<h3>Typography</h3>
+
+<p>각 타이포그래피 토큰은 다음 속성을 가진 객체다.</p>
+
+<ul>
+  <li><code>fontFamily</code> (string): 폰트 이름</li>
+  <li><code>fontSize</code> (dimension): 단위 포함 크기 (px, em, rem)</li>
+  <li><code>fontWeight</code> (number): 숫자 weight (400, 700 등)</li>
+  <li><code>lineHeight</code> (dimension 또는 number): 단위 없는 배수 또는 dimension 값</li>
+  <li><code>letterSpacing</code> (dimension): 자간</li>
+  <li><code>fontFeature</code> (string): CSS <code>font-feature-settings</code>에 대응</li>
+  <li><code>fontVariation</code> (string): CSS <code>font-variation-settings</code>에 대응</li>
+</ul>
+
+<p>스펙은 9~15단계를 권장한다. 실용적인 구성: <code>headline-display</code>, <code>headline-lg</code>, <code>headline-md</code>, <code>body-lg</code>, <code>body-md</code>, <code>body-sm</code>, <code>label-lg</code>, <code>label-md</code>, <code>label-sm</code>.</p>
+
+<h3>Rounded (테두리 반경)</h3>
+
+<p>명명된 레벨의 스케일: <code>none</code>, <code>sm</code>, <code>md</code>, <code>lg</code>, <code>xl</code>, <code>full</code>. 값은 단위가 있는 dimension이다.</p>
+
+<h3>Spacing</h3>
+
+<p>명명된 레벨의 스케일: <code>xs</code>, <code>sm</code>, <code>md</code>, <code>lg</code>, <code>xl</code>. 값은 dimension이거나 순수한 숫자다.</p>
+
+<h3>Components</h3>
+
+<p>컴포넌트는 <code>{path.to.token}</code> 구문으로 토큰을 참조한다. 값을 중복 없이 유지하고(DRY), 린터가 모든 참조를 검증할 수 있게 한다.</p>
+
+<p>유효한 컴포넌트 속성: <code>backgroundColor</code>, <code>textColor</code>, <code>typography</code>, <code>rounded</code>, <code>padding</code>, <code>size</code>, <code>height</code>, <code>width</code>. 변형(variant)은 관련 키를 사용한다 (예: <code>button-primary</code>, <code>button-primary-hover</code>, <code>button-primary-active</code>).</p>
+
+<h2>8개의 표준 섹션</h2>
+
+<p>마크다운 섹션이 존재한다면 반드시 아래 순서를 따라야 한다.</p>
+
+<ol>
+  <li><strong>Overview</strong> (별칭: "Brand &amp; Style"): 제품 전반 설명, 브랜드 개성, 감성적 톤</li>
+  <li><strong>Colors</strong>: 시맨틱 역할과 사용 지침이 포함된 팔레트</li>
+  <li><strong>Typography</strong>: 타입 스케일, 폰트 페어링, 계층 규칙</li>
+  <li><strong>Layout</strong> (별칭: "Layout &amp; Spacing"): 그리드 모델, 간격 전략, 반응형 동작</li>
+  <li><strong>Elevation &amp; Depth</strong> (별칭: "Elevation"): 그림자 및 깊이 표현 기법</li>
+  <li><strong>Shapes</strong>: 테두리 반경, 모서리 처리, 장식적 도형</li>
+  <li><strong>Components</strong>: UI 원자 요소(버튼, 카드, 입력, 내비게이션)에 대한 스타일 지침</li>
+  <li><strong>Do's and Don'ts</strong>: 가이드라인과 흔한 실수</li>
+</ol>
+
+<p>모든 섹션이 필수는 아니다. 알 수 없는 헤딩은 오류 없이 보존된다. 섹션이 표준 순서와 다를 경우 린터가 경고를 출력한다.</p>
+
+<h2>Claude Code와 연동하기</h2>
+
+<p>2분. 파일 세 개.</p>
+
+<p><strong>Step 1.</strong> DESIGN.md를 만든다 (직접 작성하거나, Stitch에서 내보내거나, awesome-design-md 컬렉션에서 가져온다). 프로젝트 루트에 놓는다.</p>
+
+<p><strong>Step 2.</strong> CLAUDE.md에 참조 지시를 추가한다.</p>
+
+<pre><code>## Design System
+This project uses a design system defined in @DESIGN.md.
+Follow strictly the rules defined in @DESIGN.md for all UI generation.
+Do not invent colors, fonts, or spacing values outside the design system.
+Match component states (hover, focus, active, disabled) to patterns in @DESIGN.md.</code></pre>
+
+<p><code>@</code> 접두사는 Claude Code에 참조된 파일의 내용을 읽으라고 지시한다.</p>
+
+<p><strong>Step 3.</strong> 검증한다. Claude Code 세션을 시작하고 "이 프로젝트 디자인 시스템에서 primary 색상이 무엇인가요?"라고 묻는다. DESIGN.md에 정의된 정확한 hex 값이 돌아오면 연동이 완료된 것이다. 일반적인 답변이 나오면 <code>@</code> 접두사를 확인하고 재시작한다.</p>
+
+<p>이후로는 프롬프트에서 디자인 시스템을 참조하면 된다. "DESIGN.md의 디자인 시스템을 사용해 primary 버튼 컴포넌트를 만들어줘." Claude Code는 토큰을 읽어 값을 적용하고, 브랜드와 일치하는 코드를 생성한다.</p>
+
+<h2>Cursor와 연동하기</h2>
+
+<p>개념은 같고 설정 파일만 다르다. DESIGN.md를 프로젝트 루트에 놓는다. Cursor 설정이나 <code>.cursorrules</code> 파일에, 모든 UI 생성 시 DESIGN.md의 디자인 시스템을 따르라는 지시를 추가한다.</p>
+
+<h2>Codex와 연동하기</h2>
+
+<p>Codex는 프로젝트 루트의 AGENTS.md를 읽는다. 그곳에 DESIGN.md 참조를 추가하고, 디자인 시스템 파일에 정의된 색상, 타이포그래피, 간격만 사용하라는 지시를 넣는다.</p>
+
+<h2>CLI 도구</h2>
+
+<p><code>@google/design.md</code> npm 패키지는 네 가지 명령을 제공한다.</p>
+
+<p><strong>Lint</strong>: 구조적 정확성과 WCAG 준수 여부를 검증한다.</p>
+
+<pre><code>npx @google/design.md lint DESIGN.md</code></pre>
+
+<p>린터는 일곱 가지 규칙을 실행한다: 깨진 토큰 참조, primary 색상 누락, WCAG 명도 대비율(AA 기준 최소 4.5:1), 미사용 토큰, 토큰 요약, 표준 섹션 누락, 섹션 순서. 출력은 구조화된 JSON으로, 어떤 에이전트나 CI 파이프라인도 소비할 수 있다.</p>
+
+<p><strong>Diff</strong>: 두 DESIGN.md 파일을 비교해 토큰 수준의 변경과 본문 회귀를 감지한다.</p>
+
+<pre><code>npx @google/design.md diff DESIGN.md DESIGN.old.md</code></pre>
+
+<p>PR 리뷰에 유용하다. 색상이 바뀌었는지, 섹션이 삭제됐는지를 텍스트 수준이 아닌 토큰 수준에서 잡아낸다.</p>
+
+<p><strong>Export</strong>: Tailwind 테마 설정이나 W3C DTCG 포맷으로 변환한다.</p>
+
+<pre><code>npx @google/design.md export --format tailwind DESIGN.md
+npx @google/design.md export --format dtcg DESIGN.md</code></pre>
+
+<p>Tailwind export는 모든 토큰이 매핑된 <code>tailwind.config.js</code> 테마 확장을 생성한다. DTCG export는 W3C 디자인 토큰 커뮤니티 그룹 스펙에 맞는 <code>tokens.json</code>을 만든다. 어느 쪽이든 디자인 토큰은 두 곳에 존재하게 된다. 에이전트용 DESIGN.md와 빌드 파이프라인용 프레임워크 설정.</p>
+
+<p><strong>Spec</strong>: 스펙 자체를 출력한다. 에이전트 시스템 프롬프트에 주입하기에 유용하다.</p>
+
+<pre><code>npx @google/design.md spec</code></pre>
+
+<h2>DESIGN.md를 처음부터 만들기</h2>
+
+<p>세 가지 방법이 있다.</p>
+
+<p><strong>Google Stitch.</strong> stitch.withgoogle.com에서 UI를 디자인하면 DESIGN.md가 함께 생성된다. 파일을 내보내 프로젝트에 넣으면 된다. 아무것도 없는 상태에서 시작한다면 가장 빠른 경로다.</p>
+
+<p><strong>생성기.</strong> design.dev/ai/design-md-generator, getdesign.md 같은 사이트에서 브라우저 기반 생성기로 브랜드 값을 입력하면 포맷에 맞는 DESIGN.md 파일을 받을 수 있다. 빠르게 시작하기에 편리하다.</p>
+
+<p><strong>직접 작성.</strong> 텍스트 에디터를 열고, YAML 프론트매터에 토큰을 작성하고, 마크다운 섹션에 디자인 근거를 추가하면 된다. 빌드 단계도, 컴파일도, 특별한 도구도 필요 없다. 그냥 마크다운 파일이다.</p>
+
+<p>기존 프로젝트에서 추출하는 경우라면 CSS 변수나 Tailwind 설정을 살펴보면 된다. 거기에 정의된 색상, 폰트, 간격, 반경이 DESIGN.md 토큰에 직접 대응된다. 추가해야 하는 부분은 본문이다. 그 값들이 왜 존재하는지, 어떻게 적용해야 하는지.</p>
+
+<h2>커뮤니티 라이브러리</h2>
+
+<p>GitHub의 VoltAgent/awesome-design-md 저장소에는 아홉 가지 카테고리로 정리된 69개 이상의 즉시 사용 가능한 DESIGN.md 파일이 있다.</p>
+
+<ul>
+  <li>AI &amp; LLM 플랫폼 (Claude, Mistral, Ollama 등)</li>
+  <li>개발자 도구 (Cursor, Vercel, Expo, Raycast)</li>
+  <li>백엔드 및 DevOps (Supabase, MongoDB, Sentry, PostHog)</li>
+  <li>생산성 SaaS (Linear, Notion, Cal.com, Zapier)</li>
+  <li>디자인 도구 (Figma, Framer, Webflow)</li>
+  <li>핀테크 (Stripe, Coinbase, Wise, Mastercard)</li>
+  <li>이커머스 (Shopify, Airbnb, Nike, Starbucks)</li>
+  <li>컨슈머 테크 (Apple, Spotify, NVIDIA, IBM, Uber)</li>
+  <li>자동차 (Tesla, BMW, Ferrari, Lamborghini)</li>
+</ul>
+
+<p>각 항목에는 DESIGN.md 파일과 HTML 미리보기(라이트/다크 모드)가 포함된다. 하나를 프로젝트에 복사하고 에이전트에게 사용하라고 지시하면, 그 브랜드의 시각적 언어와 일치하는 UI를 얻을 수 있다.</p>
+
+<h2>일주일 실사용에서 얻은 실전 팁</h2>
+
+<p><strong>DESIGN.md를 버전 관리에 넣어라.</strong> 소스 코드처럼 취급하면 된다. 누군가 색상을 바꾸거나 컴포넌트를 추가하면 diff에 정확히 무엇이 바뀌었는지 나타난다. PR 리뷰가 디자인 드리프트를 배포 전에 잡아낸다.</p>
+
+<p><strong>Do's and Don'ts 섹션을 솔직하게 유지하라.</strong> 에이전트가 가장 큰 가치를 얻는 곳이 여기다. "강조색을 넓은 면에 쓰지 마라"는 AI가 가장 자주 저지르는 디자인 실수를 막는다. "본문에 폰트 패밀리를 섞지 마라"는 두 번째로 흔한 실수를 막는다.</p>
+
+<p><strong>Tailwind export를 두 번째 제약으로 활용하라.</strong> 좋은 DESIGN.md가 있어도 에이전트가 간혹 임의 값을 사용한다. Tailwind 설정에 디자인 시스템의 토큰만 담겨 있으면, 프레임워크 자체가 빌드 시 승인되지 않은 값을 거부한다. 이중 검증이 된다.</p>
+
+<p><strong>정기적으로 감사하라.</strong> 여러 컴포넌트를 만든 뒤 에이전트에게 "모든 /components 파일을 검토하고 DESIGN.md에 정의되지 않은 값을 찾아줘"라고 요청한다. 에이전트가 코드와 디자인 시스템을 대조해 드리프트를 표시한다.</p>
+
+<p><strong>최소한으로 시작하라.</strong> 8개 섹션이 모두 필요하지 않다. Colors, Typography, Spacing, Do's and Don'ts만으로 에이전트가 일관된 UI를 생성하는 데 필요한 것의 90%를 커버한다. 디자인 시스템이 성숙해지면서 Components, Elevation, Shapes를 추가하면 된다.</p>
+
+<p><strong>DESIGN.md와 AGENTS.md를 짝지어 사용하라.</strong> DESIGN.md는 시각적 기준을 담당한다. AGENTS.md(또는 CLAUDE.md, 또는 .cursorrules)는 코드 관례를 담당한다. 분리하면 각 파일에 집중할 수 있고 유지보수가 쉬워진다.</p>
+
+<h2>DESIGN.md가 하지 않는 것</h2>
+
+<p>DESIGN.md는 시각적 정체성을 기술한다. 다음은 하지 않는다.</p>
+
+<ul>
+  <li>코드를 생성하지 않는다. 코드를 생성하는 에이전트에게 정보를 제공할 뿐이다.</li>
+  <li>Figma를 대체하지 않는다. Figma는 픽셀 수준의 디자인 작업을 위한 것이고, DESIGN.md는 디자인 규칙을 에이전트에게 전달하기 위한 것이다.</li>
+  <li>반응형 동작을 완전히 다루지 않는다. Layout 섹션에 브레이크포인트를 기술할 수 있지만, 복잡한 반응형 로직은 여전히 구현 수준의 명세가 필요하다.</li>
+  <li>스스로를 강제하지 않는다. 읽는 에이전트 없이는 그냥 마크다운 파일이다. 강제는 에이전트 설정(CLAUDE.md, .cursorrules)에서 에이전트에게 따르도록 지시함으로써 이루어진다.</li>
+</ul>
+
+<h2>지금 이것이 중요한 이유</h2>
+
+<p>DESIGN.md 이전에 AI 에이전트가 디자인 시스템을 따르게 하는 방법은 세 가지였다. 프롬프트에 예시를 붙여 넣기(작동하지만 확장되지 않음), 브랜드를 설명하는 긴 시스템 프롬프트 작성(컨텍스트가 가득 찰 때까지만 작동), 또는 AI가 생성한 UI가 범용적으로 보이는 것을 받아들이고 수동으로 고치기.</p>
+
+<p>DESIGN.md는 토큰(에이전트가 파싱하는 정확한 값)과 근거(에이전트가 판단에 사용하는 맥락)를 하나의 파일에 결합한 최초의 포맷으로, 모든 주요 AI 코딩 도구가 읽을 수 있다. Google이 Stitch 내부에 가두지 않고 Apache 2.0으로 오픈소스화했다는 사실은 진정한 크로스플랫폼 표준이 될 가능성을 열어준다.</p>
+
+<p>Spotify의 Encore 디자인 시스템 팀은 이미, AI 에이전트가 추론하기 어려운 복잡한 디자인 시스템을 우회한다는 것을 발견했다. 색상, 타입, 간격, 금지 사항 열 가지를 담은 DESIGN.md가 테스트한 모든 AI 도구에서 완전한 디자인 시스템 명세보다 더 나은 결과를 냈다.</p>
+
+<p>기준은 완벽함이 아니다. "디자인 시스템이 전혀 없는 것보다 낫다"인데, 이것이 대부분의 AI 생성 UI가 출발하는 지점이다. DESIGN.md는 5분 만에 그 기준을 통과한다.</p>
+</body>
+</html>

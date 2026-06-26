@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Linux Command I Ignored for 10 Years Just Saved Me 3 Hours a Day</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>The Linux Command I Ignored for 10 Years Just Saved Me 3 Hours a Day</h1>
+<div class="meta">Ark Protocol · 3분 읽기 · <a href="https://medium.com/@ArkProtocol1/the-linux-command-i-ignored-for-10-years-just-saved-me-3-hours-a-day-3a40b2781230" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@ArkProtocol1/the-linux-command-i-ignored-for-10-years-just-saved-me-3-hours-a-day-3a40b2781230" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">10년간 외면했던 tmux가 하루 3시간을 돌려줬다.</p>
+  <p>저자는 첫 직장에서 시니어 엔지니어가 터미널 창 하나에 네 개의 패널을 띄워 일하는 광경을 목격했지만, 그게 무엇인지 알면서도 10년 동안 tmux를 무시했다. 어느 날 프로덕션 장애 대응 중 탭을 혼동해 잘못된 프로세스를 종료하는 실수를 겪고 나서야 비로소 tmux를 도입했다. tmux는 터미널 창 하나에서 세션·윈도우·패널을 계층적으로 관리하며, 노트북을 닫아도 세션이 살아 있어 다음 날 그대로 이어서 작업할 수 있다. 핵심 명령 여섯 개만으로 하루 탭 탐색·세션 재연결·컨텍스트 재구성에 낭비하던 2시간 10분을 단 2분으로 줄일 수 있었다.</p>
+</div>
+
+<p>첫 직장에서 시니어 엔지니어가 터미널 하나에 패널 네 개를 띄워 일하는 모습을 본 적이 있다. 하나는 로그를 실시간으로 흘려보내고 있었고, 하나는 테스트를 돌리고 있었으며, 또 하나에는 개발 서버가 돌아가고 있었다.</p>
+
+<p>그는 네 번째 패널에서 타이핑을 하고 있었다. 나는 그가 직접 만든 커스텀 도구라고 짐작했고, 끝내 물어보지 않았다. 그해가 2014년이었다.</p>
+
+<p>맞다. tmux다. 한 번쯤 이름은 들어봤을 것이다. 어떤 튜토리얼에서 한번 고개를 끄덕이고 그냥 스크롤을 내렸을 수도 있다. 나도 그랬다. 10년 동안. 그게 바로 문제였다.</p>
+
+<h2>내가 잃고 있던 것을 깨달은 날</h2>
+
+<p>수요일이었다. 프로덕션 버그가 터졌다. 터미널 탭이 여덟 개 열려 있었는데, 그 중 세 개는 이름도 없었다. 잘못된 프로세스를 종료해버렸다. 서버가 다운됐다.</p>
+
+<p>나는 40초 동안 화면을 멍하니 바라보며 어떤 탭이 어떤 탭이었는지 기억하려 했다. 테크 리드가 상황 업데이트를 요청하는 메시지를 보냈다. 할 말이 없었다.</p>
+
+<p>더 속상한 건 이랬다. 그날이 유난히 나쁜 날이 아니었다는 것이다. 매일 아침이 그랬다.</p>
+
+<p>그때 동료가 팀 Slack 채널에 한 줄을 남겼다.</p>
+
+<blockquote>"tmux는 왜 안 써요?"</blockquote>
+
+<p>변명할 말이 없었다.</p>
+
+<h2>tmux가 실제로 하는 일</h2>
+
+<p>tmux는 terminal multiplexer(터미널 다중화 도구)의 약자다. 학술적으로 들리지만, 실제 의미는 이렇다. 터미널 창 하나에서 무한히 정돈된 작업 공간을 만들 수 있고, 노트북을 닫고 자리를 떠나도 그 모든 것이 그대로 살아있는 상태를 유지한다.</p>
+
+<p>이 멘탈 모델이 모든 것을 이해하게 해줬다.</p>
+
+<pre><code>[ tmux 서버 — 백그라운드에서 조용히 실행 중 ]
+|
+[ 세션: myproject ]
+|
+┌────────┴────────┐
+[윈도우: dev]  [윈도우: logs]
+|
+┌────┴────┐
+[패널 1]  [패널 2]
+서버       테스트</code></pre>
+
+<p>세션은 연결이 끊겨도 살아남는다. 윈도우는 터미널 내부의 탭과 같다. 패널은 화면을 가로 또는 세로로 분할한다.</p>
+
+<p>이 구조 전체가 백그라운드 프로세스로 실행된다. 터미널을 떼어내고 자리를 비웠다가, 다음 날 아침 다시 연결하면 아무것도 움직이지 않았다. 초기화되지 않았다. 잃어버린 것이 없다.</p>
+
+<h2>내 아침을 바꾼 명령어 여섯 개</h2>
+
+<p>이름 있는 세션 시작:</p>
+
+<pre><code>tmux new -s work</code></pre>
+
+<p>화면을 세로로 분할:</p>
+
+<pre><code>Ctrl+b %</code></pre>
+
+<p>화면을 가로로 분할:</p>
+
+<pre><code>Ctrl+b "</code></pre>
+
+<p>패널 간 이동:</p>
+
+<pre><code>Ctrl+b 방향키</code></pre>
+
+<p>모든 것을 백그라운드에서 실행한 채로 터미널 분리:</p>
+
+<pre><code>Ctrl+b d</code></pre>
+
+<p>떠났던 자리 그대로 다시 연결:</p>
+
+<pre><code>tmux attach -t work</code></pre>
+
+<p>여섯 개. 처음 몇 달 동안의 생존 키트로는 이게 전부다. 나머지는 굳이 공부하지 않아도 쓰다 보면 자연스럽게 체득된다.</p>
+
+<h2>처음 써본 날</h2>
+
+<p><code>tmux new -s work</code>를 입력하고 화면을 분할했다. 터미널을 분리했을 때도 두 패널은 살아있었다. 터미널 창 전체를 닫았다. 새로 열었다. 다시 연결했다.</p>
+
+<p>모든 것이 그 자리에 있었다. 내가 떠난 그 자리 그대로.</p>
+
+<p>나는 등받이에 기대며 아무도 없는 방에서 소리 내어 말했다.</p>
+
+<blockquote>"설마 이게 진짜였어?"</blockquote>
+
+<p>10년이었다. 매일 아침 같은 작업 공간을 처음부터 다시 만들면서도 한 번도 의심하지 않았다. 그 순간은 생산성을 높인 기쁨이 아니라, 슬픔과 민망함이 뒤섞인 감정이었다.</p>
+
+<h2>3시간이 어디서 나왔는가</h2>
+
+<p>개발자의 하루에서 가장 비싼 것은 사용하는 도구가 아니다. 자꾸 잃어버리는 컨텍스트다.</p>
+
+<p>2주 동안 정직하게 추적한 기록이다.</p>
+
+<pre><code>탭 탐색과 복구            38~52분/일
+끊긴 세션 재연결          22~35분/일
+명령어 재실행, 컨텍스트 손실  47~61분/일
+────────────────────────────────────
+일일 총 손실              약 2시간 10분
+
+tmux 도입 후:
+아침 환경 세팅            ~2분/일
+하루 중 컨텍스트 복구      ~0분/일
+────────────────────────────────────
+일일 총 손실              약 2분/일</code></pre>
+
+<p>범위가 들쭉날쭉한 건 실제 하루가 그렇기 때문이다. 하지만 방향은 예외 없이 매일 같았다.</p>
+
+<p>생산성이 떨어지는 사람이 아니었다. 그냥 매일 아침 같은 작업 공간을 처음부터 다시 만들면서 그게 당연한 일인 줄 알고 있었던 것이다.</p>
+
+<h2>알아두면 좋은 설정 한 줄</h2>
+
+<p><code>~/.tmux.conf</code> 파일에 이 한 줄을 추가하면 된다.</p>
+
+<pre><code>set -g mouse on</code></pre>
+
+<p>이 한 줄로 마우스 클릭으로 패널을 전환할 수 있게 된다. GUI 도구와 시각적 편집기에 익숙한 사람이라면, 이것이 전환을 망설일 마지막 이유를 없애준다.</p>
+
+<h2>그 3시간으로 무엇을 했는가</h2>
+
+<p>되찾은 시간을 회의나 Slack 메시지에 쓰지 않았다. 몇 주째 백로그에서 손도 못 대고 있던 작업들에 썼다. 컨텍스트 스위칭에 치여서 항상 손이 닿지 않던 일들이었다.</p>
+
+<p>며칠씩 밀려있던 기능들이 배포됐다. 코드 리뷰가 쌓이지 않게 됐다. 마무리하지 못한 일에 대한 그 조용하고 만성적인 죄책감을 퇴근 후 집에 가져가지 않아도 됐다.</p>
+
+<p>tmux가 나를 더 빠르게 만든 게 아니었다. 매일 나도 모르는 사이에 나를 느리게 만들던 것을 멈춘 것이었다.</p>
+
+<h2>왜 대부분의 개발자가 너무 오래 기다리는가</h2>
+
+<p>처음 man 페이지를 열면 비행 매뉴얼처럼 읽힌다. 비행을 이미 할 줄 아는 사람을 위해 쓰인 것처럼. 수백 가지 옵션, 수십 개의 키 바인딩, 보통 사람이 어디서 시작해야 할지 알 수 없다.</p>
+
+<p>아무도 충분히 일찍 알려주지 않는 진실이 있다. 그 대부분은 필요 없다. 위의 여섯 개 명령어가 몇 달간 실제 일상 사용의 95%를 커버한다. 나머지는 편안해지면서 자연스럽게 따라온다. tmux를 공부하는 게 아니라, 그냥 쓰기 시작하면 tmux가 가르쳐준다.</p>
+
+<p>10년 동안 이게 원격 서버 안에서만 사는 시스템 관리자를 위한 도구라고 생각했다. 아니다. 첫 커피를 마시기 전에 터미널 탭을 두 개 이상 여는 사람이라면 누구에게나 필요한 도구다.</p>
+
+<h2>지금 당장 시작하기</h2>
+
+<pre><code># Ubuntu / Debian
+sudo apt install tmux
+# Mac
+brew install tmux</code></pre>
+
+<p><code>tmux new -s dev</code>를 실행하라. 화면을 한 번 분할하라. 한쪽 패널에는 개발 서버를, 다른 쪽에는 실제 작업을 올려라. 탭 터미널로 돌아가지 말고 하루 종일 그 안에 머물러라.</p>
+</body>
+</html>

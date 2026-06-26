@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8 Backend Skills Every Developer Should Master in 2026</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>8 Backend Skills Every Developer Should Master in 2026</h1>
+<div class="meta">Gopi C K · Me n Stack Development · 3분 읽기 · <a href="https://medium.com/@gopi_ck/8-backend-skills-every-developer-should-master-in-2026-da2bd0c58bd9" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@gopi_ck/8-backend-skills-every-developer-should-master-in-2026-da2bd0c58bd9" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">도구는 바뀌어도 백엔드 핵심 역량은 변하지 않는다 — 2026년에도 살아남을 여덟 가지 기술을 정리한다.</p>
+  <p>백엔드 개발에서 프레임워크는 계속 바뀌지만, API 설계·데이터베이스 설계·클린 코드·에러 처리·인증·성능 최적화·테스트·시스템 설계라는 여덟 가지 근본 역량은 흔들리지 않는다. 많은 개발자가 새 기술을 쫓느라 이 기초를 소홀히 하는데, 도구를 많이 아는 사람보다 기본기가 탄탄한 사람이 더 나은 시스템을 만든다. 코드를 단순히 작성하는 것을 넘어 시스템을 설계하는 엔지니어가 되려면, 이 여덟 가지를 깊이 이해하는 것이 지름길이다.</p>
+</div>
+
+<h2>들어가며</h2>
+
+<p>오늘 백엔드 개발을 배우기 시작한다면, 끊임없이 진화하는 분야에 발을 딛는 셈이다. 새 프레임워크가 등장하고, 도구가 바뀌고, 모범 사례가 업데이트된다. 그런데 대부분의 사람이 분명하게 말해주지 않는 것이 하나 있다.</p>
+
+<p>도구는 바뀌어도 핵심 백엔드 역량은 그대로다.</p>
+
+<p>많은 개발자가 프레임워크 사이를 떠돌며 정작 중요한 기초를 깊이 익히는 데 시간을 쓰지 않는다. 도구가 더 많은 사람보다 도구가 적어도 기본기가 탄탄한 사람이 더 나은 시스템을 만드는 이유가 바로 그것이다.</p>
+
+<p>이 글은 트렌드에 관한 이야기가 아니다. 2026년에도, 그 이후에도 유효할 실질적인 백엔드 역량에 관한 이야기다.</p>
+
+<p>이것들에 집중하면, 단순히 코드를 작성하는 것을 넘어 시스템을 만드는 사람이 된다.</p>
+
+<h2>1. API가 실제로 어떻게 동작하는지 이해하기</h2>
+
+<p>초보자 대부분은 Spring Boot로 REST API를 만들 수 있다. 하지만 내부에서 무슨 일이 벌어지는지 이해하는 사람은 드물다.</p>
+
+<p>API는 단순한 엔드포인트 모음이 아니다. 시스템과 시스템 사이의 통신이다.</p>
+
+<h3>이해해야 할 것</h3>
+
+<ul>
+  <li>HTTP 메서드와 각각의 용도</li>
+  <li>상태 코드와 언제 어떤 것을 써야 하는지</li>
+  <li>요청과 응답의 구조</li>
+  <li>멱등성(idempotency)이 왜 중요한지</li>
+</ul>
+
+<h3>예시</h3>
+
+<pre><code>@GetMapping("/users/{id}")
+public ResponseEntity&lt;User&gt; getUser(@PathVariable Long id) {
+    Optional&lt;User&gt; user = userService.findById(id);
+    if (user.isPresent()) {
+        return ResponseEntity.ok(user.get());
+    } else {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
+}</code></pre>
+
+<h3>왜 중요한가</h3>
+
+<p>잘 설계된 API는 예측 가능하고 쓰기 쉽다. 허술한 API는 프론트엔드 개발자와 클라이언트에게 혼란과 버그를 안긴다.</p>
+
+<h2>2. 확장 가능한 데이터베이스 설계</h2>
+
+<p>쿼리는 작성할 수 있다. 그런데 데이터베이스를 제대로 설계할 수 있는가?</p>
+
+<p>백엔드 개발은 데이터와 깊이 연결되어 있다. 데이터베이스 설계가 나쁘면 시스템이 느려지고 코드가 뒤엉킨다.</p>
+
+<h3>핵심 개념</h3>
+
+<ul>
+  <li>정규화(normalization)와 그것을 피해야 할 때</li>
+  <li>인덱스와 성능 개선 원리</li>
+  <li>테이블 간 관계</li>
+  <li>대용량 데이터 처리</li>
+</ul>
+
+<h3>테이블 설계 예시</h3>
+
+<pre><code>User 테이블: id, name, email
+Order 테이블: id, user_id, amount</code></pre>
+
+<p>이 관계 구조가 올바른 데이터 조직화를 보장한다.</p>
+
+<h3>쿼리 예시</h3>
+
+<pre><code>SELECT * FROM orders WHERE user_id = 1;</code></pre>
+
+<h3>왜 중요한가</h3>
+
+<p>좋은 데이터베이스 설계는 나중의 성능 문제를 예방한다. 나쁜 설계는 두고두고 발목을 잡는다.</p>
+
+<h2>3. 읽기 좋고 유지보수하기 쉬운 코드 작성</h2>
+
+<p>코드는 기계만을 위한 것이 아니다. 사람을 위한 것이기도 하다.</p>
+
+<p>코드가 읽기 어려우면 유지보수도 어려워진다.</p>
+
+<h3>나쁜 코드 예시</h3>
+
+<pre><code>int x = 0;
+for(int i = 0; i &lt; list.size(); i++){
+    if(list.get(i).isValid()){
+        x++;
+    }
+}</code></pre>
+
+<h3>개선된 버전</h3>
+
+<pre><code>int validItemCount = 0;
+for (Item item : list) {
+    if (item.isValid()) {
+        validItemCount++;
+    }
+}</code></pre>
+
+<h3>집중해야 할 것</h3>
+
+<ul>
+  <li>의미 있는 이름 짓기</li>
+  <li>작은 메서드 단위로 쪼개기</li>
+  <li>단일 책임 원칙 지키기</li>
+  <li>일관된 구조 유지하기</li>
+</ul>
+
+<h3>왜 중요한가</h3>
+
+<p>클린 코드는 버그를 줄이고 팀 협업을 원활하게 한다.</p>
+
+<h2>4. 에러 처리와 로깅을 전문가답게</h2>
+
+<p>문제는 반드시 생긴다. 이건 보장된 사실이다.</p>
+
+<p>초보자와 전문가의 차이는 에러를 어떻게 다루느냐에 있다.</p>
+
+<h3>전역 예외 처리</h3>
+
+<pre><code>@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity&lt;String&gt; handleException(Exception ex) {
+        return new ResponseEntity&lt;&gt;("Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}</code></pre>
+
+<h3>로깅 예시</h3>
+
+<pre><code>private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
+public User getUser(Long id) {
+    logger.info("Fetching user with id {}", id);
+    return repository.findById(id)
+        .orElseThrow(() -&gt; {
+            logger.error("User not found with id {}", id);
+            return new RuntimeException("User not found");
+        });
+}</code></pre>
+
+<h3>왜 중요한가</h3>
+
+<p>좋은 에러 처리는 사용자 경험을 개선하고, 로깅은 프로덕션 문제를 디버그하는 데 핵심적인 역할을 한다.</p>
+
+<h2>5. 인증과 인가</h2>
+
+<p>보안은 백엔드의 핵심 책임이다.</p>
+
+<p>애플리케이션이 안전하지 않으면 다른 모든 것이 의미를 잃는다.</p>
+
+<h3>기본적인 Spring Security 설정</h3>
+
+<pre><code>@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf().disable()
+            .authorizeHttpRequests(auth -&gt; auth
+                .requestMatchers("/public/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .httpBasic();
+        return http.build();
+    }
+}</code></pre>
+
+<h3>배워야 할 것</h3>
+
+<ul>
+  <li>JWT 기반 인증</li>
+  <li>역할 기반 접근 제어(RBAC)</li>
+  <li>비밀번호 암호화</li>
+</ul>
+
+<h3>왜 중요한가</h3>
+
+<p>보안 취약점은 신뢰와 시스템 자체를 무너뜨린다.</p>
+
+<h2>6. 성능 최적화</h2>
+
+<p>동작하는 시스템만으로는 부족하다. 빨라야 한다.</p>
+
+<h3>주요 기법</h3>
+
+<ul>
+  <li>캐싱</li>
+  <li>페이지네이션</li>
+  <li>효율적인 쿼리 작성</li>
+</ul>
+
+<h3>캐싱 예시</h3>
+
+<pre><code>@Cacheable("users")
+public User getUserById(Long id) {
+    return repository.findById(id)
+        .orElseThrow(() -&gt; new RuntimeException("User not found"));
+}</code></pre>
+
+<h3>왜 중요한가</h3>
+
+<p>성능은 사용자 경험에 직접적으로 영향을 미친다.</p>
+
+<h2>7. 코드 테스트</h2>
+
+<p>코드를 테스트하지 않으면, 그 코드가 실제로 동작하는지 알 수 없다.</p>
+
+<h3>간단한 단위 테스트</h3>
+
+<pre><code>@Test
+public void testAddition() {
+    assertEquals(5, calculator.add(2, 3));
+}</code></pre>
+
+<h3>무엇을 테스트할 것인가</h3>
+
+<ul>
+  <li>비즈니스 로직</li>
+  <li>경계 조건(edge case)</li>
+  <li>핵심 흐름</li>
+</ul>
+
+<h3>왜 중요한가</h3>
+
+<p>테스트는 버그를 예방하고 시스템의 안정성을 높인다.</p>
+
+<h2>8. 시스템 설계 기초 이해</h2>
+
+<p>이것이 좋은 개발자와 훌륭한 개발자를 가르는 지점이다.</p>
+
+<h3>배워야 할 개념</h3>
+
+<ul>
+  <li>마이크로서비스 vs 모놀리스</li>
+  <li>로드 밸런싱</li>
+  <li>데이터베이스 스케일링</li>
+  <li>API 게이트웨이</li>
+</ul>
+
+<h3>사고 훈련 예시</h3>
+
+<p>동시에 1만 명의 사용자가 API를 호출하면 어떻게 될까? 시스템은 어떻게 반응해야 하는가?</p>
+
+<h3>왜 중요한가</h3>
+
+<p>시스템 설계를 이해해야 확장 가능하고 안정적인 애플리케이션을 만들 수 있다.</p>
+
+<h2>모든 것을 하나로</h2>
+
+<p>이 역량들을 결합하면, 단순한 코더의 수준을 넘게 된다.</p>
+
+<p>백엔드 엔지니어가 된다.</p>
+
+<p>그때부터는 이런 것들을 생각하기 시작한다.</p>
+
+<ul>
+  <li>시스템이 어떻게 동작하는가</li>
+  <li>사용자가 어떻게 상호작용하는가</li>
+  <li>데이터가 어떻게 흐르는가</li>
+</ul>
+
+<h2>마치며</h2>
+
+<p>2026년은 문법만 아는 개발자를 보상하지 않는다.</p>
+
+<p>시스템을 이해하는 개발자를 보상한다.</p>
+
+<p>이 여덟 가지 역량에 집중하면 언제나 경쟁력을 유지할 수 있다.</p>
+
+<p>도구를 쫓지 마라. 기초를 마스터하라.</p>
+
+<p>그것이 더 빠르게 성장하고 더 나은 것을 만드는 방법이다.</p>
+</body>
+</html>

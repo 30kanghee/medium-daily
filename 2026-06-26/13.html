@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Most Dangerous Person in Data Engineering</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>The Most Dangerous Person in Data Engineering</h1>
+<div class="meta">Jagadesh Jamjala · 2분 읽기 · <a href="https://medium.com/@jagadeshjamjalanarayanan/the-most-dangerous-person-in-data-engineering-5d490f2cfd9e" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@jagadeshjamjalanarayanan/the-most-dangerous-person-in-data-engineering-5d490f2cfd9e" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">데이터 엔지니어링에서 가장 위험한 말은 "이거 금방 끝나요"다.</p>
+  <p>데이터 엔지니어링에서 진짜 위험 인물은 프로덕션 DB를 직접 수정하는 사람이 아니라, "이건 간단한 변경이에요"라고 말하는 사람이다. 그 한마디가 파이프라인 6개를 재구축하고, 하위 테이블 14개를 바꾸고, 2017년 비즈니스 로직을 건드리는 대공사로 이어진다. 특히 "컬럼 하나만 바꾸면 되잖아요"라는 말은 더 위험한데, 그 컬럼이 대시보드·ML 모델·임원 KPI·문서화되지 않은 SQL 파일 38개·재무 보고서와 연결돼 있기 때문이다. 금요일 배포 후 7분간 모든 게 안정적으로 보이다가 온갖 알림이 터지는 과정을 유머러스하게 그리며, 실전에서 반드시 지켜야 할 네 가지 규칙을 제시한다.</p>
+</div>
+
+<h2>데이터 엔지니어링에서 가장 위험한 사람</h2>
+
+<p>사람들은 데이터 엔지니어링에서 가장 위험한 인물이 누구인지 알고 있다고 생각한다.</p>
+
+<ul>
+  <li>모든 접근 권한을 혼자 쥐고 있는 엔지니어</li>
+  <li>400억 개 행에 <code>SELECT *</code>를 날리는 분석가</li>
+  <li>프로덕션 테이블을 엑셀로 직접 편집하는 사람</li>
+</ul>
+
+<p>틀렸다.</p>
+
+<p>진짜로 가장 위험한 사람은 이렇게 말하는 사람이다.</p>
+
+<blockquote>"이거 금방 끝나요."</blockquote>
+
+<p>그 한 문장이 불러온 결과들:</p>
+
+<ul>
+  <li>서비스 장애</li>
+  <li>데이터 마이그레이션</li>
+  <li>전체 재작성</li>
+  <li>비상 대응 콜</li>
+  <li>그리고 Slack에서 벌어진 정서적 붕괴 최소 열네 건</li>
+</ul>
+
+<h2>"그냥 아주 작은 수정이에요"</h2>
+
+<p>이런 일은 항상 아무렇지 않게 시작된다.</p>
+
+<p>이해관계자가 회의에 들어오더니 이렇게 말한다.</p>
+
+<blockquote>"그냥 아주 작은 수정만 하면 돼요."</blockquote>
+
+<p>경험 많은 엔지니어들은 즉시 긴장한다.</p>
+
+<p>데이터 엔지니어링에서 "작은 수정"이란 보통 이런 뜻이기 때문이다.</p>
+
+<ul>
+  <li>파이프라인 6개 재구축</li>
+  <li>하위 테이블 14개 변경</li>
+  <li>2017년에 작성된 비즈니스 로직 수정</li>
+  <li>아무도 관리하지 않는 숨겨진 의존성 발견</li>
+</ul>
+
+<h2>"컬럼 하나만 바꾸면 되잖아요"</h2>
+
+<p>그 다음엔 후속 공격이 날아온다.</p>
+
+<blockquote>"컬럼 하나만 바꾸면 되잖아요, 그죠?"</blockquote>
+
+<p>이 순간 시니어 엔지니어는 이미 허공을 바라보고 있다.</p>
+
+<p>"컬럼 하나"라는 게 세상에 존재하지 않는다는 걸 다들 알기 때문이다.</p>
+
+<p>그 컬럼은:</p>
+
+<ul>
+  <li>대시보드에서 사용되고 있고</li>
+  <li>ML 모델에 데이터를 공급하며</li>
+  <li>임원 KPI를 구동하고</li>
+  <li>문서화되지 않은 SQL 파일 38개에서 참조되고 있으며</li>
+  <li>어떻게 된 영문인지 재무 보고서와도 연결되어 있다</li>
+</ul>
+
+<p>그 컬럼을 삭제했다간 분기 매출 수치가 엉뚱하게 바뀌면서 이런 제목의 회의가 소집될 수도 있다.</p>
+
+<blockquote>"긴급 — 방향 재조정 논의"</blockquote>
+
+<h2>금요일 배포</h2>
+
+<p>그리고 기업 역사상 가장 공포스러운 문장이 등장한다.</p>
+
+<blockquote>"주말 전에 올릴 수 있을까요?"</blockquote>
+
+<p>아, 그렇지. 금요일 배포.</p>
+
+<p>소프트웨어 엔지니어링의 카지노 모드다.</p>
+
+<p>금요일 저녁 프로덕션 배포만큼 엔지니어들을 경건하게 만드는 건 없다.</p>
+
+<p>그 순간 모두가 갑자기 이런 말을 시작한다.</p>
+
+<ul>
+  <li>"면밀하게 모니터링합시다."</li>
+  <li>"롤백 준비는 됐죠?"</li>
+  <li>"최악의 경우엔 되돌리면 되니까요."</li>
+  <li>"하위 환경에서는 됐으니까요."</li>
+</ul>
+
+<p>"하위 환경에서는 됐다"는 말도 또 다른 위험 신호다.</p>
+
+<p>하위 환경에 있는 것들:</p>
+
+<ul>
+  <li>데이터 200건</li>
+  <li>깔끔하게 정제된 데이터</li>
+  <li>완벽한 스키마</li>
+  <li>중복 없음</li>
+  <li>늦게 도착하는 이벤트 없음</li>
+  <li>그리고 희망</li>
+</ul>
+
+<p>프로덕션에 있는 것들:</p>
+
+<ul>
+  <li>혼돈</li>
+  <li>역사</li>
+  <li>오염된 레코드</li>
+  <li>비즈니스 예외 케이스</li>
+  <li>2019년에 재무팀이 수동으로 올린 CSV 파일 하나 — 왜인지 아직도 모든 것에 영향을 미치는</li>
+</ul>
+
+<h2>"안정적으로 보여요"</h2>
+
+<p>그리고… 그 빠른 변경이 라이브에 올라간다.</p>
+
+<p>7분 동안… 모든 게 괜찮아 보인다.</p>
+
+<p>엔지니어들이 긴장을 풀기 시작한다.</p>
+
+<p>누군가 이렇게 말한다.</p>
+
+<blockquote>"안정적으로 보여요."</blockquote>
+
+<p>그 문장이 분산 시스템의 법칙을 즉각 발동시킨다.</p>
+
+<p>알림이 쏟아지기 시작한다.</p>
+
+<p>대시보드가 빨갛게 변한다.</p>
+
+<p>Slack 메시지가 터진다.</p>
+
+<ul>
+  <li>"이거 보이시는 분 있어요?"</li>
+  <li>"매출이 32% 떨어졌어요."</li>
+  <li>"고객 수가 두 배가 됐는데요."</li>
+  <li>"왜 유저들이 매년 태어나는 거죠?"</li>
+</ul>
+
+<h2>워룸 가동</h2>
+
+<p>이제 조사가 시작된다.</p>
+
+<p>워룸이 열린다.</p>
+
+<p>스무 명이 콜에 들어온다.</p>
+
+<p>처음 40초 동안 아무도 말을 하지 않는다. 다들 조사하는 척을 하면서, 속으로는 다른 사람이 먼저 원인을 찾아줬으면 하고 바라고 있다.</p>
+
+<p>마침내 누군가 원인을 찾아낸다.</p>
+
+<blockquote>"새 컬럼에서 예기치 않은 null 동작이 발생해서 조인이 레코드를 중복시켰어요."</blockquote>
+
+<p>침묵.</p>
+
+<p>완전한 기업의 침묵.</p>
+
+<p>그리고 리더십에서 묻는다.</p>
+
+<blockquote>"고치는 데 얼마나 걸려요?"</blockquote>
+
+<p>이 순간 시니어 엔지니어들은 최종 형태를 발현한다.</p>
+
+<p>실제 대답이 "7분에서 14 영업일 사이 어딘가"라는 걸 알기 때문이다.</p>
+
+<p>그래서 전문가답게 이렇게 말한다.</p>
+
+<blockquote>"적극 조사 중입니다."</blockquote>
+
+<h2>데이터 엔지니어가 배우는 네 가지 규칙</h2>
+
+<h3>규칙 1</h3>
+
+<p>누군가 "빠른 변경"이라고 말하면, 일정을 즉시 두 배로 잡아라.</p>
+
+<p>그런 다음 감정적으로도 두 배를 더해라.</p>
+
+<h3>규칙 2</h3>
+
+<p>요청된 변경이 작아 보일수록, 실제 영향은 더 무시무시한 경우가 많다.</p>
+
+<h3>규칙 3</h3>
+
+<p>독립된 시스템이란 없다.</p>
+
+<p>모든 것은 문서화되지 않은 고통을 통해 다른 모든 것과 연결되어 있다.</p>
+
+<h3>규칙 4</h3>
+
+<p>절대로 믿지 마라:</p>
+
+<ul>
+  <li>"간단해요"</li>
+  <li>"작아요"</li>
+  <li>"아주 조금이에요"</li>
+  <li>"사소해요"</li>
+  <li>"쉬울 거예요"</li>
+</ul>
+
+<p>이것들은 일정 추정치가 아니다.</p>
+
+<p>경고 표지판이다.</p>
+
+<hr>
+
+<p>그리고 결국… 몇 시간에 걸친 디버깅, 롤백 논의, 검증 쿼리, 대시보드 새로고침 끝에 문제가 해결된다.</p>
+
+<p>리더십이 말한다.</p>
+
+<blockquote>"잘 대응했어요. 작은 이슈라서 다행이에요."</blockquote>
+
+<p>엔지니어들은 화면을 조용히 바라본다.</p>
+
+<p>점심 이후로 최소 열한 살은 더 늙었다는 걸 알면서.</p>
+</body>
+</html>

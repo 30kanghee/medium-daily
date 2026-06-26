@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docker Is Dead Weight: I Rebuilt Our Pipeline Without It and Cut Costs 60%</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  table{border-collapse:collapse;width:100%;margin:1.2em 0;}
+  th,td{border:1px solid #ddd;padding:8px 14px;text-align:left;}
+  th{background:#f6f8fa;font-weight:600;}
+  td:not(:first-child){text-align:right;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Docker Is Dead Weight: I Rebuilt Our Pipeline Without It and Cut Costs 60%</h1>
+<div class="meta">Ark Protocol · 3분 읽기 · <a href="https://medium.com/@ArkProtocol1/docker-is-dead-weight-i-rebuilt-our-pipeline-without-it-and-cut-costs-60-d45aceb0a591" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@ArkProtocol1/docker-is-dead-weight-i-rebuilt-our-pipeline-without-it-and-cut-costs-60-d45aceb0a591" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">CI 파이프라인에서 Docker를 제거하고 rsync + systemd로 교체했더니 배포 시간이 13분에서 58초로 줄고 월 비용이 80% 절감됐다.</p>
+  <p>3인 팀이 운영하는 세 개의 서비스에서 매달 $4,200이 Docker 이미지 빌드, ECR 저장, 레지스트리 전송 비용으로 빠져나가고 있었다. 아무도 이 비용에 의문을 제기하지 않았다. 저자는 Docker를 CI에서 완전히 제거하고 rsync와 systemd 유닛으로 교체해 배포 시간을 58초로 단축하고 비용을 $840까지 낮췄다. 마이그레이션 과정에서 Docker가 우연히 보호하고 있던 런타임 설정 파일을 발견하는 사고도 있었다. Docker가 항상 불필요한 것은 아니지만, 많은 소규모 팀에서는 처음 설정한 사람의 관성으로 지금도 돌아가고 있을 뿐이라고 지적한다.</p>
+</div>
+
+<p>막연한 인프라 비용 이야기가 아니다. 출처가 명확한 진짜 돈이다. CI 러너 실행 시간에 $2,100, 매 병합마다 1.8GB 이미지를 밀고 당기는 데이터 전송에 $1,680, 그리고 아무도 수개월째 배포하지 않은 이미지 버전을 ECR에 쌓아두는 비용으로 $420.</p>
+
+<p>이렇게 항목별로 뜯어보면 운영 비용이 아니라, 누군가가 한 번도 다시 들여다보지 않은 결정처럼 느껴진다.</p>
+
+<p>팀에서 아무도 질문을 하지 않았다. 그래서 내가 하기 시작했다.</p>
+
+<h2>아무도 의심하지 않은 구성</h2>
+
+<p>우리에게는 세 개의 서비스가 있었다. Python API, Node.js 백그라운드 워커, Go 바이너리. 각각 Dockerfile을 따로 가지고 있었다. 실제로 무엇이 바뀌었든 상관없이 푸시할 때마다 처음부터 전부 다시 빌드했다. 설정 파일 한 줄 수정도 전체 기능 배포와 똑같은 12분짜리 사이클을 돌렸다.</p>
+
+<pre><code>[GitHub Push]
+|
+v
+[Build Docker Image] ────── 6분
+|
+v
+[Push to ECR] ────── 2분
+|
+v
+[Pull on Server] ────── 3분
+|
+v
+[Run Container] ────── 30초</code></pre>
+
+<p>하루에 15~20번 푸시하는 3인 팀 기준으로, 파이프라인 시간 중 세 시간 이상이 오로지 Docker 동작에 쓰이고 있었다. 테스트 로직도, 동작 검증도 아닌, 그저 레이어를 이리저리 옮기는 데만.</p>
+
+<p>나는 CI에서 Docker를 완전히 제거하자고 제안했다. 팀원 Rahul이 나를 뚫어지게 쳐다보며 말했다. "그게 원래 배포가 돌아가는 방식이잖아요." 그 한 마디가 수년 동안 잘못된 기본값이 엔지니어링 팀 안에서 살아남는 방식이다.</p>
+
+<h2>거의 모든 것을 망가뜨릴 뻔한 마이그레이션</h2>
+
+<p>새 파이프라인을 금요일에 돌렸다. 당연히 그랬다.</p>
+
+<p>rsync는 8초 만에 끝났다. systemd 재시작이 확인됐다. 헬스 엔드포인트를 쳤더니 200 OK. 노트북을 닫으면서 진심으로 천재가 된 기분이었다.</p>
+
+<p>그날 저녁, 백그라운드 워커가 아무 소리 없이 작업 처리를 멈췄다. 크래시도 없었다. 알림도 없었다. 로그에 에러도 없었다. 그냥 멈췄다.</p>
+
+<p>새 배포가 런타임에 생성되는 설정 파일을 덮어쓴 것이었다. Docker가 컨테이너 내부에 조용히 격리해두던 파일이었다. 컨테이너 경계가 사라지자 rsync가 매 푸시마다 그 파일을 지워버렸고, 우리는 그 파일이 존재하는지조차 몰랐다.</p>
+
+<p>그 순간이 나를 겸손하게 만들었다. Docker는 단순히 코드를 패키징하는 것이 아니었다. 우리 설정의 어느 한 구석에서, 완전히 문서화되지 않은 방식으로, 우리가 한 번도 의식적으로 관리한 적 없는 상태를 보호하고 있었다.</p>
+
+<p>해결책은 해당 설정 파일을 배포 경로 밖의 별도 디렉토리로 옮기는 것이었다. 두 시간과 적잖은 침묵의 시간이 걸렸다.</p>
+
+<p>파이프라인은 여전히 Docker보다 빨리 돌았다. 하지만 그 금요일은 내가 모든 마이그레이션에 가져가는 교훈을 남겼다. 얻는 것을 축하하기 전에 제거하는 것을 먼저 존중하라.</p>
+
+<h2>새 파이프라인의 모습</h2>
+
+<pre><code>[GitHub Push]
+|
+v
+[Run Tests] ────── 45초
+|
+v
+[rsync to server] ────── 8초
+|
+v
+[systemctl restart] ────── 2초</code></pre>
+
+<p>배포 스크립트는 민망할 정도로 단순하다. 그게 바로 핵심이다.</p>
+
+<pre><code># deploy.sh
+set -e
+rsync -az --delete ./app/ deploy@$SERVER:/srv/api/
+ssh deploy@$SERVER "
+  cd /srv/api
+  pip install -r requirements.txt -q
+  sudo systemctl restart api
+"</code></pre>
+
+<p>컨테이너 런타임 전체를 대체한 systemd 유닛 파일이다.</p>
+
+<pre><code>[Unit]
+Description=Python API
+After=network.target
+
+[Service]
+User=deploy
+WorkingDirectory=/srv/api
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+
+<p>백그라운드에서 Docker 데몬이 돌지 않는다. 이미지 레이어가 스토리지 요금을 쌓지 않는다. 연휴 주말에 레지스트리 인증이 조용히 만료되는 일도 없다.</p>
+
+<h2>격리 문제에 제대로 답하자</h2>
+
+<p>이 글을 읽는 모든 엔지니어는 이미 같은 생각을 했을 것이다. 격리는 어떻게 하나? 의존성 충돌은? 환경 간 재현성은?</p>
+
+<p>이것들은 약한 반론이 아니다. Docker가 처음부터 기본값이 된 바로 그 이유들이며, 진지하게 다뤄야 한다.</p>
+
+<p>솔직하게 말하겠다. 잠긴 배포 계정으로 실행되고 Python 의존성이 격리된 가상 환경 안에 있는 이 세 서비스에서, Docker가 제공하는 격리는 우리 상황에 존재하지도 않는 문제를 해결하고 있었다.</p>
+
+<p>이것은 보편적인 주장이 아니다. 상황에 따른 주장이며, 그 차이가 중요하다.</p>
+
+<p>멀티 테넌트 워크로드를 운영하거나, 신뢰할 수 없는 사용자 입력을 실행하거나, 엄격한 런타임 격리를 의무화하는 컴플라이언스 요건이 있다면, 당신에게 Docker는 불필요한 짐이 아니다.</p>
+
+<p>그것은 핵심 인프라다. 이 글에 설득당하지 말고 그대로 두라.</p>
+
+<p>하지만 소규모에서 중간 규모의 내부 서비스 대부분은 그런 상황에 있지 않다. Docker를 쓰는 건 파이프라인을 처음 설정한 엔지니어가 익숙한 것에 손을 뻗었기 때문이고, 그 이후로 아무도 의문을 품지 않았기 때문이다.</p>
+
+<p>검토되지 않은 그 기본값의 비용은 매달 복리로 쌓인다.</p>
+
+<h2>수치</h2>
+
+<table>
+  <thead>
+    <tr><th>지표</th><th>도입 전</th><th>도입 후</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>평균 배포 시간</td><td>12분 58초</td><td>58초</td></tr>
+    <tr><td>월 CI 비용</td><td>$2,100</td><td>$840</td></tr>
+    <tr><td>데이터 전송 비용</td><td>$1,680</td><td>$0</td></tr>
+    <tr><td>ECR 스토리지 비용</td><td>$420</td><td>$0</td></tr>
+    <tr><td>월 총 비용</td><td>$4,200</td><td>$840</td></tr>
+    <tr><td>절감액</td><td>—</td><td><strong>80%</strong></td></tr>
+  </tbody>
+</table>
+
+<p>배포 속도가 빨라지자 팀의 행동 방식이 스프레드시트로는 측정할 수 없는 방식으로 달라졌다. 수정 사항을 더 큰 릴리즈로 묶어 두는 일이 없어졌다. "내일 올릴게요"라는 말도 사라졌다.</p>
+
+<p>피드백 루프가 타이트해졌다. 이후 몇 주에 걸쳐 배포에 대한 자신감이 눈에 띄게 커졌다.</p>
+
+<h2>월 $4,200이 실제로 의미하는 것</h2>
+
+<p>이 이야기는 청구서로 시작했다. 여기서 끝낸다.</p>
+
+<p>그 $4,200은 단순히 돈이 아니었다. 첫날 내려진 결정의 무게가 아무도 감히 건드리려 하지 않은 채 쌓여온 결과물이었다.</p>
+
+<p>당신이 운영하는 모든 도구는 청구서 너머의 비용을 지닌다. 매 배포에 추가되는 시간, 팀에 새로 합류한 엔지니어에게 생기는 복잡성, 그리고 구성이 너무 확립된 것처럼 보여서 차마 입 밖에 내지 못하게 되는 질문. 그 질문을 침묵시키는 비용이 가장 크다.</p>
+</body>
+</html>
