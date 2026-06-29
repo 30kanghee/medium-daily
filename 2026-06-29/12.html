@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Microservices Lost to COBOL. Let That Sink In</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Your Microservices Lost to COBOL. Let That Sink In</h1>
+<div class="meta">The Thread Whisperer · 4분 읽기 · <a href="https://medium.com/@maahisoft20/your-microservices-lost-to-cobol-let-that-sink-in-8ce2e236d007" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@maahisoft20/your-microservices-lost-to-cobol-let-that-sink-in-8ce2e236d007" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">한 은행이 4년과 21억 달러를 들여 마이크로서비스로 전환했다가 COBOL 시스템으로 되돌아갔고, 저자는 그 팀에 직접 있었다.</p>
+  <p>저자는 직접 대형 은행의 COBOL에서 마이크로서비스로의 전환 프로젝트를 경영진에게 팔았던 당사자다. 2년 뒤 사후 검토 자리에서 COBOL 배치 작업이 240만 건을 11분에 처리한 반면, Docker·Kubernetes·API 게이트웨이로 구성된 새 시스템은 47분에 한 번 장애까지 발생했다는 사실을 목격한다. COBOL은 우아함이 아니라 &lsquo;돈을 움직이는 것&rsquo;을 위해 설계된 언어로, 부동소수점 오류 없는 10진 연산과 40년간 최적화된 메인프레임 런타임이 강점이다. 분산 시스템은 실패 지점을 하나에서 아홉 개로 늘렸고, 이 실패들은 조용히 HTTP 200으로 잘못된 데이터를 반환한다. 저자는 &lsquo;분산&rsquo;이 &lsquo;확장 가능&rsquo;을 의미하지 않으며, &lsquo;현대적&rsquo;이 &lsquo;더 낫다&rsquo;를 의미하지 않는다고 결론 내린다.</p>
+</div>
+
+<figure>
+  <img src="https://miro.medium.com/v2/resize:fit:1200/1*u_rT3W8Ba81BfwQD6siokw.png" alt="마이크로서비스 vs COBOL">
+  <figcaption>분산 시스템의 복잡성과 레거시의 신뢰성 사이의 대결</figcaption>
+</figure>
+
+<p>그들은 되돌아갔다.</p>
+
+<p>당신 월급을 처리하는 시스템은 당신 부모님이 만나기도 전에 작성되었다. 그리고 그 시스템은 Docker, Kubernetes, 여섯 겹의 API 게이트웨이로 맞서 싸운 모든 것보다 빠르고, 저렴하고, 신뢰할 수 있다.</p>
+
+<p>말이 안 된다고? 하지만 사실이다.</p>
+
+<h2>나의 자신감을 무너뜨린 방</h2>
+
+<p>솔직히 말하겠다. 나는 그 팀에 있었다.</p>
+
+<p>보드룸에 들어가 전환을 팔아넘긴 사람이 바로 나다. &ldquo;클라우드 네이티브&rdquo;, &ldquo;개발자 속도&rdquo;, &ldquo;수평적 확장성&rdquo; 같은 단어를 썼다. 슬라이드도 있었고 다이어그램도 있었고 확신도 있었다. 그 말 한 마디 한 마디를 나 자신도 믿었다.</p>
+
+<p>2년 뒤, 나는 사후 검토 회의실에 앉아 누군가가 벤치마크 결과를 화면에 띄우는 것을 지켜봤다. 우리의 새 주문 처리 서비스와, 그것이 대체한 기존 COBOL 배치 작업을 비교한 자료였다.</p>
+
+<p>COBOL 작업은 240만 건의 레코드를 11분 안에 처리했다.</p>
+
+<p>재시도 로직, 메시지 큐, 헬스 체크, 서비스 디스커버리, 그리고 아무도 완전히 이해하지 못하는 Helm 차트를 갖춘 우리의 분산 시스템은 47분이 걸렸다. 게다가 부하가 걸리자 한 번 다운됐다.</p>
+
+<p>아무도 말이 없었다. 나는 침묵의 초를 세었다. 열네 초였다.</p>
+
+<p>그 침묵이 소프트웨어에 대한 나의 생각을 영원히 바꿨다.</p>
+
+<h2>COBOL이 실제로 무엇인가</h2>
+
+<p>사람들은 COBOL을 웃음거리로 취급한다. 60년 된 문법, 제네릭 없음, 람다 없음, 열일곱 개의 추상 레이어를 가진 의존성 주입 프레임워크도 없음.</p>
+
+<p>하지만 COBOL은 우아하게 만들어진 것이 아니다. 돈을 움직이도록 만들어졌다. 그리고 알고 보면 이 둘은 같은 요구사항이 아니다.</p>
+
+<p>COBOL에는 부동소수점 오류로 단 1센트도 잃지 않는 10진 연산이 있다. 대규모 순차 데이터 처리를 위해 처음부터 설계된 배치 처리 기능이 있다. 메인프레임 하드웨어에서 40년간 최적화된 런타임이 있다. 콜드 스타트 없음. 컨테이너 오케스트레이션 오버헤드 없음. 서비스 메시 설정 파일 없음.</p>
+
+<p>당신의 마이크로서비스는 COBOL이 실제 작업을 처리하는 시간보다 서비스끼리 대화하는 데 더 많은 시간을 쓴다.</p>
+
+<h2>아무도 말하지 않는 아키텍처</h2>
+
+<p>당신이 생각하는 시스템의 구조는 이렇다:</p>
+
+<pre>Client --> API Gateway --> Auth Service --> Order Service --> DB
+                                  |
+                            Message Queue
+                                  |
+                        Inventory Service --> DB
+                                  |
+                        Notification Service</pre>
+
+<p>트래픽이 급증할 때 실제로 벌어지는 일은 이렇다:</p>
+
+<pre>Client --> [timeout] --> retry --> [circuit breaker OPEN]
+              |
+         API Gateway --> Auth Service --> [pod restarting]
+              |
+         fallback --> stale cache --> wrong inventory count
+              |
+         Notification Service fires anyway --> angry emails sent</pre>
+
+<p>실패 지점 하나가 있던 자리에 아홉 개를 만들었다.</p>
+
+<p>그리고 최악의 부분은, 이 실패들이 모두 조용하다는 것이다. 시스템이 다운되지 않는다. 그저 HTTP 200 상태 코드와 함께 잘못된 데이터를 반환하고, 누군가의 계좌 잔액이 틀어지는데 그 사람이 직접 전화를 걸기 전까지는 아무도 눈치채지 못한다.</p>
+
+<h2>기억에 남을 비교</h2>
+
+<p>현대 서비스 지향 스택에서 잔액을 업데이트하는 코드는 이렇다:</p>
+
+<pre>
+def update_balance(account_id, amount):
+    r = requests.post(f"{ACCOUNTS_SVC}/balance", json={
+        "id": account_id,
+        "delta": amount
+    })
+    if r.status_code != 200:
+        raise ServiceError("balance update failed")
+    publish_event("balance.updated", account_id)  # this can also fail</pre>
+
+<p>COBOL로 동일한 작업을 하면 이렇다(단순화했지만 정직한 버전):</p>
+
+<pre>MOVE ACCOUNT-ID TO WS-ACCT-ID
+ADD TRANS-AMOUNT TO ACCT-BALANCE
+REWRITE ACCOUNT-RECORD</pre>
+
+<p>세 줄. 네트워크 홉 없음. 재시도 로직 없음. 최소 한 번 전달 보장 때문에 두 번 발행될 수 있는 이벤트 없음. 레코드는 재기록되거나, 전체 배치가 깔끔하게 롤백된다.</p>
+
+<p>Python 버전에는 예외를 발생시키지 않고 실패할 수 있는 경로가 다섯 개 있다. COBOL 버전에는 하나뿐이다: 디스크가 죽는 것. 그러면 그건 개발자 문제가 아니라 데이터 센터 전체의 문제다.</p>
+
+<p>이것은 레거시의 한계가 아니다. 이것은 아무리 많은 블로그 포스트가 그렇지 않다고 말해도 메시지 큐가 기본적으로 제공하지 않는 트랜잭션 무결성이다.</p>
+
+<h2>우리가 스스로에게 한 거짓말</h2>
+
+<p>우리는 &lsquo;분산&rsquo;이 &lsquo;확장 가능&rsquo;을 의미하고, &lsquo;현대적&rsquo;이 &lsquo;더 낫다&rsquo;를 의미하며, 40년 전에 만들어진 것은 교체될 준비가 됐다고 스스로를 설득했다. 이 중 어느 것도 자동으로 참이 아니다.</p>
+
+<p>아직도 COBOL을 실행하는 은행들은 부끄러워하지 않는다. 컨퍼런스 발표가 마이크로서비스를 멋지게 보이게 했다고 마이그레이션을 계획하지 않는다. 그들은 도구가 문제에 맞는다는 결정을 내렸고, 그것을 뒷받침할 벤치마크 데이터가 있다.</p>
+
+<p>풀어야 할 문제는 정확성과 데이터 손실 없이 수백만 건의 순차적 금융 레코드를 처리하는 것이었다. 바로 COBOL이 설계된 문제다. 전환 팀이 풀어낸 문제는 달랐다. 그들은 Kubernetes에 배포 가능한 무언가를 만든 것이다. 그리고 이 둘은 같은 옷을 입은 같은 문제가 아니다.</p>
+
+<h2>그 방에서 벌어지는 일</h2>
+
+<p>다음에 기획 회의에서 누군가 &ldquo;이걸 서비스로 분리해야 한다&rdquo;고 말하면, 한 가지 질문을 던져라.</p>
+
+<p>팀이 분해한 마지막 시스템 중에서 실제로 더 빨라진 것이 무엇인지 말해 달라고.</p>
+
+<p>더 독립적으로 배포 가능한지가 아니다. 이론적으로 개별 확장 가능한지가 아니다. 반대편에서 기다리는 실제 사용자 입장에서, 엔드 투 엔드로, 실제로 더 빨라진 것.</p>
+
+<p>그 방이 어떻게 변하는지 지켜봐라.</p>
+
+<p>내가 열네 초 동안 앉아있던 그 침묵이 당신의 답이다. 결과가 아닌 아키텍처 다이어그램에 최적화한 팀의 소리다.</p>
+
+<p>당신 월급을 처리하는 시스템은 다이어그램 따위는 신경 쓰지 않는다. 그저 돌아갈 뿐이다.</p>
+
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Every System Design Question I Was Asked in Real Interviews at 10+ Companies</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Every System Design Question I Was Asked in Real Interviews at 10+ Companies</h1>
+<div class="meta">Freeze Francis · 10분 읽기 · <a href="https://freezefrancis.medium.com/every-system-design-question-i-was-asked-in-real-interviews-at-10-companies-1b19f4d197c4" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://freezefrancis.medium.com/every-system-design-question-i-was-asked-in-real-interviews-at-10-companies-1b19f4d197c4" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">10개 이상의 회사 실전 면접에서 받은 시스템 설계 질문들을 직접 경험한 내용 그대로 정리한 글.</p>
+  <p>저자 Freeze Francis는 Canva, Grab, Foodpanda, Agoda, TikTok, N26, Mercari, Glovo, Talabat 등 10여 개 회사의 면접을 직접 경험하며 실제로 받은 시스템 설계 질문들을 상세히 기록했다. 온라인에서 흔히 볼 수 있는 "트위터를 설계하라", "URL 단축기를 설계하라" 같은 교과서적 질문은 단 한 번도 나오지 않았다. 대신 데이터센터 간 데이터 복제, 라운드 로빈 로드 밸런서 구현, SIM 카드 판매 시스템 설계, 실시간 알림 파이프라인 구축 등 훨씬 더 구체적이고 도전적인 문제들이 주어졌다. 이 글은 저자가 잘 답한 문제뿐 아니라 실패한 문제까지 솔직하게 다루어, 실전 면접 준비의 진짜 나침반 역할을 한다.</p>
+</div>
+
+<h2>들어가며</h2>
+
+<p>시스템 설계 면접을 준비할 때 우리는 대개 같은 자료들을 찾아본다. "트위터를 설계하라", "YouTube를 설계하라", "URL 단축 서비스를 설계하라"—인터넷에는 이런 유형의 풀이 영상과 글이 넘쳐난다. 나도 처음에는 그랬다.</p>
+
+<p>그런데 막상 실전 면접에 들어가 보니, 그 어떤 교과서적 문제도 나오지 않았다. 면접관들은 자신들이 실제로 해결해야 했던 문제, 혹은 자사 시스템에 직접 연결된 문제를 물어보는 경향이 강했다. 준비했던 내용과 전혀 다른 문제들이 등장했다.</p>
+
+<p>나는 7년 이상의 백엔드 엔지니어 경력 동안 Amazon, Agoda, Canva를 비롯한 10개 이상의 회사 면접을 경험했다. Google(폴란드 바르샤바), Grab(싱가포르), TikTok(싱가포르), N26(베를린), Foodpanda(싱가포르), Mercari(일본), Glovo(바르셀로나), Agoda(방콕), Talabat(두바이), Coda Payments(방콕) 등 세계 각지의 회사들과 면접을 진행했다. 이 과정에서 받은 시스템 설계 질문들을 모두 기록해 두었고, 이 글에서 그것들을 공유하려 한다.</p>
+
+<p>잘 풀어낸 문제뿐 아니라, 완전히 틀렸던 문제들도 포함한다. 그것이 더 가치 있다고 생각하기 때문이다.</p>
+
+<hr>
+
+<h2>왜 실전 면접 질문은 다를까</h2>
+
+<p>면접관은 보통 자신이 지금 다루고 있는 기술 영역에서 문제를 낸다. Foodpanda에서 결제 시스템을 담당하는 엔지니어라면, 분산 트랜잭션이나 결제 처리 파이프라인 관련 문제를 낼 가능성이 높다. Agoda에서 재고 관리 시스템을 다루는 엔지니어는 예약 시스템의 동시성 문제에 관심을 가질 것이다.</p>
+
+<p>이 말은 곧, 특정 회사의 면접을 준비할 때 그 회사가 어떤 기술적 도전을 안고 있는지를 먼저 파악해야 한다는 뜻이다. 공개된 기술 블로그, 엔지니어링 포스트, 채용 공고의 기술 스택을 꼼꼼히 살펴보면 힌트를 얻을 수 있다.</p>
+
+<hr>
+
+<h2>실전에서 받은 시스템 설계 질문들</h2>
+
+<h3>1. 데이터센터 간 데이터 복제 시스템 설계 (Agoda)</h3>
+
+<p>Agoda는 전 세계 여러 데이터센터를 운영한다. 면접 질문은 이렇게 시작되었다. "서로 다른 지리적 위치에 있는 데이터센터 간에 데이터를 어떻게 복제하겠습니까? 지연 시간은 최소화하되, 데이터 일관성은 보장해야 합니다."</p>
+
+<p>이 문제의 핵심은 CAP 정리(CAP theorem)—일관성(Consistency), 가용성(Availability), 분할 허용성(Partition Tolerance) 사이의 트레이드오프를 이해하는 것이다. 나는 다음과 같은 접근으로 답변했다.</p>
+
+<ul>
+  <li>주(primary) 데이터센터와 보조(replica) 데이터센터 구조를 먼저 정의했다.</li>
+  <li>동기(synchronous) 복제는 강한 일관성을 제공하지만 지연이 크고, 비동기(asynchronous) 복제는 지연이 적지만 일시적 불일치가 발생할 수 있음을 설명했다.</li>
+  <li>Agoda처럼 예약 서비스를 제공하는 경우, 결제 관련 데이터는 동기 복제가 필수적이고, 검색·추천 데이터는 비동기 복제로 처리해도 충분하다고 제안했다.</li>
+  <li>충돌 해결(conflict resolution) 전략으로는 last-write-wins 또는 벡터 클럭(vector clock)을 언급했다.</li>
+</ul>
+
+<p>이 문제는 준비가 잘 된 편이었다. Agoda의 기술 블로그에서 다지역 아키텍처 관련 글을 읽었던 것이 도움이 되었다.</p>
+
+<h3>2. 라운드 로빈 로드 밸런서 설계 (Grab)</h3>
+
+<p>Grab 면접에서 받은 질문이다. "소프트웨어로 라운드 로빈 로드 밸런서를 처음부터 설계하세요. 서버가 추가되거나 제거될 때도 올바르게 동작해야 합니다."</p>
+
+<p>로드 밸런서를 '사용'하는 것은 익숙하지만, 직접 '구현'하는 문제는 처음이었다. 아래와 같은 설계를 제안했다.</p>
+
+<ul>
+  <li>서버 목록을 리스트로 관리하고, 현재 인덱스를 원자적으로 증가시키는 방식(<code>AtomicInteger</code>)으로 라운드 로빈을 구현했다.</li>
+  <li>서버 추가 시에는 목록에 추가하고, 제거 시에는 목록에서 삭제한 뒤 인덱스를 조정했다.</li>
+  <li>헬스 체크(health check)를 주기적으로 수행해 비정상 서버를 자동으로 목록에서 제외하는 로직을 추가했다.</li>
+  <li>동시성 환경에서 목록 수정 시 발생하는 경쟁 조건(race condition)을 <code>ReadWriteLock</code>으로 처리하는 방법도 설명했다.</li>
+</ul>
+
+<p>면접관은 이후 가중 라운드 로빈(weighted round-robin)으로 확장하면 어떻게 하겠냐고 물었고, 서버별 가중치를 고려해 인덱스 증가 횟수를 달리하는 방식으로 답했다.</p>
+
+<h3>3. SIM 카드 판매 시스템 설계 (Coda Payments)</h3>
+
+<p>Coda Payments는 동남아시아에서 디지털 결제 서비스를 제공하는 회사다. 이 면접에서 받은 질문이 가장 특이했다. "이동통신사를 위한 SIM 카드 재고 관리 및 판매 시스템을 설계하세요. 각 SIM 카드에는 고유 ICCID가 있고, 한 번 판매된 SIM은 재사용할 수 없습니다."</p>
+
+<p>처음에는 당황했지만, 본질적으로 고유 ID를 가진 일회성 재고를 관리하는 문제임을 파악하고 나서 접근이 쉬워졌다.</p>
+
+<ul>
+  <li>SIM 카드 상태를 <code>AVAILABLE</code>, <code>RESERVED</code>, <code>SOLD</code>, <code>DEACTIVATED</code>로 정의하고 상태 머신(state machine)으로 관리했다.</li>
+  <li>동시에 여러 사용자가 같은 SIM을 구매하려 할 때의 동시성 문제를 낙관적 잠금(optimistic locking)으로 처리했다.</li>
+  <li>대규모 재고 조회 성능을 위해 AVAILABLE 상태의 SIM 목록을 Redis 큐(queue)에 캐시하고, 판매 시 큐에서 꺼내는 방식을 제안했다.</li>
+  <li>이통사 API 연동 실패 시의 보상 트랜잭션(compensating transaction) 처리도 논의했다.</li>
+</ul>
+
+<h3>4. 실시간 알림 파이프라인 설계 (TikTok)</h3>
+
+<p>TikTok 싱가포르 면접에서 받은 질문이다. "수억 명의 사용자에게 실시간 알림(좋아요, 댓글, 팔로우 등)을 보내는 시스템을 설계하세요. 지연은 1초 이내여야 합니다."</p>
+
+<p>이 문제는 규모(scale)가 핵심이었다.</p>
+
+<ul>
+  <li>이벤트 생성 → Kafka 토픽 발행 → 알림 서비스 소비 → 푸시/인앱 전달의 파이프라인을 제안했다.</li>
+  <li>사용자별 알림 선호 설정(푸시 알림 on/off, 특정 유형 알림 수신 여부)을 캐시에 저장해 불필요한 알림 전송을 막는 필터링 레이어를 추가했다.</li>
+  <li>Apple APNs, Google FCM 등 외부 푸시 서비스와의 연동 및 재시도 로직을 설명했다.</li>
+  <li>활성 사용자(online user)에게는 WebSocket을 통한 실시간 인앱 알림을, 비활성 사용자에게는 푸시 알림을 보내는 이중 전략을 제안했다.</li>
+  <li>Kafka 파티션 키를 사용자 ID로 설정해 같은 사용자의 알림 순서를 보장했다.</li>
+</ul>
+
+<h3>5. 분산 속도 제한기(Rate Limiter) 설계 (N26)</h3>
+
+<p>N26(베를린의 온라인 은행)에서는 보안과 API 안정성에 초점을 맞춘 질문을 받았다. "여러 서비스 인스턴스에 걸쳐 동작하는 분산 속도 제한기를 설계하세요. 사용자당 분당 요청 수를 제한해야 합니다."</p>
+
+<ul>
+  <li>토큰 버킷(token bucket)과 슬라이딩 윈도우(sliding window) 알고리즘을 비교 설명하고, 은행 서비스 특성상 정확도가 중요하므로 슬라이딩 윈도우 방식을 권장했다.</li>
+  <li>Redis의 원자적 연산(<code>INCR</code>과 <code>EXPIRE</code>)을 활용해 분산 환경에서도 정확한 카운팅이 가능한 구현을 설명했다.</li>
+  <li>Redis 장애 시 서비스 전체가 멈추는 것을 방지하기 위한 폴백(fallback) 전략—로컬 메모리 기반 제한기로 임시 전환—도 논의했다.</li>
+</ul>
+
+<h3>6. 실시간 검색 자동완성 시스템 설계 (Grab)</h3>
+
+<p>Grab 면접의 또 다른 질문이었다. "사용자가 검색창에 타이핑할 때 실시간으로 자동완성 제안을 보여주는 시스템을 설계하세요."</p>
+
+<ul>
+  <li>트라이(Trie) 자료구조를 기반으로 접두사 검색을 구현하는 방법을 설명했다.</li>
+  <li>하지만 수억 건의 검색어를 단일 트라이에 저장하는 것은 비현실적이므로, 인기 검색어는 Redis의 Sorted Set에 저장하고 점수(score)로 순위를 관리하는 방식을 제안했다.</li>
+  <li>검색어 빈도는 스트림 처리(Apache Kafka + Flink)로 실시간 업데이트하되, 전체 재계산은 배치(batch) 작업으로 주기적으로 수행하는 하이브리드 방식을 설명했다.</li>
+  <li>지역별 인기 검색어를 달리 보여주기 위한 지역화(localization) 전략도 논의했다.</li>
+</ul>
+
+<h3>7. 분산 작업 스케줄러 설계 (Foodpanda)</h3>
+
+<p>Foodpanda 면접에서는 배달 플랫폼과 직결된 문제가 나왔다. "정확히 한 번(exactly-once) 실행을 보장하는 분산 크론 작업 스케줄러를 설계하세요."</p>
+
+<ul>
+  <li>이 문제의 핵심은 여러 인스턴스 중 하나만 작업을 실행하도록 하는 리더 선출(leader election) 메커니즘이었다.</li>
+  <li>ZooKeeper 또는 Redis의 분산 락(distributed lock)을 활용한 리더 선출을 제안했다.</li>
+  <li>작업 실행 기록을 데이터베이스에 저장해 멱등성(idempotency)을 보장하는 방법을 설명했다.</li>
+  <li>작업 실패 시 지수 백오프(exponential backoff)와 함께 재시도하되, 최대 재시도 횟수를 초과하면 데드 레터 큐(dead letter queue)로 이동시키는 전략을 제시했다.</li>
+</ul>
+
+<h3>8. 글로벌 파일 동기화 서비스 설계 (Canva)</h3>
+
+<p>Canva(호주 시드니)의 시니어 백엔드 엔지니어 면접에서 받은 질문이다. "여러 기기에서 대용량 디자인 파일을 실시간으로 동기화하는 시스템을 설계하세요. 오프라인 상태에서의 편집도 지원해야 합니다."</p>
+
+<ul>
+  <li>파일 전체를 매번 전송하는 대신, 변경된 청크(chunk)만 전송하는 델타 동기화(delta sync) 방식을 제안했다.</li>
+  <li>오프라인 편집을 위해 CRDT(Conflict-free Replicated Data Type)를 활용한 충돌 해결 전략을 설명했다.</li>
+  <li>S3와 같은 객체 스토리지에 버전별 스냅샷을 저장하고, 메타데이터(어떤 청크가 변경되었는지)는 별도 데이터베이스로 관리하는 구조를 제안했다.</li>
+  <li>이 문제에서 면접관과 가장 깊은 토론이 이루어졌다. Canva는 실제로 이 문제를 다루고 있기 때문이다.</li>
+</ul>
+
+<h3>9. 대규모 이벤트 티케팅 시스템 설계 (Mercari)</h3>
+
+<p>Mercari(일본) 면접에서는 C2C 마켓플레이스 특성을 반영한 질문이 나왔다. "수천만 명이 동시에 접속하는 콘서트 티켓 선착순 판매 시스템을 설계하세요. 과판매(overselling)는 절대 허용되지 않습니다."</p>
+
+<ul>
+  <li>대기열(virtual waiting room) 시스템으로 트래픽을 제어하는 방법을 먼저 제안했다.</li>
+  <li>티켓 예약 시 짧은 시간(예: 10분) 동안 임시 잠금을 걸어 결제를 완료하지 않으면 자동으로 풀리는 방식을 설명했다.</li>
+  <li>Redis의 원자적 연산으로 남은 티켓 수를 관리하고, 재고가 0이 되면 즉시 매진 처리하는 로직을 구현했다.</li>
+  <li>면접관이 "결제 도중 시스템이 다운되면 어떻게 됩니까?"라는 질문을 추가로 던졌을 때, 분산 트랜잭션의 복잡성을 과소평가했던 나는 완벽하게 답하지 못했다.</li>
+</ul>
+
+<h3>10. 재고 관리 API 게이트웨이 설계 (Glovo)</h3>
+
+<p>Glovo(바르셀로나)에서는 배달 플랫폼의 핵심 인프라와 관련된 질문을 받았다. "수천 개의 레스토랑 파트너로부터 실시간 재고 업데이트를 수신하고, 이를 사용자에게 일관성 있게 보여주는 API 게이트웨이를 설계하세요."</p>
+
+<ul>
+  <li>파트너별 속도 제한과 인증을 처리하는 게이트웨이 레이어를 먼저 설계했다.</li>
+  <li>파트너에서 들어오는 재고 업데이트를 이벤트 스트림(Kafka)으로 처리해 비동기적으로 내부 시스템에 반영하는 구조를 제안했다.</li>
+  <li>사용자 조회 요청에는 캐시를 활용해 빠른 응답을 제공하되, 캐시 무효화(cache invalidation) 전략을 명확히 정의했다.</li>
+  <li>파트너 시스템의 다양한 API 형식(REST, gRPC, 웹훅 등)을 내부 표준 형식으로 변환하는 어댑터 패턴(adapter pattern)도 논의했다.</li>
+</ul>
+
+<hr>
+
+<h2>실패한 질문들로부터 배운 것</h2>
+
+<p>Talabat(두바이) 면접에서는 분산 트랜잭션을 다루는 Saga 패턴에 대한 깊이 있는 질문을 받았다. 개념은 알고 있었지만, 코레오그래피(choreography) 방식과 오케스트레이션(orchestration) 방식의 실질적 차이와 트레이드오프를 명확하게 설명하지 못했다. 그 면접 이후 Saga 패턴을 훨씬 더 깊이 공부했다.</p>
+
+<p>N26 최종 면접에서는 시스템 설계를 넘어 구체적인 알고리즘 최적화 문제로 넘어갔는데, 준비가 부족했다. 시스템 설계와 알고리즘을 함께 준비해야 한다는 것을 새삼 깨달았다.</p>
+
+<hr>
+
+<h2>실전 면접 준비를 위한 조언</h2>
+
+<p>첫째, 지원하는 회사의 기술 블로그를 반드시 읽어라. Agoda, Grab, Canva 같은 회사들은 자신들이 해결한 기술적 도전을 공개적으로 공유한다. 그것이 바로 면접 질문의 원천이다.</p>
+
+<p>둘째, 일반적인 패턴을 깊이 이해하되 특정 회사에 맞게 적용하는 연습을 해라. 로드 밸런싱, 캐싱, 분산 락, 이벤트 스트리밍—이런 핵심 개념을 다양한 도메인에 적용할 수 있어야 한다.</p>
+
+<p>셋째, 트레이드오프를 명확히 설명하는 습관을 들여라. 면접관이 원하는 것은 완벽한 해답이 아니라, 주어진 제약 조건 안에서 합리적인 결정을 내리는 과정이다.</p>
+
+<p>넷째, 실패를 두려워하지 마라. 면접에서 틀리는 것은 부끄러운 일이 아니다. 내가 가장 많이 배운 것은 잘 답한 문제가 아니라 망친 문제들에서였다.</p>
+
+<hr>
+
+<h2>마치며</h2>
+
+<p>10개 이상의 회사 면접을 통해 확실히 깨달은 것이 있다. 실전 시스템 설계 면접은 온라인 자료에서 보는 것과는 다르다. 면접관이 어떤 문제를 다루는 팀에 속해 있는지, 그 회사가 어떤 기술적 도전을 안고 있는지를 파악하는 것이 핵심이다.</p>
+
+<p>이 글이 당신의 면접 준비에 실질적인 도움이 되기를 바란다. 각 회사별 상세한 면접 후기는 내 Medium 프로필에서 찾아볼 수 있다.</p>
+
+</body>
+</html>

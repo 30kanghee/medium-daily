@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WTF Is a Agentic Coding Loop? And How to Build One.</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>WTF Is a Agentic Coding Loop? And How to Build One.</h1>
+<div class="meta">Marco Kotrotsos · Autocomplete. Real World AI · 12분 읽기 · <a href="https://medium.com/autocomplete-real-world-ai/wtf-is-a-agentic-coding-loop-and-how-to-build-one-58eedb7cbcae" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/autocomplete-real-world-ai/wtf-is-a-agentic-coding-loop-and-how-to-build-one-58eedb7cbcae" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">에이전틱 코딩 루프는 AI 에이전트에게 프롬프트를 보내고, 결과를 읽고, 완료 여부를 판단하고, 미완이면 다시 시도하는 작은 프로그램으로, 개발자가 루프 안에서 타이핑하는 존재에서 루프를 설계하는 존재로 올라서는 방식이다.</p>
+  <p>Peter Steinberger의 "에이전트에게 직접 프롬프트를 보내지 마라, 에이전트에게 프롬프트를 보내는 루프를 설계하라"는 발언이 업계를 뒤흔들었다. Claude Code를 만든 Boris Cherny는 한 달 동안 기여한 코드 259개 풀 리퀘스트 전부를 Claude Code가 작성했다고 밝혔으며, 11월부터 IDE를 삭제했다. 가장 단순한 루프는 bash 한 줄이며, Claude Code의 <code>/goal</code> 명령이 더 안전한 프로덕션 버전이다. 신뢰할 수 있는 루프는 두 가지 조건을 갖춰야 한다. 외부 검증으로 완료를 판단하는 자기 검증 메커니즘, 그리고 비용 폭탄을 막는 세 가지 강제 정지 조건이다.</p>
+</div>
+
+<p>이번 주 AI 코딩 타임라인을 뒤집어 놓은 여섯 단어짜리 문장이 있었다. Peter Steinberger가 올린 이 글은 200만 뷰를 넘겼고, 댓글은 이 말이 실제로 무엇을 의미하는지를 두고 논쟁으로 가득 찼다.</p>
+
+<blockquote>"You shouldn't be prompting coding agents anymore. You should be designing loops that prompt your agents."<br>— @steipete, 2026년 6월</blockquote>
+
+<p>누군가가 유일하게 쓸모 있는 질문을 던졌다. 실제로 어떻게 하면 되냐고. 가장 많이 인용된 답글은 "그건 그 사람이랑 boris만 알고 있어"였다. 웃기지만 틀린 말이다. 아는 사람은 충분히 많고, 답은 신비롭지 않으며, 진입 장벽은 명령 한 줄이다. 그러니 프롬프트 엔지니어링이 죽었는가에 대한 또 다른 생각거리 대신, 다음 5분 안에 복사해 붙여넣을 수 있는 것부터 시작해 실제로 어떻게 만드는지를 이야기하겠다.</p>
+
+<p>핵심 세 가지를 먼저 정리하면 다음과 같다.</p>
+
+<ul>
+  <li>루프는 에이전트에게 프롬프트를 보내고, 그 결과물을 읽고, 완료 여부를 판단하고, 미완이면 다시 프롬프트를 보내는 작은 프로그램이다. 루프 안에서 직접 타이핑하는 존재가 아니라 루프를 작성하는 존재가 되고, 모델은 하나의 서브루틴이 된다.</li>
+  <li>가장 단순하고 쓸모 있는 루프는 bash 한 줄이다. 가장 실용적인 루프는 슬래시 명령 하나다. 오케스트레이션 프레임워크로 시작할 필요도 없고, 그렇게 시작해서도 안 된다.</li>
+  <li>작동하는 루프와 비용을 날려버리는 루프를 가르는 것은 두 가지다. 외부 사실에 비춰 자신의 작업물을 검증하는 방법, 그리고 강제 정지 장치. 이 글의 실용적인 내용은 모두 그 두 가지에 관한 것이다.</li>
+</ul>
+
+<h2>명확한 정의, 그리고 세 단계 사다리</h2>
+
+<p>Boris Cherny는 Claude Code를 만들었고, 최근 한 달 동안 자신의 기여분 259개 풀 리퀘스트를 전부 Claude Code가 작성했다고 밝혔다. 11월부터 IDE를 삭제했다. 그가 어떻게 했는지에 대한 설명이 가장 명료하다.</p>
+
+<blockquote>"저는 더 이상 Claude에게 직접 프롬프트를 보내지 않습니다. 루프들이 실행 중이에요. 루프들이 Claude에게 프롬프트를 보내고 무엇을 할지 파악합니다. 제 일은 루프를 작성하는 것입니다."</blockquote>
+
+<p>그가 말하는 세 단계 사다리에 자신을 대입해 보면 개념이 추상적이지 않게 된다. 1년 전에는 자동 완성 도움을 받으며 코드를 직접 작성했다. 그 다음에는 여러 에이전트 세션을 병렬로 실행하며 각각 프롬프트를 보냈다. 이제는 에이전트에게 프롬프트를 보내는 프로그램을 작성하고, 자리를 비운다. 직업의 고도가 코드 작성에서 코드를 작성하는 것을 작성하는 수준으로 올라갔다. 그는 이것이 엔지니어를 쓸모없게 만들지 않는다고 강조한다. 무엇을 만들지 결정하는 사람은 여전히 필요하며, 오히려 좋은 엔지니어가 더 중요해진다고 주장한다. 키 입력은 사라졌다. 판단력은 남았다. 검증은 언제나 중요하다.</p>
+
+<h2>가장 단순한 루프: bash 한 줄</h2>
+
+<p>개념 전체가 bash 한 줄에 담긴다. 한 번 실행해 보면 그 감각을 느낄 수 있다. Geoffrey Huntley가 2025년에 대중화한 "ralph 루프"라 불리는 것이다.</p>
+
+<pre>while :; do cat PROMPT.md | claude -p --dangerously-skip-permissions; done</pre>
+
+<p>이게 전부다. 같은 프롬프트 파일을 헤드리스 모드의 Claude Code에 계속 파이프로 넣고, 에이전트가 작업을 마치고 종료하면 같은 프롬프트로 다시 시작한다. 매 실행은 새로운 세션이므로 에이전트는 이전 내용을 기억하지 못한다. 파일과 체크리스트, 이전 실행이 남긴 커밋을 읽어서 방향을 다시 잡는다. 오케스트레이션도 없고, 프레임워크도 없고, 상태 머신도 없다. 코딩 에이전트를 감싼 while-true다.</p>
+
+<p>붙여넣기 전에 한 가지 주의사항이 있다. <code>--dangerously-skip-permissions</code>는 이름 그대로다. 에이전트가 확인 없이 명령을 실행한다. 임시 git 워크트리나 컨테이너 안에서, 덮어씌워도 괜찮은 브랜치에서 실행해야 한다. 절대로 메인 브랜치에서 실행하지 마라.</p>
+
+<p>비밀은 코드가 아니라 규율에 있다. 매 반복마다 컨텍스트를 고정된 앵커 파일 집합으로 리셋한다. <code>PROMPT.md</code>는 에이전트를 매번 같은 몇 개의 파일로 안내한다. 보통은 스펙과 에이전트가 진행하며 체크해 커밋하는 체크리스트다. 덕분에 다음 실행은 새로 시작하지만 방향을 알고 있다. 이 리셋과 진행 상황 커밋이 루프가 표류하지 않고 완료된 작업을 다시 하지 않는 이유다.</p>
+
+<p>이 단순한 루프가 실제로 작동하는가? Y Combinator 해커톤에서 한 팀이 ralph 루프로 밤새 여섯 개의 레포지토리를 완성했고, API 비용은 약 297달러였다. 그들이 추산한 외주 비용은 5만 달러였다. Huntley는 이 방식으로 소규모 프로그래밍 언어 하나를 통째로 만들었다. 한 줄짜리 루프는 나중에 벗어날 수 있는 도구이지만, 30초 만에 전체 아이디어의 형태를 가르쳐 준다.</p>
+
+<p>단점도 있다. 이 루프는 터미널이 열려 있다고 가정하고, 실제로 완료됐는지 확인하지 않는다. 그냥 영원히 실행된다. 다음 두 절이 그 문제를 해결한다.</p>
+
+<h2><code>/goal</code>과 <code>/loop</code>: 명령 하나로 실행하기</h2>
+
+<p>bash를 직접 짤 필요가 없다. Claude Code에는 같은 루프의 상품화되고 더 안전한 버전인 두 가지 명령이 있다.</p>
+
+<p><code>/goal</code>은 에이전트를 실행하다가 지정한 조건이 참이 되면 멈춘다. 조건을 작성하는 것이 핵심 기술이다.</p>
+
+<pre>/goal all tests in test/auth pass and the lint step is clean,
+ or stop after 20 turns</pre>
+
+<p>이것이 단순한 while-true 이상인 이유가 있다. 매 차례 이후 Claude Code는 조건과 그때까지의 대화를 별도의 작고 빠른 모델(기본값은 Haiku)에게 보내고, 그 모델이 예 또는 아니오와 이유를 반환한다. "아니오"가 나오면 그 이유가 다음 차례의 안내로 다시 들어간다. 작업을 하는 모델과 완료를 판단하는 모델이 다르다.</p>
+
+<p>가장 중요한 주의사항이 하나 있다. 판단 모델은 테스트를 실행하거나 레포지토리를 읽지 않는다. 오직 대화 기록에 이미 들어온 내용만 읽는다. 따라서 조건은 에이전트 자신의 출력이 증명할 수 있는 것이어야 한다. "test/auth의 모든 테스트가 통과됐다"는 조건이 작동하는 이유는 에이전트가 테스트를 실행하고 그 결과가 대화에 남아 있기 때문이다. "인증이 견고하다"는 조건은 작동하지 않는다. 대화 기록 안에서 그것을 결정할 수 있는 것이 없기 때문이다. 판단 모델에게 코드를 검증해 달라고 요청하는 것이 아니라, 에이전트가 이미 생성한 영수증을 읽어달라고 요청하는 것이다.</p>
+
+<p>좋은 조건은 두 부분으로 이루어진다. 측정 가능한 완료 상태 하나, 그리고 에이전트가 그것을 출력에서 증명하는 방법. 항상 상한선을 추가하고(또는 20 차례 후 중지), <code>--max-turns 20</code>을 하드 백스톱으로 전달해야 한다. 무인 실행이 영원히 계속되지 않도록 하기 위함이다.</p>
+
+<p><code>claude -p --max-turns 20 "/goal ..."</code>로 한 번에 무인 실행할 수 있다. 작업하는 동안 프로세스가 살아 있어야 하므로, 열어 두는 터미널이나 서버에서 실행해야 한다. 뚜껑을 닫고 싶다면 클라우드용 Claude Code가 그를 위한 것이다. Ctrl+C로 로컬 실행을 조기에 중단할 수 있다.</p>
+
+<p>실제 짧은 실행은 이렇게 생겼다. 두 차례에 약 40센트다.</p>
+
+<pre>&gt; /goal all tests in test/auth pass, npm test exits 0, or stop after 15 turns
+◎ /goal active · turn 1
+  ran: npm test
+  ✗ 2 failing in test/auth/login.test.ts
+  judge: not done, expired-token case still throws
+◎ /goal active · turn 2
+  edited src/auth/token.ts
+  ran: npm test
+  ✓ 41 passing, exit 0
+  judge: done, npm test exits 0 and only auth files changed
+✓ goal achieved · 2 turns · ~$0.40</pre>
+
+<p>이것이 화면에서 전체 메커니즘이다. 에이전트가 검증을 실행하고, 결과가 대화에 남고, 판단 모델이 그것을 읽어 계속할지 멈출지 결정한다.</p>
+
+<p><code>/loop</code>는 주기적으로 실행되는 "보모" 역할이다. Boris 자신의 시작 예시를 복사해 명사만 바꿔 쓰면 된다.</p>
+
+<pre>/loop babysit all my PRs. Auto-fix build issues, and when
+ comments come in, use a worktree agent to fix them.</pre>
+
+<p>시간 간격으로 재실행되며, 마지막 실행 이후 새로운 것을 처리하고, 중단하거나 작업이 완료됐다고 판단할 때까지 계속된다. 마법 같은 이벤트 처리가 아니라 폴링이지만, "내 PR을 지켜보며 깨진 것을 고쳐라"는 용도에는 폴링으로 충분하다. 단계가 아니라 의도와 정지 조건을 작성했다. 그리고 며칠 후 Boris가 에이전트를 몇 시간 또는 며칠 동안 자율적으로 실행하는 방법에 대한 레시피를 올렸는데, 마지막 팁이 가장 중요하다.</p>
+
+<h2>신뢰할 수 있게 만드는 것: 자기 검증</h2>
+
+<p>작업을 작성하기만 하고 검증하지 않는 열린 루프는 자신감 넘치는 실수를 점점 빠르게 생성하는 기계다. 그러니 루프는 외부의 객관적인 기준에 비춰 자신의 작업물을 검증해야 한다. 자신의 의견이 아니라 외부 기준으로.</p>
+
+<p>실무자들이 수렴하는 규칙은 이것이다. 작업 완료를 결정하는 것은 외부 검증이지, 모델의 자체 평가가 아니다. 에이전트가 "이거 괜찮아 보여"라고 했을 때가 아니라, <code>docker build</code>가 성공하고, 컨테이너가 시작되고, 헬스 체크가 통과됐을 때 루프가 계속된다. 실제로 작동하는 루프 본문의 의사 코드는 이렇다.</p>
+
+<pre>loop:
+  agent: make progress on the task
+  run: npm test (or the build, or the linter)
+  if check passes: done, exit
+  if check fails: feed the failure back, try again
+  if no progress in N tries, or budget hit: stop and ping me</pre>
+
+<p>프로덕션에서 이것을 실행하는 사람들이 맹세하는 두 가지 개선 사항이 있다. 첫째, 코드를 작성한 모델과 다른 모델로 리뷰하라. 같은 모델은 같은 맹점을 갖고 있어서 작성자가 발견하지 못한 것을 신선한 검토자가 잡아낸다. Dan Kornas가 만든 roborev라는 도구는 모든 커밋을 백그라운드에서 리뷰하고 컨텍스트가 아직 신선할 때 발견 사항을 에이전트에게 돌려준다. 이 패턴을 제품화한 것이다. 둘째, 첫 번째 리뷰에서 아무것도 발견되지 않았더라도 최소 두 번의 리뷰 과정을 거쳐라. 그리고 5~6 라운드에서 하드 캡을 걸어 영원히 진동하지 못하게 하라.</p>
+
+<p>루프 자체가 마법이 아니다. 그 안의 피드백이 마법이다. 실제 검증이 있는 루프는 엔진이고, 없는 루프는 그냥 청구 이벤트다.</p>
+
+<h2>재정을 지키는 것: 가드레일</h2>
+
+<p>모델이 코드 작성 비용을 거의 0에 가깝게 만들어 놓으면, 비용은 루프를 실행하는 데로 이동한다. 그리고 무한정 실행되는 루프는 진짜 재정적 위험이다. Uber는 Claude Code와 Cursor에 대해 사람당 도구당 월 1,500달러로 상한선을 정했다. 연간 AI 예산을 4개월 만에 소진한 뒤였다. 프로덕션에서 모두가 두려워하는 실패는 멈추지 않는 루프, 방치된 터미널이 밤새 네 자리 청구서를 만드는 루프다.</p>
+
+<p>모든 진지한 루프에는 동일한 세 가지 강제 정지 장치가 있고, 무인으로 실행하기 전에 세 가지 모두를 추가해야 한다.</p>
+
+<pre>max_iterations: stop after N turns (the runaway cap)
+no_progress: stop if M turns change nothing (the stuck cap)
+budget_ceiling: stop at $X or T tokens (the wallet cap)
+on_stop: ping me with the state and the reason</pre>
+
+<p><code>/goal</code>은 폭주 방지 상한선을 거의 무료로 제공한다. 조건에 "또는 20 차례 후 중지"를 넣고 <code>--max-turns 20</code>을 전달하면 된다. 나머지 두 가지는 직접 추가해야 한다. 진행 없음 감지기는 자동이 아니다. 가장 단순한 버전은 차례 사이에 <code>git diff --stat</code>를 비교하고 몇 라운드 동안 아무것도 바뀌지 않으면 중단하는 Stop 훅이나 작은 래퍼다. 예산 상한선은 공급자의 지출 설정에서 관리된다. 루프를 무인으로 실행하기 전에 Console에서 워크스페이스에 하드 달러 한도를 한 번 설정하면 된다. 루프에 대한 낭만적인 선전 문구는 루프를 작성하면 천 명의 에이전트가 밤새 회사를 만들어준다는 것이다. 프로덕션의 현실은 루프를 작성하고, 엔지니어링 대부분이 루프가 확실히 멈추게 만드는 일이라는 것이다.</p>
+
+<h2>루프 안의 자산은 스킬이다, 프롬프트가 아니라</h2>
+
+<p>이것들을 구축하고 나서 내가 도달한 결론이 있다. 루프는 배관이다. 가치 있는 것은 루프가 호출하는 것이다.</p>
+
+<p>Steinberger가 반복해서 강조하는 또 다른 핵심이 있다. 뭔가를 한 번 이상 한다면 재사용 가능한 스킬로 만들어라. 어렵게 뭔가를 했다면, 다음 번에는 공짜가 되도록 나중에 스킬로 만들어라. 매 반복마다 테스트를 어떻게 실행하는지, 설정을 어디서 찾는지, 출력 형식을 어떻게 맞추는지를 다시 파악하는 루프는 모델에게 프로젝트를 영원히 재학습시키는 비용을 치르는 것이다. 테스트 실행, PR 열기, 스테이징 배포처럼 이름 붙이고 테스트된 작은 스킬 라이브러리를 호출하는 루프는 복리로 작동한다. 각 반복이 처음부터 다시 도출하는 대신 역량에서 시작하기 때문이다. 비용도 적고 표류하지도 않는다. 스킬이 자산이다. 루프는 그것을 순서대로 호출하는 것에 불과하다.</p>
+
+<h2>다음 단계: 루프가 루프를 감독하다</h2>
+
+<p>최전선, 그리고 Steinberger와 Boris가 실제로 말하는 새로운 것은 루프가 다른 루프를 감독하는 것이다. 하나의 루프가 여러 에이전트에게 작업을 분배하고, 지켜보고, 다음에 무엇을 실행할지 결정한다. 크래시가 나도 살아남는 durable git 기반 상태와 함께. Steve Yegge의 오픈소스 Gas Town이 생생한 예시다. 20~30개의 Claude Code 인스턴스를 "시장(Mayor)" 에이전트가 조율하고, 순찰 에이전트들이 지속적인 루프를 실행한다. Claude Code의 동적 워크플로우가 상품화된 버전으로, 에이전트가 오케스트레이션 스크립트를 작성하고 하위 에이전트 집단을 실행한다.</p>
+
+<p>여기서 시작하지 마라. <code>/goal</code> 하나로 시작하고, 자기 검증을 추가하고, 세 가지 상한선을 추가하고, 단일 루프가 정말 작업을 감당하지 못할 때만 오케스트레이션에 손을 뻗어라. 대부분의 사람들에게 그 시점은 선전 문구가 시사하는 것보다 훨씬 늦게 온다.</p>
+
+<h2>이번 주에 첫 번째 루프를 만들어라</h2>
+
+<p>이국적인 것은 없는 구체적인 계획이다.</p>
+
+<ul>
+  <li><strong>임시 브랜치에서 시작해 검증을 직접 증명하라.</strong> <code>git checkout -b loop-test</code>를 실행하고, 테스트 명령을 한 번 직접 실행해 뭔가 깨졌을 때 0이 아닌 값으로 종료되는지 확인하라. 에이전트가 통과와 실패를 구분하지 못하면 판단 모델도 구분하지 못한다.</li>
+  <li><strong>객관적인 완료 기준이 있는 하나의 제한된 작업을 선택하라.</strong> 불안정한 테스트, 소규모 마이그레이션, lint 정리 같은 것. "완료"가 취향의 문제인 것은 피하라.</li>
+  <li><strong><code>/goal</code>과 상한선으로 작성하라.</strong> 형태가 아니라 실제 명령으로: <code>claude --max-turns 15 "/goal all tests in test/auth pass, npm test exits 0, or stop after 15 turns"</code></li>
+  <li><strong>에이전트가 검증을 처음부터 끝까지 실행할 수 있는지 확인하라.</strong> 의존성 설치됨, 키 입력을 기다리는 대화형 프롬프트 없음, 실패 시 0이 아닌 값으로 종료. 첫 번째 실행이 조용히 멈추는 곳이 바로 이 지점이다.</li>
+  <li><strong>첫 번째는 지켜보며 실행하라.</strong> 자리를 비우지 마라. 판단 모델이 "아직 안 됨"을 말하는 곳과 검증이 실패했을 때 에이전트가 하는 행동을 지켜봐라. Ctrl+C로 중단할 수 있다.</li>
+  <li><strong>무인 실행 전에 지출 한도를 설정하라.</strong> Console에서 워크스페이스에 하드 달러 한도를 설정하고, 모든 실행에 <code>--max-turns</code>를 유지하라. 차례 상한선은 폭주를 막고, 달러 상한선은 느린 소모를 막는다.</li>
+  <li><strong>반복되는 부분을 스킬로 저장하라.</strong> 테스트 명령, PR 단계, 자신을 반복해서 설명하게 되는 것. <code>SKILL.md</code>에 넣어두면 다음 루프가 처음부터 다시 도출하는 대신 역량에서 시작한다.</li>
+</ul>
+
+<p>이번 주가 끝나면 직접 타이핑하지 않은 실제 작업을 완성했을 것이다. 스스로 검증하고 수정하는 것을 지켜봤을 것이다. 절벽에서 뛰어내리지 않도록 상한선을 설정했을 것이다. 미니어처 안에서의 전체 실습이다.</p>
+
+<p>"루프가 무엇인가"에 대한 답은 프롬프트 엔지니어링이 죽었는가에 대한 생각거리가 아니다. 이것이 그 답이다. 루프 안에 있는 존재가 되기를 멈춰라. 루프를 한 번 작성하고, 실제 검증과 재사용 가능한 스킬을 부여하고, 멈추도록 상한선을 설정하고, 다음에 무엇을 만들지 결정하러 가는 동안 실행되게 하라. Steinberger와 Boris는 두 방향에서 같은 동물을 묘사하고 있다. 좋은 소식은 이번 달 기준으로 정문이 슬래시 명령 하나라는 것이다.</p>
+
+<hr>
+<p><em>Marco Kotrotsos는 AI 구현 실무 전문가로, IT 분야에서 30년의 경험을 바탕으로 AI 하이프와 AI 가치 사이의 간극을 좁히는 데 집중한다. 이 글은 실무자와 의사결정자를 위한 실세계 AI 미디엄 퍼블리케이션 Autocomplete에 게재됐다.</em></p>
+
+</body>
+</html>

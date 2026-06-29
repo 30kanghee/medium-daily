@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Step-by-Step Guide for Developing Your Personal Agentic System</title>
+<style>
+body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+h3{font-size:1.15em;margin:1.4em 0 .4em;}
+.meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+.summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+.summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>A Step-by-Step Guide for Developing Your Personal Agentic System</h1>
+<div class="meta">Erdogan T · Data Science Collective · 36분 읽기 · <a href="https://medium.com/data-science-collective/a-step-by-step-guide-for-developing-your-personal-agentic-system-24c6cd6fa849" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/data-science-collective/a-step-by-step-guide-for-developing-your-personal-agentic-system-24c6cd6fa849" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">LLM을 CPU로, 컨텍스트 윈도를 RAM으로 이해하는 LLMos 패러다임 위에서, Python LLMlight 라이브러리로 나만의 다중 에이전트 시스템을 단계별로 구축한다.</p>
+  <p>이 글은 에이전틱 AI 시스템의 기초 개념(LLMos, RAG, 전역 추론, 다중 에이전트 아키텍처)을 명확히 설명하고, Python 라이브러리 LLMlight를 사용해 로컬에서 실행되는 다중 에이전트 시스템을 실습 중심으로 구축하는 과정을 담고 있다. 단일 프롬프트의 한계를 넘어 청킹 전략, 임베딩, 채점, 사회자 에이전트, 채점 에이전트까지 실제 코드와 함께 단계적으로 안내한다.</p>
+</div>
+
+<p>에이전틱 시스템의 활용은 복잡한 업무 자동화의 표준이 되어가고 있다. 데이터 과학자라면 이 새로운 패러다임을 익혀야 한다. 자연어가 컴퓨팅의 기본 인터페이스가 되는 세상 말이다. 이 개념을 한 번 이해하고 나면, 코드를 직접 짜지 않아도 많은 것들을 자동화할 수 있다는 사실을 깨닫게 된다.</p>
+
+<p>이 글에서는 LLM 운영 체제(LLMos)라는 새로운 개념을 살펴볼 것이다. 언어 모델이 중앙 추론 엔진 역할을 하며 도구, 메모리, 검색, 그리고 여러 전문 에이전트를 조율하는 구조다. 이후에는 Python 라이브러리 LLMlight를 사용해 로컬에서 실행되는 경량 다중 에이전트 시스템을 직접 구축하는 실습으로 이어진다.</p>
+
+<h2>에이전틱 시스템 입문</h2>
+
+<p>에이전틱 시스템에 관한 짧은 소개를 쓰려 했지만, 설명해야 할 개념이 너무 많아 결국 긴 입문서가 되었다. 이 도입부를 건너뛰지 말 것을 강력히 권한다. 에이전틱 시스템을 설계하는 데 있어 핵심 개념들이기 때문이다.</p>
+
+<blockquote>직접 에이전틱 시스템을 구축해보는 학습 과정을 통해, 이러한 시스템이 근본적으로 어떻게 동작하는지 더 깊이 이해하게 된다. 덕분에 가능성과 한계를 더 명확하게 볼 수 있다.</blockquote>
+
+<p>ChatGPT나 Gemini의 채팅 인터페이스를 넘어 언어 모델을 중심으로 시스템을 구축하기 시작하면 곧 깨닫게 된다. 진짜 도전은 텍스트를 생성하는 것이 아니라, 복잡한 문제를 구조적이고 재현 가능한 방식으로 해결하는 워크플로를 설계하는 것임을.</p>
+
+<blockquote>규칙 기반으로 정교하게 설계된 시스템에서 처리하던 작업들을 이제는 자연어 지시로 처리할 수 있다. 하지만 현실은 더 복잡하다. 핵심 과제는 여전히 같다: 신뢰할 수 있고, 구조적이며, 재현 가능한 결과를 만드는 에이전틱 워크플로를 설계하는 것이다.</blockquote>
+
+<h3>핵심 인식 1: LLM은 글쓰기 도구가 아니라 CPU다</h3>
+
+<p>우리는 지금 새로운 컴퓨팅 패러다임에 진입하고 있다. 대형 언어 모델 자체가 시스템의 연산 핵심이 되는 시대다. 이를 LLM 운영 체제(LLMos)라고 부를 수 있다.</p>
+
+<p>전통적 컴퓨팅과의 대응 관계는 직관적이다.</p>
+
+<ul>
+  <li>CPU → 대형 언어 모델(LLM)</li>
+  <li>바이트(Byte) → 토큰(Token)</li>
+  <li>RAM → 컨텍스트 윈도(Context Window)</li>
+</ul>
+
+<p>결정론적 바이트 연산 대신, 이 시스템들은 토큰 위에서 확률론적으로 동작한다. 컨텍스트 윈도는 임시 작업 메모리가 되고, 검색 시스템은 외부 저장소가 되며, 프롬프트는 점점 소프트웨어 인터페이스처럼 기능한다.</p>
+
+<blockquote>우리는 대형 언어 모델 자체가 시스템의 연산 핵심이 되는 새로운 컴퓨팅 패러다임에 진입하고 있다.</blockquote>
+
+<p>복잡한 작업을 단일 프롬프트 하나에 모두 밀어넣으면 혼란스럽고 신뢰할 수 없는 결과가 나온다. 이것이 바로 AI 에이전트가 필요한 이유다. 거대한 문제를 한 번에 해결하도록 강요하는 대신, 에이전틱 시스템은 작업을 더 작고 전문화된 하위 작업으로 분해한다.</p>
+
+<h3>핵심 인식 2: 파라미터가 더 많은 모델 하나가 아니라 전문화된 '에이전트 팀'이 필요하다</h3>
+
+<p>에이전틱 시스템을 구축하는 아이디어는 간단해 보이지만, 완전히 새로운 엔지니어링 과제들을 만들어낸다.</p>
+
+<ul>
+  <li>에이전트들은 어떻게 통신하는가?</li>
+  <li>어떤 작업은 결정론적으로, 어떤 작업은 확률론적으로 처리해야 하는가?</li>
+  <li>제한된 컨텍스트 윈도를 어떻게 관리하는가?</li>
+  <li>관련 정보를 어떻게 검색하고 통계적으로 검증하는가?</li>
+  <li>환각(hallucination)을 어떻게 방지하는가?</li>
+  <li>일관된 채점과 평가를 어떻게 유지하는가?</li>
+</ul>
+
+<p>에이전틱 시스템 구축에서 성공은 영리한 프롬프트 하나에서 오는 경우가 드물다. 실제로는 신중하게 설계된 파이프라인의 결과다. 청킹(chunking) 전략, 검색 시스템, 임베딩 선택, 채점 메커니즘, 그리고 반복적인 검증 루프가 모두 합쳐진 결과물이다.</p>
+
+<h2>현실의 문제: 인간 vs 기계</h2>
+
+<p>대형 언어 모델로 자동화를 시도해보면, 처음에는 간단해 보이는 문제들이 얼마나 복잡한지 금세 깨닫게 된다. 가장 흔하게 자동화 대상이 되는 작업은 문서 평가다. 처음 보면 워크플로가 단순해 보인다: 1. 문서 업로드, 2. 평가, 3. 보고서 생성. 하지만 단일 프롬프트로 이것을 구현하면 순식간에 복잡해진다.</p>
+
+<blockquote>단일 거대 프롬프트는 함정이다.</blockquote>
+
+<p>인간은 도메인 지식과 전문성을 활용해 문서를 탐색한다. 회사 규칙을 알고, 세부 사항을 파고들 때와 전체 맥락을 유지할 때를 자연스럽게 전환한다.</p>
+
+<h2>단일 프롬프트가 실패하고 에이전틱 시스템이 성공하는 이유</h2>
+
+<p>큰 문서를 통째로 LLM에 넣고 한 번에 평가하라고 하는 단일 프롬프트 방식에는 두 가지 근본적인 한계가 있다.</p>
+
+<ul>
+  <li><strong>컨텍스트 윈도 포화:</strong> 200K 토큰을 지원하는 모델이라도, 방대한 문서에 조밀한 시스템 지시와 엄격한 출력 형식 스키마가 더해지면 모델이 실질적인 한계에 부딪힌다. 결과적으로 문서의 중요한 부분이 무시될 수 있다.</li>
+  <li><strong>작업 혼합(Task Entanglement):</strong> 단일 프롬프트는 모델에게 근본적으로 다른 인지 작업들을 동시에 수행하도록 강요한다 — 관련 데이터 추출, 맥락 해석, 미묘한 규칙 적용, 일관성 유지, 구조화된 피드백 생성. 이것들을 명시적으로 분리하는 메커니즘 없이 한 번에 하면 결과가 불안정해진다.</li>
+</ul>
+
+<blockquote>복잡한 작업에는 반복과 검증이 필요하다. 단일 프롬프트(one-shot prompting)는 신뢰할 수 있는 판단을 위한 구조를 제거해버리고, LLM 출력을 취약하고 일관성 없게 만든다.</blockquote>
+
+<h2>에이전트 아키텍처란 무엇인가</h2>
+
+<p>실제로 대부분의 에이전틱 시스템은 구조화된 파이프라인으로 구성된다. 여러 전문화된 LLM 모델이 각자 특정 작업을 맡아 공동 목표를 향해 협력한다. 에이전틱 시스템의 핵심 아이디어는, 단일 프롬프트로 모든 것을 해결하는 대신 문제를 더 작은 하위 작업으로 나누고, 각 에이전트에게 사전 정의된 책임을 부여하는 것이다.</p>
+
+<p>예를 들어 이런 식으로 역할을 나눌 수 있다.</p>
+
+<ul>
+  <li>A1: 검색 에이전트 — 문서의 관련 섹션 식별</li>
+  <li>A2: 추론 에이전트 — 검색된 컨텍스트 분석</li>
+  <li>A3: 요약 에이전트 — 검색된 컨텍스트 요약</li>
+  <li>A4: 평가 에이전트 — 완전성이나 품질 검증</li>
+  <li>A5: 채점 에이전트 — 신뢰도나 순위 부여</li>
+  <li>A6: 오케스트라 에이전트 — 전체 파이프라인 조율</li>
+</ul>
+
+<blockquote>여러 면에서 에이전틱 아키텍처는 고전적인 분산 시스템과 닮아 있다. 단일 모놀리식 프로세스가 모든 작업을 수행하는 대신, 전문화된 구성 요소들이 구조화된 인터페이스를 통해 통신하고 조율한다. 차이점은 연산 핵심이 더 이상 결정론적 CPU 파이프라인이 아니라 확률론적 언어 모델이라는 것이다.</blockquote>
+
+<h2>검색 증강 생성(RAG) 파이프라인</h2>
+
+<p>검색 증강 생성(RAG)은 생성 전에 외부 검색 레이어를 추가하여 대형 언어 모델의 핵심 한계를 해결한다. 전체 문서를 보내는 대신, 시스템은 먼저 가장 관련성 높은 텍스트 조각을 검색하고, 그 조각들만을 컨텍스트로 LLM에 전달한다.</p>
+
+<p>RAG를 인간의 기억에 비유하면 직관적이다. 뇌가 수천 개의 검색 가능한 기억 조각으로 나뉘어 있다고 상상해보자. "열쇠가 어디 있지?"라고 스스로 물을 때, 당신은 삶의 전체 이야기를 재생하지 않는다. 관련 기억 조각만 무의식적으로 검색한다.</p>
+
+<h3>RAG 파이프라인의 핵심 단계</h3>
+
+<ul>
+  <li><strong>청킹 전략(Chunking Strategy):</strong> 소스 문서를 더 작고 일관성 있는 세그먼트로 분할하는 방법을 정의한다. 좋은 청킹은 각 조각이 의미 있는 컨텍스트를 충분히 담으면서 중복이나 단절을 피한다.</li>
+  <li><strong>검색(Search):</strong> 쿼리에 가장 관련성 높은 청크를 벡터 데이터베이스에서 찾는 과정이다.</li>
+  <li><strong>임베딩(Embedding):</strong> 청크와 쿼리를 벡터 공간에 표현하는 방법을 결정한다.</li>
+  <li><strong>채점(Scoring):</strong> 검색된 청크에 관련성 점수를 부여하여 상위 청크를 선택한다.</li>
+</ul>
+
+<p>RAG의 주요 한계는 지역적 관련성을 최적화하지만 전역적 관련성은 최적화하지 않는다는 점이다. "조언이 잘 구성되어 있는가?"처럼 문서 전체를 이해해야 하는 질문에는 전역 추론 워크플로가 필요하다.</p>
+
+<h2>전역 추론 워크플로</h2>
+
+<p>전역 추론 워크플로는 검색된 청크에서 직접 답변하는 대신, 문서의 중간 전역 표현을 먼저 생성한다.</p>
+
+<ol>
+  <li>문서를 청크로 분할한다.</li>
+  <li>각 청크를 독립적으로 분석한다.</li>
+  <li>지역 요약 또는 관찰 내용을 생성한다.</li>
+  <li>중간 요약을 집계한다.</li>
+  <li>문서의 전역 표현을 구성한다.</li>
+  <li>집계된 컨텍스트를 사용하여 원래 질문에 답한다.</li>
+</ol>
+
+<p>이렇게 하면 워크플로가 바뀐다. 검색 → 생성에서, 분석 → 요약 → 집계 → 추론 → 생성으로. 실제로는 지역 전략과 전역 전략을 결합하는 것이 가장 좋다. 결정론적 질문에는 지역 검색 파이프라인을, 추상적이거나 전체론적 평가에는 전역 추론 워크플로를 적용한다.</p>
+
+<h2>소형 언어 모델이 경쟁에서 이기고 있다</h2>
+
+<p>올해 LLM 분야에서 가장 중요한 변화 중 하나는 단일 대형 밀집 언어 모델에서 여러 전문화된 에이전트로 구성된 에이전틱 AI 시스템으로의 전환이다. NVIDIA Research는 "소형 언어 모델이 에이전틱 AI의 미래"라고 주장했으며, Microsoft는 메모리 요구사항을 대폭 줄이는 고효율 1-bit LLM을 도입했다.</p>
+
+<h2>LM Studio로 나만의 로컬 모델 설정하기</h2>
+
+<p>LLM과 에이전틱 시스템을 실험하기 전에, 먼저 로컬 모델을 설정해야 한다. 현재 가장 널리 쓰이는 소프트웨어 중 하나는 LM Studio다. 무료이고, 사용자 인터페이스가 있으며, 기기 하드웨어와 잘 연동된다. 소프트웨어를 다운로드하여 설치한 뒤, 개발자 창에서 "start running"을 활성화하면 모델들이 로컬호스트(<code>http://localhost:1234</code>)를 통해 접근 가능해진다.</p>
+
+<h2>LLMlight 라이브러리</h2>
+
+<p>LLMlight는 최소한의 의존성으로 언어 모델을 로컬에서 실행하기 위한 사용하기 쉬운 경량 Python 패키지다. 입력 프롬프트 처리부터 모델 출력까지 다양한 단계를 갖춘 에이전틱 파이프라인이다.</p>
+
+<h3>임베딩 방법</h3>
+<ul>
+  <li><strong>TF-IDF:</strong> 일치하는 쿼리 용어가 있는 구조화된 문서에 최적</li>
+  <li><strong>Bag of Words:</strong> 단순 단어 빈도 방식</li>
+  <li><strong>BERT:</strong> 자유형 텍스트를 위한 고급 맥락 임베딩</li>
+  <li><strong>BGE-small:</strong> 일반적 사용을 위한 효율적인 임베딩 모델</li>
+</ul>
+
+<h3>컨텍스트 전략 세 가지</h3>
+<ul>
+  <li><strong>None:</strong> 전처리 없이 원시 컨텍스트 텍스트 전체를 사용</li>
+  <li><strong>chunk-wise:</strong> 컨텍스트를 관리 가능한 청크로 나눔</li>
+  <li><strong>global-reasoning:</strong> 컨텍스트의 전역 요약을 생성</li>
+</ul>
+
+<h2>실습 1: 단일 모델 로드 및 기본 채팅</h2>
+
+<pre># 라이브러리 설치
+pip install llmlight
+from LLMlight import LLMlight
+
+# LLMlight 클라이언트 초기화
+client = LLMlight(model='google/gemma-4-26b-a4b-qat')
+
+# 질문하기
+response = client.prompt('What is the capital of France?')
+print(response)</pre>
+
+<h2>실습 2: 로컬 지식 베이스 생성</h2>
+
+<pre>from LLMlight import LLMlight
+
+client = LLMlight(model='google/gemma-4-26b-a4b-qat')
+# 데이터베이스 생성 (또는 로드)
+client.memory_init(store_path='knowledge_base.db')
+
+# PDF 파일을 데이터베이스에 추가 (텍스트 자동 추출 및 청킹)
+client.memory_add('https://example.com/paper.pdf')</pre>
+
+<h2>실습 3: 컨텍스트 전략별 출력 비교</h2>
+
+<pre>from LLMlight import LLMlight
+
+# 컨텍스트 전략 없이 초기화
+client = LLMlight(model='google/gemma-4-26b-a4b-qat',
+                  retrieval_method='naive_rag',
+                  context_strategy=None,
+                  top_chunks=6)
+client.memory_init(store_path='knowledge_base.db')
+response = client.prompt('질문 내용')</pre>
+
+<p><code>context_strategy='chunk-wise'</code>로 바꾸면 컨텍스트를 청크 단위로 분리해 처리하고, <code>'global-reasoning'</code>으로 바꾸면 전체 문서의 전역 요약을 먼저 생성한 뒤 답변한다. 작업 성격에 따라 적합한 전략을 선택한다.</p>
+
+<h2>실습 4: 두 에이전트 간의 토론 생성</h2>
+
+<pre>from LLMlight import LLMlight
+
+agent_a = LLMlight(
+    model="google/gemma-4-26b-a4b-qat",
+    retrieval_method="naive_rag",
+    context_strategy=None,
+    system="You are a data scientist expert."
+)
+agent_b = LLMlight(
+    model="google/gemma-4-26b-a4b-qat",
+    retrieval_method="naive_rag",
+    context_strategy=None,
+    system="You are a software engineer expert."
+)</pre>
+
+<h3>세 번째 에이전트 도입: 사회자(Moderator)</h3>
+
+<p>두 에이전트가 풍부하고 통찰력 있는 토론을 나눌 수 있지만, 반복적인 논쟁에 빠지거나 원래 목표에서 벗어날 수 있다. 사회자 역할을 하는 세 번째 에이전트를 도입하면 토론의 질을 크게 높일 수 있다. 사회자는 주기적으로 토론을 압축하고, 합의 사항을 추출하며, 목표 지향적인 질문을 던져 대화를 이끈다.</p>
+
+<pre>from LLMlight import LLMlight
+
+agent_a = LLMlight(model="google/gemma-4-26b-a4b-qat",
+                   system="You are a data scientist.")
+agent_b = LLMlight(model="google/gemma-4-26b-a4b-qat",
+                   system="You are a software engineer.")
+moderator = LLMlight(model="google/gemma-4-26b-a4b-qat",
+                     system="You are a neutral moderator.")</pre>
+
+<h3>채점 에이전트로 대화 동적으로 종료하기</h3>
+
+<p>고정된 반복 횟수로 대화를 제한하는 것보다 더 지능적인 방법은 채점 에이전트를 도입하는 것이다. 채점 에이전트는 토론이 충분히 포괄적인 결론에 도달했는지 지속적으로 평가하고, 충분하다고 판단하면 대화를 종료시킨다.</p>
+
+<h2>좋은 지시문(Instructions)이 핵심이다</h2>
+
+<p>지시문의 활용은 신뢰할 수 있는 LLM 애플리케이션을 구축하는 데 중요한 요소다. LLMlight는 프롬프트의 여러 구성 요소를 명시적으로 분리하여 제공한다.</p>
+
+<pre>response = client.prompt(
+    query="Explain attention mechanisms.",
+    instructions=(
+        "Explain the concept for beginners. "
+        "Use exactly three paragraphs. "
+        "Include one real-world example."
+    ),
+    system="You are an experienced AI professor.",
+    context="some context",
+)</pre>
+
+<p>이렇게 분리하면 프롬프트를 읽고 유지하기 쉬워지고, 개별 구성 요소를 여러 쿼리에 걸쳐 재사용할 수 있다.</p>
+
+<h2>언어 모델 도입 전 핵심 조언</h2>
+
+<ol>
+  <li><strong>모든 문제에 언어 모델이 필요한 것은 아니다.</strong> 복잡한 모델은 더 단순한 솔루션으로는 원하는 결과를 얻을 수 없을 때만 고려하라. 조회 목록, 정규 표현식, TF-IDF부터 시작하라. 시간, 복잡성, 유지보수, 비용, 그리고 좌절을 아낄 수 있다.</li>
+  <li>언어 모델은 특정 작업에 맞게 최적화해야 한다. 성능은 모델 크기만큼이나 프롬프트 설계와 작업 적합성에 달려 있다.</li>
+</ol>
+
+<h2>마무리: 빠르게 가지 말고, 구조적으로 가라</h2>
+
+<p>이제는 '컨텍스트 엔지니어링'의 해다. LLM 통합의 성공은 배포 속도가 아니라 기저의 인지 아키텍처에 달려 있다. 결정론적 바이트에서 확률론적 토큰으로 전환하면서, 우리는 전통적인 소프트웨어 시스템에 적용하는 것과 동일한 엄격함으로 이 시스템들을 관리해야 한다.</p>
+
+<p>이 글을 즐겁게 읽었다면, 실습 예제들을 직접 실험해보기를 권한다. 직접 해봐야 더 빨리 배우고, 더 잘 이해하고, 더 오래 기억한다.</p>
+
+</body>
+</html>

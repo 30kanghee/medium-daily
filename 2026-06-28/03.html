@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linus Torvalds Just Picked a Side in the Linux Civil War (And C Developers Are Furious)</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Linus Torvalds Just Picked a Side in the Linux Civil War (And C Developers Are Furious)</h1>
+<div class="meta">Oz · The Tech Notes · 5분 읽기 · <a href="https://medium.com/the-tech-notes/linus-torvalds-just-picked-a-side-in-the-linux-civil-war-and-c-developers-are-furious-b2cc8a3c7ee0" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/the-tech-notes/linus-torvalds-just-picked-a-side-in-the-linux-civil-war-and-c-developers-are-furious-b2cc8a3c7ee0" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">30년간 C로만 쌓아온 리눅스 커널에 Rust가 진입하면서 벌어진 언어 전쟁에서 리누스 토르발스가 마침내 Rust 편을 들었고, 구세대 C 메인테이너들은 격렬하게 반발하고 있다.</p>
+  <p>리눅스 커널 메일링 리스트는 지금 공동 작업의 장이 아니라 공개적인 이혼 소송장처럼 보인다. C 진영의 베테랑 메인테이너들과 Rust 신세대 개발자들 사이의 갈등이 극에 달해 핵심 메인테이너들이 사임하고 미국 정부까지 개입했다. 토르발스는 "문제는 네가 아닌가 생각해봐라"라는 직설적 발언으로 Rust 진영을 사실상 지지했고, NSA·CISA 등 보안 기관들도 메모리 안전 언어로의 전환을 권고하면서 구세대가 이미 패배했음을 데이터가 증명한다고 저자는 주장한다.</p>
+</div>
+
+<p><strong>오픈소스 커뮤니티가 Rust를 두고 갈기갈기 찢어지고 있다. 구세대가 이미 졌다는 것을 데이터가 증명한다.</strong></p>
+
+<h2>지금 리눅스 커널 메일링 리스트의 모습</h2>
+
+<p>지금 리눅스 커널 메일링 리스트(LKML)를 열어보면 협업 엔지니어링 포럼보다는 지저분한 공개 이혼 소송장에 가깝다.</p>
+
+<p>리눅스는 세상을 돌린다. 당신의 안드로이드 스마트폰도, 이 글이 올라온 서버도, 주식 시장도, 국제 우주 정거장도 리눅스 위에서 돌아간다. 30년 넘는 세월 동안 리눅스는 거의 온전히 한 언어로 쌓였다. 바로 C다.</p>
+
+<p>그런데 지금, 그 기반에 균열이 생기고 있다.</p>
+
+<p>구세대 C 메인테이너들과 신세대 Rust 개발자들 사이에 내전이 벌어졌다. 분위기가 얼마나 독해졌냐면, 핵심 메인테이너들이 사임하고, 미국 정부가 경고를 발령하고, 리누스 토르발스 본인이 직접 나서야 했다.</p>
+
+<p>내가 오늘 관리하는 네트워킹 아키텍처를 보면 C에서 Rust로의 전환은 단순한 트렌드가 아니다. 구조적 필연이다. 성능 지표와 메모리 안전성 이점은 부정할 수 없다. Rust에 대한 반발이 이제 엔지니어링의 문제가 아니라는 것을 나는 점점 더 확신하게 된다.</p>
+
+<h2>30년의 독점, 그리고 균열</h2>
+
+<p>1991년 리누스 토르발스가 리눅스를 처음 공개했을 때 C는 시스템 프로그래밍의 유일한 선택지에 가까웠다. 빠르고, 이식성이 높으며, 당시 개발자들이 알고 있는 언어였다.</p>
+
+<p>그 이후 35년 동안 커널 코드는 거의 전부 C로 쌓였다. 현재 약 3,400만 줄이다. 이 코드베이스에 기여한 개발자 수십만 명이 C를 체계로, 문화로, 정체성으로 내면화했다.</p>
+
+<p>2022년 리눅스 커널 6.1 버전에 Rust 코드가 처음으로 병합되었다. 역사적 순간이었다. 새 언어에 늘 회의적이었던 토르발스가 직접 승인한 것이다. 그러나 그 결정이 커뮤니티의 단층선을 드러냈다.</p>
+
+<h2>불씨가 된 사건들</h2>
+
+<p>갈등이 가장 극적으로 표면화된 것은 2025년 초다. Asahi Linux의 핵심 개발자 Hector Martin이 Rust로 작성된 장치 드라이버가 커널의 C 기반 DMA API를 호출할 수 있게 하는 패치를 둘러싼 논쟁 끝에 결국 사임했다.</p>
+
+<p>토르발스는 이 논란에서 단호했다. "어쩌면 문제는 네가 아닌가 생각해봐라(Maybe the problem is you)." 직설적인 한 마디였다. Martin은 결국 애플 실리콘 담당 업스트림 메인테이너 자리를 내려놓겠다고 선언했다.</p>
+
+<p>또 다른 메인테이너는 C와 Rust 코드를 함께 유지하는 부담을 두고 이것이 "암(cancer)"과 같다는 표현까지 썼다. LKML에 그 표현이 올라오자 논쟁은 기술적 토론을 넘어섰다.</p>
+
+<blockquote>이것은 더 이상 순수하게 엔지니어링의 문제가 아니다. 정체성의 문제, 세대의 문제, 그리고 누가 리눅스의 미래를 설계할 것인가의 문제다.</blockquote>
+
+<h2>정부도 말했다: C는 메모리 안전하지 않다</h2>
+
+<p>이 논쟁에 기술 커뮤니티 외부의 목소리도 가세했다. NSA와 CISA가 공동으로 발표한 지침은 새 개발에서 메모리 안전 언어를 우선 사용할 것을 권고했다. 2021년 기준 제로데이 취약점의 67%가 메모리 안전 문제에서 비롯된다는 것이 근거였다.</p>
+
+<p>C와 C++는 전형적인 비메모리안전 언어(Non-Memory-Safe Language)로 분류되었다. Rust는 반대편에 놓였다.</p>
+
+<p>정부 기관의 권고가 오픈소스 커뮤니티의 내부 결정을 바꾸지는 않는다. 그러나 신호는 분명하다. C를 고집하는 것이 기술적 선택이 아니라 정치적 선택으로 읽히기 시작했다.</p>
+
+<h2>Rust가 실제로 해결하는 것</h2>
+
+<p>C의 힘은 하드웨어를 직접 제어하는 데 있다. 그 힘의 이면은 개발자가 메모리 관리를 직접 책임져야 한다는 것이다. 버퍼 오버플로, 해제 후 사용(use-after-free), 이중 해제(double-free) 같은 버그 유형이 수십 년째 커널 취약점의 주된 원인이다.</p>
+
+<p>Rust는 소유권(ownership) 시스템을 통해 이 문제를 컴파일 타임에 잡는다. 런타임 오버헤드 없이 메모리 안전성을 보장한다는 것이 핵심 주장이다. C만큼 빠르고, C보다 안전하다는 것이다.</p>
+
+<p>Linux Kernel Maintainers Summit에서 Rust는 "더 이상 실험적이지 않다"고 선언되었다. C와 함께 커널에 남을 언어로 공식 인정된 것이다.</p>
+
+<h2>구세대가 이미 진 이유</h2>
+
+<p>감정이 아니라 데이터를 보자.</p>
+
+<ul>
+  <li>Stack Overflow 개발자 설문에서 Rust는 수년 연속 "가장 사랑받는 언어" 1위를 지켰다. 신규 시스템 프로그래머들이 어떤 언어를 선택하는지를 보여주는 지표다.</li>
+  <li>Linux 재단 자체가 Rust for Linux 프로젝트를 공식 지원하고 있다.</li>
+  <li>구글, 마이크로소프트, 아마존이 각자의 커널 및 시스템 소프트웨어에 Rust를 도입하거나 도입을 발표했다.</li>
+  <li>안드로이드 커널의 신규 드라이버 코드에 Rust가 표준으로 자리잡았다.</li>
+</ul>
+
+<p>Rust에 반발하는 메인테이너들이 기술적으로 틀렸다는 말이 아니다. 그들의 C 전문성은 진짜이고 그 가치는 여전하다. 그러나 신규 기여자들의 흐름, 정부 기관의 방향, 주요 기술 기업들의 투자가 모두 같은 쪽을 가리키고 있을 때 그 흐름을 되돌리기는 어렵다.</p>
+
+<h2>토르발스의 입장, 그 의미</h2>
+
+<p>토르발스는 Rust의 열성 지지자가 아니다. 그는 언제나 실용주의자였다. 그가 Rust 코드의 병합을 승인하고, Rust를 거부하는 메인테이너보다 Rust 드라이버를 작성한 개발자의 손을 들어준 것은 그 자체로 명확한 신호다.</p>
+
+<p>토르발스가 기술적 논쟁에서 어느 쪽이 옳다고 판단했다기보다, 리눅스의 미래를 위해 어느 방향이 필요한지를 결정했다고 읽는 것이 정확하다.</p>
+
+<p>C 개발자들이 격분하는 것은 이해할 수 있다. 수십 년간 쌓아온 전문성이 한순간에 '낡은 것'으로 취급받는 느낌은 달갑지 않다. 그러나 역사는 반복된다. UNIX 전쟁, C++ 도입 논란, 가비지 컬렉션 언어에 대한 초기 거부감. 기술은 언제나 저항을 뚫고 앞으로 나아갔다.</p>
+
+<h2>결론: 내전의 끝이 보인다</h2>
+
+<p>리눅스 커널의 미래는 C 대 Rust의 승자 독식 구조가 아닐 것이다. 당분간 두 언어는 공존한다. C로 쌓인 3,400만 줄의 코드는 하룻밤 사이에 사라지지 않는다.</p>
+
+<p>그러나 방향은 정해졌다. 새로운 드라이버, 새로운 서브시스템, 새로운 보안 관련 코드에서 Rust의 비중은 점점 커질 것이다. 메인테이너들의 감정이 어떻든, 메모리 안전이라는 구조적 필요가 그것을 요구하기 때문이다.</p>
+
+<p>토르발스가 편을 골랐다. 데이터도 같은 편이다. 내전은 아직 끝나지 않았지만, 어느 쪽이 이길지는 이미 알 수 있다.</p>
+
+</body>
+</html>

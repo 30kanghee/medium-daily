@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microsoft vs Palantir: Two Paths to Enterprise Ontology (And Why Microsoft's Bet on Semantic Contracts Changes the Game)</title>
+<style>
+body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+h3{font-size:1.15em;margin:1.4em 0 .4em;}
+.meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+.summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+.summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+table{width:100%;border-collapse:collapse;font-size:.9em;margin:1em 0;}
+th{background:#f0f0f0;padding:8px;border:1px solid #ddd;text-align:left;}
+td{padding:8px;border:1px solid #ddd;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Microsoft vs Palantir: Two Paths to Enterprise Ontology (And Why Microsoft's Bet on Semantic Contracts Changes the Game)</h1>
+<div class="meta">Pankaj Kumar · Microsoft Fabric IQ 토픽 · 8분 읽기 · <a href="https://medium.com/@cloudpankaj/microsoft-vs-palantir-two-paths-to-enterprise-ontology-and-why-microsofts-bet-on-semantic-6e72265dce21" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@cloudpankaj/microsoft-vs-palantir-two-paths-to-enterprise-ontology-and-why-microsofts-bet-on-semantic-6e72265dce21" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">Palantir는 인간 분석가를 위한 그래프 온톨로지를 만들었고, Microsoft는 AI 에이전트를 위한 의미론적 계약 온톨로지를 만들었다 — 같은 기술, 완전히 다른 철학.</p>
+  <p>이 글은 Microsoft Fabric IQ와 Palantir Foundry가 엔터프라이즈 온톨로지를 어떻게 다르게 구현하는지 기술적으로 심층 분석한다. Microsoft는 3계층 구조(온톨로지 아이템 → OneLake 바인딩 → 의미론적 계약)로 에이전트들이 SQL 없이 비즈니스 개념으로만 추론하게 하는 반면, Palantir는 그래프 탐색 기반의 인간 분석가 중심 모델이다. 저자는 90%의 기업에는 Microsoft 방식이 더 적합하다고 주장하며, 어떤 상황에서 무엇을 선택할지 구체적인 기준을 제시한다.</p>
+</div>
+
+<p>Microsoft Fabric IQ가 온톨로지를 어떻게 구현하는지, 그리고 왜 그것이 Palantir의 접근 방식과 근본적으로 다른지에 대한 기술적 심층 분석이다.</p>
+
+<h2>이 글을 쓰게 된 질문</h2>
+
+<p>필자가 Microsoft의 Ignite 2025 발표를 분석한 글을 공개한 후, 한 독자가 모든 엔터프라이즈 아키텍트들의 마음속에 있던 질문을 던졌다.</p>
+
+<blockquote>"Palantir는 꽤 오랫동안 제품에 온톨로지를 사용해왔습니다. Palantir의 접근 방식과 Microsoft가 제공하는 것을 어떻게 비교할 수 있을까요?"</blockquote>
+
+<p>짧은 버전으로 말하면 이렇다. Palantir는 정보(intelligence) 업무를 위한 온톨로지를 만들었다 — 그래프 데이터와 인간 추론을 중심으로. Microsoft는 에이전틱 시스템을 위한 온톨로지를 만들었다 — 의미론적 계약과 자율적 행동을 중심으로. 같은 기술이지만, 근본적으로 다른 구현 철학이다.</p>
+
+<h2>1부: Microsoft가 Fabric IQ에서 온톨로지를 실제로 구현하는 방법</h2>
+
+<h3>아키텍처: 세 개의 레이어, 하나의 의미론적 기반</h3>
+
+<p>Microsoft의 구현은 단순히 "온톨로지 지원을 추가했다"는 수준이 아니다. 비즈니스 컨텍스트가 엔터프라이즈 AI 스택 전체를 어떻게 흐를 것인가에 대한 완전한 재설계다.</p>
+
+<h3>레이어 1: 온톨로지 아이템 — 기반</h3>
+
+<p>핵심에는 Microsoft가 '온톨로지 아이템(Ontology Item)'이라고 부르는 것이 있다. 데이터 레이크하우스, Power BI 모델, 데이터 파이프라인과 나란히 존재하는 Fabric의 일급 객체(first-class object)다. 이것은 데이터에 대한 메타데이터가 아니라, 다음을 정의하는 공식적인 의미론적 모델이다.</p>
+
+<p><strong>엔티티 유형</strong> — 단순한 테이블 스키마가 아니라 비즈니스 개념:</p>
+
+<pre>Customer
+  ├─ Properties: CustomerID, Tier, RiskScore, LifetimeValue
+  ├─ Constraints: RiskScore must be 0-100
+  └─ Relationships: has_many Orders, belongs_to Region</pre>
+
+<p><strong>타입이 지정된 관계</strong> — 단순한 외래 키가 아니라 의미론적 연결:</p>
+
+<pre>Shipment --[belongs_to]--> Customer
+Shipment --[contains]--> LineItem
+Shipment --[monitored_by]--> IoTSensor
+Shipment --[governed_by]--> ComplianceRule</pre>
+
+<p><strong>비즈니스 규칙</strong> — 유효한 상태를 정의하는 실행 가능한 논리:</p>
+
+<pre>Rule: "High-Risk Shipment Alert"
+  IF: Shipment.RiskScore > 80
+  AND: Shipment.Status = "In Transit"
+  AND: IoTSensor.Temperature > Threshold
+  THEN: Trigger_Action(Notify_Customer, Escalate_to_Operations)</pre>
+
+<p><strong>허용된 액션</strong> — 에이전트가 할 수 있는 것:</p>
+
+<pre>Action: Reroute_Shipment
+  ├─ Requires: Operations_Manager_Role OR System_Emergency_Override
+  ├─ Validates: Destination must be valid Warehouse
+  └─ Triggers: Update_Shipment_Status, Log_Audit_Trail</pre>
+
+<h3>레이어 2: OneLake와의 의미론적 통합</h3>
+
+<p>온톨로지는 단순한 문서가 아니다. OneLake의 실제 데이터와 능동적으로 연결된다. Microsoft는 이것을 '의미론적 바인딩(semantic binding)'이라고 부른다.</p>
+
+<pre>Entity: Customer
+  ├─ Ontology Definition: [고객이 누구인지에 대한 비즈니스 개념]
+  ├─ Data Binding: OneLake의 customers_table
+  └─ Mapping:
+      Customer.CustomerID → customers.customer_id
+      Customer.Tier → CASE WHEN annual_revenue > 1M THEN 'Enterprise'...
+      Customer.RiskScore → ml_model_endpoint</pre>
+
+<p>온톨로지는 물리적 데이터 위의 의미론적 추상화 레이어가 된다. AI 에이전트가 "위험도가 높은 엔터프라이즈 고객이 누구인가?"라고 물으면, 에이전트는 온톨로지 레벨에서 추론하지 SQL을 작성하지 않는다.</p>
+
+<h3>레이어 3: 의미론적 계약을 통한 에이전트 통합</h3>
+
+<p>이것이 Microsoft의 핵심 혁신이다. 에이전트들은 데이터를 쿼리하지 않고 온톨로지를 쿼리한다.</p>
+
+<pre>Agent: "Supply Chain Monitor"
+  ├─ Can Read: Shipment, Customer, IoTSensor, ComplianceRule
+  ├─ Can Write: Shipment.Status, Alert
+  ├─ Can Execute: Notify_Customer, Escalate_to_Operations
+  └─ Context: All Shipments where Status IN ['In Transit', 'Delayed']</pre>
+
+<p>에이전트는 자동으로 다음을 상속받는다.</p>
+
+<ul>
+  <li>이 엔티티들이 의미하는 것 (온톨로지 정의에서)</li>
+  <li>엔티티들이 어떻게 관계되는지 (관계 그래프에서)</li>
+  <li>무엇이 유효한지 (비즈니스 규칙에서)</li>
+  <li>에이전트가 할 수 있는 것 (허용된 액션에서)</li>
+</ul>
+
+<p>데이터 스키마에 대한 프롬프트 엔지니어링도 없다. RAG 파이프라인 배선도 없다. 의미론적 계약 자체가 근거(grounding)다.</p>
+
+<h2>2부: Palantir vs Microsoft — 온톨로지에 대한 두 가지 철학</h2>
+
+<h3>Palantir의 접근: 인간 분석가를 위한 온톨로지</h3>
+
+<p>Palantir의 Foundry 플랫폼은 엔터프라이즈 온톨로지를 선구했지만, 다른 사용 사례에 최적화되어 있다.</p>
+
+<ul>
+  <li><strong>그래프 우선:</strong> 모든 것이 노드와 엣지로 관계 탐색에 최적화됨</li>
+  <li><strong>인간-루프 내(Human-in-the-loop):</strong> 분석가가 온톨로지 그래프를 탐색하며 조사를 구축함</li>
+  <li><strong>정보(Intelligence) 중심:</strong> 대테러, 사기 탐지, 복잡한 조사를 위해 설계됨</li>
+  <li><strong>폐쇄 생태계:</strong> 온톨로지가 Palantir 플랫폼 내에 존재함</li>
+</ul>
+
+<p>사용 사례 예시: 사기를 조사하는 분석가가 링크를 따라간다 — 용의자 → 은행 계좌 → 거래 → 회사 → 소유자 → 용의자2. 온톨로지는 연결을 가시화하고 탐색 가능하게 만들어 인간의 추론을 돕는다.</p>
+
+<h3>Microsoft의 접근: 자율 에이전트를 위한 온톨로지</h3>
+
+<p>Microsoft의 Fabric IQ는 근본적으로 다른 문제에 최적화되어 있다.</p>
+
+<ul>
+  <li><strong>의미론 우선:</strong> 엔티티는 단순한 그래프 노드가 아닌 규칙을 가진 비즈니스 개념임</li>
+  <li><strong>에이전트 자율:</strong> AI 에이전트가 인간의 개입 없이 온톨로지를 추론함</li>
+  <li><strong>운영(Operations) 중심:</strong> 공급망, 금융, 고객 운영 — 비즈니스 프로세스를 위해 설계됨</li>
+  <li><strong>개방 생태계:</strong> 온톨로지가 Power BI, Azure, Microsoft 365 전반에 연결됨</li>
+</ul>
+
+<p>사용 사례 예시: 에이전트가 배송을 모니터링하고 온도 위반 감지 → 배송 위험 → 고객 영향 → 자동 경로 변경의 흐름으로 처리한다.</p>
+
+<h3>핵심 차이 비교</h3>
+
+<table>
+<thead><tr><th>구분</th><th>Palantir</th><th>Microsoft</th></tr></thead>
+<tbody>
+<tr><td>주요 목표</td><td>인간 분석가의 연결 발견 지원</td><td>AI 에이전트의 자율적 행동 지원</td></tr>
+<tr><td>온톨로지 구조</td><td>그래프 (탐색 최적화)</td><td>의미론적 모델 (추론 최적화)</td></tr>
+<tr><td>의사결정</td><td>인간 분석 후 시스템이 제시</td><td>에이전트가 자율적으로 행동</td></tr>
+<tr><td>생태계</td><td>폐쇄 (Palantir 플랫폼 내)</td><td>개방 (Power BI, Azure 등과 연결)</td></tr>
+</tbody></table>
+
+<h2>3부: 대부분의 기업에 Microsoft 구현이 더 중요한 이유</h2>
+
+<h3>데이터 플랫폼 소유권 문제</h3>
+
+<p><strong>의미론적 레이어를 누가 소유하느냐가 어떤 온톨로지 기술을 쓰느냐보다 더 중요하다.</strong></p>
+
+<p>Palantir의 접근 방식: "데이터를 우리 플랫폼으로 가져오면, 우리가 온톨로지를 만들어줄게요." 세계 최고의 온톨로지 도구를 얻지만, 의미론적 이해가 벤더의 사일로 안에 갇힌다. Power BI, Salesforce, SAP 같은 다른 도구들은 거기에 접근할 수 없다.</p>
+
+<p>Microsoft의 접근 방식: "데이터가 이미 있는 곳에서 온톨로지를 만드세요." 온톨로지가 Fabric 아이템으로서 버전 관리되고, 에코시스템의 모든 도구가 활용할 수 있다. 의미론적 레이어가 벤더 종속이 아닌 인프라가 된다.</p>
+
+<h3>비코딩 민주화 전략</h3>
+
+<p>이미 2천만 개의 Power BI 의미론적 모델을 만들어온 비즈니스 분석가들이 그것을 완전한 온톨로지로 발전시킬 수 있다.</p>
+
+<ol>
+  <li>기존 Power BI 모델에서 시작: 고객 → 주문 → 제품</li>
+  <li>Fabric IQ가 의미론적 강화를 제안: "'주문'에 위험 점수가 있어야 하는가?"</li>
+  <li>비즈니스 분석가가 규칙 추가: "5만 달러 이상의 주문은 승인이 필요함"</li>
+  <li>AI 에이전트가 커스텀 코드 없이도 이 제약을 이해함</li>
+</ol>
+
+<p>이것이 엔터프라이즈 규모의 온톨로지 민주화다.</p>
+
+<h3>에이전틱 AI 타이밍</h3>
+
+<p>2015~2020년: Palantir의 접근 방식이 맞았다. AI는 아직 자율적 결정을 내릴 준비가 되지 않았다. 그래프 탐색이 적절한 인터페이스였다.</p>
+
+<p>2025년 이후: LLM은 추론하고, 계획하고, 행동할 수 있다. 병목은 인간의 분석이 아니라 에이전트에게 신뢰할 수 있게 행동할 수 있는 구조화된 컨텍스트를 주는 것이다. 의미론적 계약이 이것을 해결한다.</p>
+
+<p>Microsoft는 Palantir의 숙제를 베끼는 것이 아니다. 그들은 다음 문제를 해결하고 있다 — 100개의 AI 에이전트가 기업 안에서 혼돈 없이 협력하게 하려면 어떻게 해야 하는가? 답: 공유 온톨로지를 의미론적 운영 체제로 사용하는 것.</p>
+
+<h2>4부: 기술적 구현 세부 사항</h2>
+
+<h3>3계층 바인딩 모델</h3>
+
+<p><strong>계층 1: 논리적 정의 (순수 온톨로지)</strong></p>
+
+<pre>Entity: HighValueCustomer
+  Definition: "평생 가치 10만 달러 초과 또는 엔터프라이즈 등급 고객"
+  # 아직 물리적 매핑 없음</pre>
+
+<p><strong>계층 2: 물리적 바인딩 (데이터 레이크하우스)</strong></p>
+
+<pre>Binding: HighValueCustomer -> SQL query
+  SELECT customer_id, tier, lifetime_value
+  FROM customers
+  WHERE lifetime_value > 100000 OR tier = 'Enterprise'</pre>
+
+<p><strong>계층 3: 계산된 속성 (실시간 강화)</strong></p>
+
+<pre>Property: CurrentRiskScore
+  Source: Azure ML model endpoint
+  Refresh: 접근 시 실시간
+  Cache: 5분</pre>
+
+<p>이 덕분에 온톨로지가 OneLake의 정적 데이터, 실시간 센서 데이터, ML 모델 예측, 외부 API 호출을 모두 하나의 의미론적 인터페이스를 통해 참조할 수 있다.</p>
+
+<h3>에이전트가 실제로 온톨로지를 사용하는 방법</h3>
+
+<p><strong>단계 1: 의미론적 쿼리 계획</strong></p>
+
+<pre>에이전트가 받음: "위험도 높은 배송 건이 있는 고가치 고객에게 알림을 보내라"
+
+온톨로지 쿼리 플래너가 변환:
+  1. "고가치 고객" 해석 → HighValueCustomer 엔티티
+  2. "위험한 배송" 해석 → Shipment WHERE RiskScore > 80
+  3. 관계 경로 탐색: HighValueCustomer --[has]--> Shipment</pre>
+
+<p><strong>단계 2: 물리적 실행</strong></p>
+
+<pre>SELECT c.customer_id, s.shipment_id, s.risk_score
+FROM customers c
+JOIN shipments s ON c.customer_id = s.customer_id
+WHERE c.lifetime_value > 100000
+  AND s.risk_score > 80
+  AND s.status = 'In Transit'</pre>
+
+<p><strong>단계 3: 의미론적 응답</strong></p>
+
+<pre>[
+  {
+    "type": "CustomerAtRisk",
+    "customer": {"id": 123, "tier": "Enterprise"},
+    "shipments": [{"id": 456, "risk_score": 85, "issue": "TempAlert"}]
+  }
+]</pre>
+
+<p>에이전트는 SQL을 절대 보지 않는다. 오직 비즈니스 개념으로만 추론한다.</p>
+
+<h2>5부: 이것이 미래인 이유와 당신에게 의미하는 것</h2>
+
+<h3>Palantir 방식을 선택해야 하는 경우</h3>
+
+<ul>
+  <li>복잡한 조사(사기, 보안, 정보)를 수행할 때</li>
+  <li>세계 최고 수준의 그래프 탐색과 분석가 UX가 필요할 때</li>
+  <li>병목이 에이전트 자동화가 아닌 인간 전문성일 때</li>
+  <li>프리미엄 기능을 위한 플랫폼 종속을 감수할 수 있을 때</li>
+</ul>
+
+<h3>Microsoft 방식을 선택해야 하는 경우</h3>
+
+<ul>
+  <li>규모 있는 운영 AI 에이전트를 구축할 때</li>
+  <li>전체 기술 스택에 걸쳐 의미론적 이해가 필요할 때</li>
+  <li>비즈니스 분석가가 온톨로지를 구축하고 유지하기를 원할 때</li>
+  <li>에이전트 조율과 자율적 행동이 목표일 때</li>
+</ul>
+
+<h3>무엇을 최적화하고 있는지가 진짜 질문이다</h3>
+
+<p>기업의 90%는 Palantir 모델보다 Microsoft 모델을 더 필요로 한다. 조사 필요보다 운영 자동화 필요가 더 많고, 10명의 분석가가 그래프를 탐색하는 것이 아니라 100개의 에이전트가 함께 작동해야 하며, 별도 플랫폼이 아닌 Power BI에 의미론적 이해가 필요하기 때문이다.</p>
+
+<p>정보 업무, 사기 탐지, 복잡한 조사를 수행하는 나머지 10%에게는 Palantir의 접근 방식이 타의 추종을 불허한다.</p>
+
+<h2>마무리</h2>
+
+<p>"온톨로지를 학문적 연습으로"의 시대는 끝났다. "온톨로지를 인프라로"의 시대가 시작되었다.</p>
+
+<p>어려운 질문을 던져 이 논의를 발전시킨 모든 분께 감사드린다. Palantir, Microsoft, 또는 나만의 온톨로지 솔루션 구축 중 무엇으로 고민하고 있다면, 구체적인 사용 사례를 댓글로 남겨달라 — 다음 글에서 다루겠다.</p>
+
+</body>
+</html>

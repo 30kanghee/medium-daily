@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI and Data Scientist Job Market in 2026: Analysis, Trends, Opportunities (Early Year Report)</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>AI and Data Scientist Job Market in 2026: Analysis, Trends, Opportunities (Early Year Report)</h1>
+<div class="meta">Andres Vourakis · Data Science Collective · 6분 읽기 · <a href="https://medium.com/data-science-collective/ai-and-data-scientist-job-market-in-2026-analysis-trends-opportunities-early-year-report-1641d1f8a30d" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/data-science-collective/ai-and-data-scientist-job-market-in-2026-analysis-trends-opportunities-early-year-report-1641d1f8a30d" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">700개 이상의 채용 공고를 직접 분석한 결과, 2026년 데이터 과학 일자리 시장은 '소멸'이 아니라 'AI를 아는 인재'로의 빠른 재편이 진행 중이다.</p>
+  <p>하버드 대학과 Lightcast의 선행 연구는 데이터 과학자 수요가 사라지지 않고 있으며 AI를 활용할 줄 아는 인재에 대한 수요는 오히려 늘고 있다고 밝혔다. 저자는 이 거시적 결론이 실제 채용 현장에서 어떻게 나타나는지 확인하기 위해 700개 이상의 채용 공고를 직접 분석했다. 핵심 발견은 세 가지다. 첫째, 생성형 AI·LLM·MLOps를 명시한 직책은 15~25%의 급여 프리미엄을 받는다. 둘째, 시니어 역할이 AI 도입의 혜택을 가장 많이 받고 있다. 셋째, 데이터 과학자 역할 자체는 죽지 않았지만, 기대하는 역량의 조합이 근본적으로 달라졌다.</p>
+</div>
+
+<h2>이 분석이 시작된 배경</h2>
+
+<p>작년 말, 필자는 데이터 과학 채용 시장을 분석한 글을 발표했다. 두 개의 독립적인 연구, 즉 하버드 대학의 연구와 노동 시장 분석 기업 Lightcast의 연구를 주요 근거로 삼았다.</p>
+
+<p>그 연구들의 핵심 결론은 두 가지였다.</p>
+
+<ol>
+  <li><strong>데이터 과학자 수요는 사라지지 않는다.</strong> 오히려 AI를 아는 데이터 인재에 대한 수요는 증가하고 있다.</li>
+  <li><strong>시니어 역할이 AI 도입의 혜택을 가장 많이 받고 있다.</strong> AI를 채용한 기업에서 경력자와 미채용 기업 경력자 사이의 고용 격차가 시간이 갈수록 벌어지고 있다.</li>
+</ol>
+
+<p>방향성은 분명했다. 하지만 그 결론들은 거시적 수준에 머물렀다. 무엇이 일어나고 있는지는 알았지만, 실제 채용 현장에서 어떻게 나타나는지는 알 수 없었다. 2026년이 시작되는 시점에 직접 확인하고 싶었다.</p>
+
+<p>그래서 700개 이상의 채용 공고를 직접 분석했다.</p>
+
+<h2>분석 방법</h2>
+
+<p>분석 대상은 2025년 4분기부터 2026년 1월 초 사이에 게시된 데이터 과학 관련 채용 공고다. LinkedIn, Indeed, Glassdoor 등 주요 채용 플랫폼을 아울렀으며, 직함에 "데이터 과학자", "머신러닝 엔지니어", "AI 엔지니어", "MLOps 엔지니어"가 포함된 공고를 수집했다. 기업 규모, 업종, 직급(주니어·미들·시니어·스탭)별로 분류했다.</p>
+
+<p>살펴본 항목은 요구 기술 스택, 명시된 급여 범위, 업무 방식(원격·하이브리드·대면), 선호 경력 연수, 그리고 직함에 AI·GenAI·LLM 등의 단어가 포함되는지 여부였다.</p>
+
+<h2>발견 1: "AI 프리미엄"은 실재한다</h2>
+
+<p>가장 뚜렷한 발견이다. 직함이나 직무 설명에 생성형 AI(GenAI), LLM, MLOps를 명시적으로 언급한 역할은 유사한 경력 요건의 전통적 데이터 과학 역할에 비해 <strong>급여가 15~25% 높았다.</strong></p>
+
+<figure>
+  <img src="https://miro.medium.com/v2/resize:fit:1200/1*lfxRWpqK7I1EmiQ6qADp4w.jpeg" alt="Lightcast의 생성형 AI 참조 채용 공고 직함 분석">
+  <figcaption>생성형 AI를 참조하는 채용 공고에서 가장 많이 등장하는 직함들. 출처: Lightcast</figcaption>
+</figure>
+
+<p>이 프리미엄은 단순히 "AI"라는 단어를 직함에 넣는다고 붙는 것이 아니었다. 실제로 LLM 파인튜닝, RAG(Retrieval-Augmented Generation) 파이프라인 구축, 프로덕션 ML 시스템 운영 경험을 요구하는 공고일수록 급여 범위가 높았다.</p>
+
+<h2>발견 2: SQL은 여전히 왕이다</h2>
+
+<p>직관에 반하는 발견 중 하나다. 700개 이상의 공고 중 <strong>64%가 SQL을 명시적으로 요구했다.</strong> 데이터 분석가 역할로 좁히면 이 수치는 78%까지 올라간다.</p>
+
+<p>LLM이 코드를 작성해주는 시대에 SQL이 여전히 가장 많이 요구되는 기술이라는 사실은 무엇을 의미하는가? 데이터를 다루는 일의 본질—비즈니스 질문을 구조화하고, 데이터를 탐색하고, 결과를 해석하는 능력—은 도구가 바뀌어도 변하지 않는다는 것이다. AI가 SQL을 생성할 수 있어도, 어떤 SQL을 써야 하는지 판단하는 것은 사람의 몫이다.</p>
+
+<h2>발견 3: FAANG 밖에 기회가 있다</h2>
+
+<p>데이터 과학 분야에 뜻을 둔 많은 사람들이 대형 테크 기업 입사를 목표로 삼는다. 하지만 분석 결과는 다른 방향을 가리켰다.</p>
+
+<p><strong>분석한 공고의 85~88%가 FAANG 외부 기업에서 나왔다.</strong> 이것은 지난 2년 사이에 일어난 가장 중요한 구조적 변화 중 하나다. 가장 적극적으로 채용하는 곳은 중간 규모의 엔터프라이즈 SaaS 기업, 지역 은행, 병원 시스템, 디지털 전환을 진행 중인 제조업체들이었다.</p>
+
+<p>이 기업들은 대형 테크 기업의 급여를 맞춰주지 못할 수 있지만, 몇 가지 중요한 장점을 제공한다.</p>
+
+<ul>
+  <li>한 사람이 전체 데이터 스택을 소유하고 영향을 미칠 수 있다.</li>
+  <li>비즈니스 도메인 지식을 빠르게 쌓을 수 있다.</li>
+  <li>AI 프로젝트가 실험 단계가 아닌 실제 운영 환경에서 실행된다.</li>
+  <li>경력 성장 경로가 더 명확하고 빠른 경우가 많다.</li>
+</ul>
+
+<h2>발견 4: 시니어 역할에 AI 혜택이 집중된다</h2>
+
+<p>하버드 연구의 발견을 실제 채용 데이터가 확인해줬다. AI 도입 기업의 시니어 데이터 과학자와 미도입 기업 시니어 사이의 고용 격차는 시간이 갈수록 벌어지고 있다.</p>
+
+<p>구체적으로는 이런 양상이 나타났다. 주니어~미들 레벨에서는 공고 수가 전년 대비 소폭 감소했다. 반면 스탭 및 시니어 레벨에서는 공고 수가 증가했으며, 특히 AI 관련 경험을 요구하는 시니어 역할의 증가가 두드러졌다.</p>
+
+<p>이 패턴의 해석은 명확하다. 기업들은 AI 도구를 도입한 뒤 팀 규모를 줄이는 것이 아니라, 팀의 <em>구성</em>을 바꾸고 있다. 반복적인 분석 작업을 자동화하는 대신, 그 자동화 시스템을 설계하고 관리할 수 있는 고경력자에게 투자하고 있다.</p>
+
+<h2>발견 5: 원격 근무는 줄고 있지만 완전히 사라지지는 않는다</h2>
+
+<p>2021년 최고조에 달했던 완전 원격 데이터 과학 직책은 2026년 기준으로 분명히 감소했다. 하이브리드 근무 방식이 표준으로 자리 잡았으며, 특히 AI 관련 역할일수록 주 2~3일 출근을 요구하는 경향이 강했다.</p>
+
+<p>완전 원격 역할은 여전히 존재하지만, 주로 특정 전문 기술(예: 특정 도메인의 LLM 파인튜닝 경험)을 보유한 경력자를 대상으로 했다. 신입이나 주니어 레벨에서 완전 원격 역할을 찾기는 이전보다 훨씬 어려워졌다.</p>
+
+<h2>2026년 데이터 과학자에게 실제로 필요한 것</h2>
+
+<p>700개 공고 분석을 종합하면, 2026년 데이터 과학 채용 시장이 기대하는 역량 조합은 다음과 같다.</p>
+
+<h3>반드시 갖춰야 할 기술</h3>
+<ul>
+  <li><strong>SQL (심화):</strong> SELECT * 수준이 아닌, 윈도우 함수, CTE, 성능 최적화 쿼리</li>
+  <li><strong>Python:</strong> 데이터 분석 및 모델링 자동화</li>
+  <li><strong>통계적 사고:</strong> 가설 검증, A/B 테스트 설계, 결과 해석</li>
+  <li><strong>비즈니스 문제 정의 능력:</strong> 모호한 요청을 분석 가능한 질문으로 바꾸는 능력</li>
+  <li><strong>커뮤니케이션:</strong> 기술적 결과를 비기술 이해관계자에게 설명하는 능력</li>
+</ul>
+
+<h3>경쟁력을 높이는 기술</h3>
+<ul>
+  <li>LLM API 활용 및 프롬프트 엔지니어링 경험</li>
+  <li>RAG 파이프라인 구축 또는 파인튜닝 경험</li>
+  <li>MLOps 도구(MLflow, Weights &amp; Biases, Airflow) 실무 경험</li>
+  <li>클라우드 플랫폼(AWS, GCP, Azure) 기본 이상의 이해</li>
+  <li>특정 도메인 지식(금융, 헬스케어, 리테일 등)</li>
+</ul>
+
+<h2>이 데이터가 말하지 않는 것</h2>
+
+<p>숫자 이면에도 중요한 것들이 있다. 공고 수가 줄었다는 것이 취업이 불가능하다는 뜻이 아니다. 그리고 AI 관련 기술이 없다고 해서 기회가 없는 것도 아니다.</p>
+
+<p>실제로 채용 시장에서 가장 강력한 신호는 여전히 <strong>실제 비즈니스 문제를 해결한 경험</strong>이다. Kaggle 메달이나 화려한 모델 아키텍처보다, "이 분석이 제품 결정에 어떻게 영향을 미쳤는가?"를 설명할 수 있는 포트폴리오가 더 강하게 작용한다.</p>
+
+<blockquote>
+  <p>채용 담당자들이 실제로 보고 싶어하는 것: 지표가 왜 변했는지 설명하는 능력, 믿을 수 있는 대시보드를 만드는 능력, SQL을 망설임 없이 쓰는 능력, 간단한 모델을 끝까지 배포하는 능력.</p>
+</blockquote>
+
+<h2>결론: 소멸이 아니라 재편</h2>
+
+<p>2026년 데이터 과학 채용 시장을 한 문장으로 요약하면 이렇다. <strong>죽지 않았다. 다만 재편되고 있다.</strong></p>
+
+<p>AI를 두려워하는 데이터 과학자에게는 나쁜 소식처럼 들릴 수 있다. 하지만 AI를 도구로 받아들이고, SQL과 비즈니스 커뮤니케이션 같은 영구적인 기술에 투자하고, FAANG이 아닌 곳에서도 기회를 찾을 의향이 있다면, 2026년 시장은 생각보다 훨씬 더 많은 기회를 품고 있다.</p>
+
+<p>거시적 연구는 방향을 알려줬다. 700개의 채용 공고는 그 방향이 실제 채용 현장에서 어떻게 나타나는지 확인해줬다. 이제 남은 것은 그 방향으로 움직이는 것이다.</p>
+
+</body>
+</html>

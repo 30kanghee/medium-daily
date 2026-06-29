@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power BI June 2026: The Update That Turns Your Semantic Model Into an API for Agents</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  table{border-collapse:collapse;width:100%;margin:1em 0;font-size:.9em;}
+  th,td{border:1px solid #ddd;padding:8px 12px;text-align:left;}
+  th{background:#f6f8fa;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Power BI June 2026: The Update That Turns Your Semantic Model Into an API for Agents</h1>
+<div class="meta">Tomas Kutac · Power BI (Microsoft) · 25분 읽기 · <a href="https://medium.com/microsoft-power-bi/power-bi-june-2026-the-update-that-turns-your-semantic-model-into-an-api-for-agents-2f7d267f9781" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/microsoft-power-bi/power-bi-june-2026-the-update-that-turns-your-semantic-model-into-an-api-for-agents-2f7d267f9781" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">2026년 6월 Power BI 업데이트는 시맨틱 모델을 AI 에이전트가 직접 읽고 쓸 수 있는 거버넌스 기반 API로 전환하는 두 가지 큰 흐름을 완성한다.</p>
+  <p>이번 릴리스에서 가장 중요한 변화는 DAX 사용자 정의 함수(UDF)의 정식 출시(GA)와 PBIR(Power BI Enhanced Report Format)의 기본값 전환 재시도다. DAX UDF는 측정값 전반에서 재사용할 수 있는 타입 안전 비즈니스 로직을 가능하게 하고, PBIR은 리포트를 AI가 읽고 수정할 수 있는 스키마 검증 JSON 파일 구조로 만든다. 여기에 에이전트가 처음부터 끝까지 리포트를 빌드·배포하는 AI 리포트 저작 에이전트 스킬(프리뷰), Fabric IQ를 통해 Microsoft 365 Copilot 내에서 Power BI 데이터에 직접 답변하는 기능, 그리고 날짜 피커 슬라이서·툴팁 문장 모드 등 실무에서 즉시 활용 가능한 시각화 개선이 추가된다. 저자는 각 기능의 GA 여부, 라이선스 제약, 롤백 기간, 용량 제한 등 발표문이 생략한 운영 상세 내용까지 철저히 추적한다.</p>
+</div>
+
+<h2>이번 릴리스가 의미하는 것</h2>
+
+<p>2026년 6월은 오랫동안 진행되던 두 가지 큰 흐름이 마침내 하나로 합쳐지는 달이다. 첫 번째 흐름은 <strong>리포트 코드를 1등급 아티팩트로 만드는 것</strong>이다. PBIR이 유일한 리포트 형식으로 굳어지고, AI 에이전트가 리포트를 처음부터 끝까지 빌드·배포할 수 있는 에이전트 스킬이 추가되었다. 두 번째 흐름은 <strong>시맨틱 모델을 Power BI 경계 밖에서도 동작하는 거버넌스 기반 답변 엔진으로 만드는 것</strong>이다. Microsoft 365 Copilot, Cowork, 커스텀 웹 앱 등 어디서나 동작한다. DAX UDF의 GA는 이 두 흐름을 연결하는 핵심 고리다. 재사용 가능하고 타입이 명시된 소스 관리 비즈니스 로직이야말로 나머지 모든 것을 신뢰할 수 있게 만드는 토대이기 때문이다.</p>
+
+<p>이 글은 릴리스를 기능별로 살펴보되, 프로덕션 환경에서 중요한 부분까지 문서를 끝까지 따라가며 검증한다. 호환성 레벨, 보안 경계, 용량 제외 조건, 크기 제한, 그리고 무언가를 활성화하기 전에 알아야 할 롤백 기간까지 다룬다.</p>
+
+<hr>
+
+<h2>역할별 TL;DR — 어디부터 읽을지</h2>
+
+<ul>
+  <li><strong>DAX/시맨틱 모델 개발자</strong> → 1절(UDF GA, 단 호환성 레벨 1702, 서비스에서 저작 불가, OLS 미전파 함정 주의). 브라우저에서 모델링한다면 4절도 훑어볼 것.</li>
+  <li><strong>리포트 저자/애널리스트</strong> → 6절(날짜 피커 슬라이서, 툴팁 문장 모드, 매트릭스 자동 확장, 축 반올림 범위 등 오늘 당장 쓸 수 있는 개선). 모델도 직접 만든다면 4절도 참고.</li>
+  <li><strong>BI 플랫폼 소유자/관리자</strong> → 2절(PBIR이 GA 시 필수화, 지금 감사 도구 준비 필요)과 5절(Fabric IQ 라이선스, 용량 제외 조건, 관리자 설정). 이 두 절이 계획 항목이다.</li>
+  <li><strong>개발자/데이터 플랫폼 엔지니어</strong> → 3절(에이전트 스킬, Modeling MCP, Fabric Apps)과 2절(PBIR-as-code, byPath vs byConnection, REST API 배포 구조).</li>
+  <li><strong>의사결정자/리드</strong> → 도입부와 마지막 "이 릴리스가 실제로 의미하는 것" 절이면 충분하다.</li>
+</ul>
+
+<hr>
+
+<h2>1. DAX 사용자 정의 함수(UDF) 정식 출시 — 매크로가 아닌 진짜 언어 기능</h2>
+
+<p>DAX로 밥 먹고 사는 사람에게 이번 릴리스의 핵심은 바로 이것이다. 2025년 시작된 프리뷰 이후 <strong>DAX UDF가 2026년 6월 릴리스부터 Power BI Desktop과 Power BI 서비스 모두에서 정식 출시(GA)되었다.</strong> 프리뷰 기간의 도입 신호가 충분히 강해서 Microsoft는 이제 UDF를 시맨틱 모델 개발의 핵심 기능으로 포지셔닝하고 있다.</p>
+
+<p>한 줄 요약: 계산을 한 번 정의하고, 측정값·계산 열·시각적 계산 전반에서 재사용하며, 인라인 문서화와 런타임 타입 안전성까지 확보한다. 하지만 가치는 세부 사항에 있다.</p>
+
+<h3>함수의 구조</h3>
+
+<p>UDF에는 새로운 <code>FUNCTION</code> 키워드가 도입된다. 공식 예제는 다음과 같다.</p>
+
+<pre>DEFINE
+/// AddTax takes in amount and returns amount including tax
+/// @param {NUMERIC} amount - The pre-tax value to which tax will be applied
+/// @param {NUMERIC} [taxRate] - Optional tax rate to apply, default is 0.1 (10%)
+/// @returns The amount including tax
+FUNCTION AddTax =
+(
+    amount : NUMERIC,
+    taxRate : NUMERIC = 0.1
+) =>
+    amount * ( 1 + taxRate )
+
+EVALUATE { AddTax ( 10 ) }  // Returns 11</pre>
+
+<p>즉시 눈에 띄는 두 가지가 있다. 첫째, <code>///</code> 주석은 장식이 아니다. JSDoc 스타일 블록 태그를 사용하며 함수를 사용하는 쪽의 IntelliSense에 표시된다. (단일 행 <code>//</code>와 여러 줄 <code>/* */</code> 주석은 IntelliSense에 나타나지 않으므로 삼중 슬래시를 의도적으로 사용해야 한다.) 둘째, <code>taxRate : NUMERIC = 0.1</code>은 기본 표현식을 가진 <strong>선택적 파라미터</strong>를 만든다. 호출 시 <code>AddTax(10)</code> 또는 <code>AddTax(10, 0.2)</code> 모두 가능하다.</p>
+
+<h3>타입 시스템이 진짜 기능이다</h3>
+
+<p>UDF 파라미터는 <code>[type] [subtype] [parameterMode]</code> 형태로 최대 세 가지 힌트를 가질 수 있다.</p>
+
+<ul>
+  <li><strong>Type</strong> — 허용되는 인수 범주: <code>AnyVal</code>, <code>Scalar</code>, <code>Table</code>, <code>AnyRef</code>, <code>CalendarRef</code>, <code>ColumnRef</code>, <code>MeasureRef</code>, <code>TableRef</code></li>
+  <li><strong>Subtype</strong> (스칼라 전용) — 구체적인 데이터 타입: <code>Variant</code>, <code>Int64</code>, <code>Decimal</code>, <code>Double</code>, <code>String</code>, <code>DateTime</code>, <code>Boolean</code>, <code>Numeric</code></li>
+  <li><strong>ParameterMode</strong> — 인수가 평가되는 <em>시점</em>: <code>val</code>(즉시 평가) 또는 <code>expr</code>(지연 평가)</li>
+</ul>
+
+<p><code>val</code> 대 <code>expr</code>의 구분은 필터 컨텍스트와의 상호작용을 결정하는 부분이므로 특히 주의가 필요하다.</p>
+
+<p><code>val</code> 파라미터는 함수 본문이 실행되기 전, 호출 시점의 컨텍스트에서 <strong>한 번</strong> 평가된다. 호출 지점의 행 컨텍스트와 필터 컨텍스트를 모두 상속한다. <code>expr</code> 파라미터는 <strong>미평가 표현식</strong>을 전달하며, 함수가 내부적으로 평가한다. 필터 컨텍스트만 상속하고, 이터레이터나 <code>CALCULATE</code> 내부에서 여러 번 재평가될 수 있다.</p>
+
+<p>공식 문서의 예제가 이 차이를 명확하게 보여준다. 본문은 동일하지만 파라미터 모드만 다른 두 함수가 서로 다른 결과를 반환한다.</p>
+
+<pre>DEFINE
+FUNCTION CountRowsNow = ( t : TABLE VAL ) =>
+    COUNTROWS ( CALCULATETABLE ( t, ALL ( 'Date' ) ) )
+
+FUNCTION CountRowsLater = ( t : TABLE EXPR ) =>
+    COUNTROWS ( CALCULATETABLE ( t, ALL ( 'Date' ) ) )
+
+EVALUATE
+{
+    CALCULATE ( CountRowsNow  ( 'Sales' ), 'Date'[Fiscal Year] = "FY2020" ),
+    CALCULATE ( CountRowsLater( 'Sales' ), 'Date'[Fiscal Year] = "FY2020" )
+}
+// returns 84285, 121253</pre>
+
+<p><code>CountRowsNow</code>는 FY2020만 반환한다. 함수 진입 전에 테이블이 이미 필터링되어 있어 내부의 <code>ALL('Date')</code>가 제거할 것이 없다. <code>CountRowsLater</code>는 모든 연도를 반환한다. 미평가된 <code>'Sales'</code> 참조를 받아서 직접 <code>ALL('Date')</code>를 적용하기 때문이다. 코드가 동일한데 답이 다른 이유, 이제 <code>val</code> 대 <code>expr</code>로 명시적으로 설명된다.</p>
+
+<p>참조 타입(<code>ColumnRef</code>, <code>MeasureRef</code>, <code>TableRef</code>, <code>CalendarRef</code>)은 반드시 <code>expr</code>여야 한다. 이들은 함수 컨텍스트 안에서 해석되어야 하는 참조이기 때문이다. 그리고 암묵적 타입 캐스팅은 값 타입(<code>AnyVal</code>, <code>Scalar</code>, <code>Table</code>)에서만 지원되며, 참조 타입은 지원하지 않는다.</p>
+
+<h3>본문 안에서의 타입 검사</h3>
+
+<p>UDF는 <code>ISNUMERIC</code>, <code>ISINT64</code>, <code>ISSTRING</code>, <code>ISBOOLEAN</code>, <code>ISDATETIME</code>, <code>ISCURRENCY</code> 등 <code>IS…</code> 함수 계열을 사용해 런타임에 입력을 검증할 수 있다. 이를 통해 단일 함수가 여러 입력 타입을 받아 분기 처리할 수 있다. 문서의 통화 예제는 정수 키 또는 문자열 코드를 받아 적절한 조회 함수로 디스패치한다.</p>
+
+<pre>FUNCTION GetCurrencyName = ( currency ) =>
+    IF (
+        ISINT64 ( currency ),
+        GetCurrencyNameByKey  ( currency ),   // 보조 UDF
+        GetCurrencyNameByCode ( currency )    // 보조 UDF
+    )</pre>
+
+<p>UDF는 다른 UDF를 호출할 수 있다. 중첩이 가능하므로 거대한 단일 함수 대신 작고 조합 가능한 보조 함수들을 만들 수 있다.</p>
+
+<h3>함께 쓸 두 가지 새 헬퍼 함수: TABLEOF와 NAMEOF</h3>
+
+<p><code>TABLEOF</code>는 컬럼·측정값·캘린더에 연결된 <strong>테이블 참조</strong>를 반환한다. 데이터 자체가 아닌 테이블 참조다. 컬럼을 전달하면 해당 컬럼이 속한 테이블을, 측정값을 전달하면 해당 측정값이 정의된 테이블을 얻는다. 테이블 이름을 하드코딩하지 않고 "이 컬럼이 속한 테이블의 행 수를 세어라"와 같은 함수를 작성할 수 있게 된다.</p>
+
+<pre>FUNCTION GetTableRowCount = ( columnRef : ANYREF ) =>
+    COUNTROWS ( TABLEOF ( columnRef ) )</pre>
+
+<p>주의 사항: <code>TABLEOF</code>는 현재 필터 컨텍스트(기본 테이블)의 컬럼만 해석하며, 행 컨텍스트는 해석하지 않는다. 또한 계산 열이나 RLS 규칙에서 DirectQuery 모드로 사용할 수 없다.</p>
+
+<p><code>NAMEOF</code>는 객체 이름 반환 방식을 세밀하게 제어할 수 있도록 개선되었다. 테이블·컬럼·측정값·캘린더 이름의 어떤 구성 요소를, 어떤 형식으로 반환할지 선택할 수 있다. <code>TABLEOF</code>와 함께 사용하면 기존의 "동적" DAX 시도에서 빈번했던 문자열 조작 취약성을 크게 줄일 수 있다.</p>
+
+<h3>발표문이 알려주지 않는 것: 요구사항과 제한</h3>
+
+<p>롤아웃을 계획하기 전에 반드시 확인해야 할 내용이다.</p>
+
+<ul>
+  <li><strong>호환성 레벨 1702 이상이 필요하다.</strong> 오래된 모델을 유지 관리하고 있다면 이것이 진입 장벽이 된다.</li>
+  <li><strong>서비스에서는 UDF를 저작할 수 없다.</strong> UDF를 서비스에서 사용할 수는 있지만, 공식 문서는 명확히 밝힌다: "서비스에서 DAX UDF를 저작하거나 모델링할 수 없습니다." 저작은 Power BI Desktop(모델 뷰, DAX 쿼리 뷰, TMDL 뷰) 또는 SSMS 22.5+에서 이루어진다. 웹 편집은 조회와 일부 편집에는 가능하지만, Desktop이 저작의 기준 환경이다.</li>
+  <li><strong>객체 수준 보안(OLS)이 전파되지 않는다.</strong> 진짜 보안 함정이다. UDF가 OLS로 보호된 측정값을 참조하는 경우, 함수가 자동으로 보호되지 않는다. 해당 측정값에 대한 권한이 없는 사용자로 실행하면 측정값이 존재하지 않는 것처럼 동작한다. Microsoft의 권장 사항: 보호된 객체 이름을 함수명이나 설명에 노출하지 말 것.</li>
+  <li><strong>재귀 없음</strong>, 상호 재귀 없음, 함수 오버로딩 없음, 명시적 반환 타입 없음. 파라미터 설명(JSDoc 방식)은 지원하지만, 열거형 반환값은 지원하지 않아 열거형 파라미터를 기대하는 내장 함수에 UDF를 전달할 수 없다.</li>
+  <li><strong>IntelliSense 지원이 고르지 않다.</strong> 시각적 계산 수식 표시줄, SSMS, TMDL 뷰에서 부재하며, 소스 모델 UDF를 참조하는 라이브 연결 리포트의 리포트 기반 측정값에서도 제한적이다. 파서 관련 알려진 버그도 있다: <code>expr</code> 파라미터에 컬럼을 전달할 때 불필요한 빨간 밑줄이 나타날 수 있고, <code>ColumnRef</code>/<code>MeasureRef</code>/<code>TableRef</code>/<code>CalendarRef</code> 힌트가 모든 호출 지점에서 허용되지 않는다. 이 경우 문서에서 권장하는 대안은 <code>AnyRef</code>다.</li>
+  <li><strong>소스 관리 측면의 진짜 가치.</strong> UDF는 Power BI 프로젝트의 <code>definition</code> 폴더 안 <code>functions.tmdl</code>에 저장되는 1등급 모델 객체다. TMDL로 저장하고 Git 연동 워크스페이스에 커밋하면 단일 진실 소스에서 승인된 비즈니스 로직이 흐른다. <code>INFO.USERDEFINEDFUNCTIONS()</code> DMV(전체 메타데이터, 쓰기 권한 필요) 또는 <code>INFO.FUNCTIONS()</code>(경량 메타데이터)로 모델의 모든 UDF를 조회할 수 있다.</li>
+</ul>
+
+<h3>DAX 쿼리 뷰 결과 그리드에 정렬·필터 추가 (GA)</h3>
+
+<p>작지만 실질적으로 시간을 절약해주는 개선이다. DAX 쿼리 뷰 결과 그리드 컬럼 헤더에 정렬·필터 컨트롤이 내장되었다. 헤더를 클릭하면 오름차순/내림차순이 전환되고, 줄임표(…)로 정렬 초기화·값 검색·값 필터링을 할 수 있다. 쿼리를 다시 작성하지 않고도 쿼리 결과를 검증할 수 있어 UDF 디버깅이나 낯선 데이터 탐색 사이클이 짧아진다.</p>
+
+<hr>
+
+<h2>2. PBIR: 리포트 형식이 코드가 되고 있다, 그리고 결국 유일한 형식이 된다</h2>
+
+<p>발표의 "개발자+API" 항목 밑에는 몇 년 만에 가장 중요한 플랫폼 변화 중 하나가 담겨 있다. 발표문이 많은 역사를 몇 줄에 압축했으므로 이 부분을 충분히 설명한다.</p>
+
+<h3>PBIR이 실제로 무엇인가</h3>
+
+<p>PBIR(Power BI Enhanced Report Format)은 불투명하고 단일 파일인 <code>report.json</code>(이제 PBIR-Legacy로 불린다)을 <strong>개별 JSON 파일로 이루어진 공개 문서화된 폴더 구조</strong>로 대체한다. 페이지마다, 시각 요소마다, 북마크마다 각자의 파일이 있으며, 각 파일 상단에 공개 JSON 스키마 선언이 있다. VS Code에서 PBIR 프로젝트를 열면 편집 중에 IntelliSense와 스키마 유효성 검사를 받을 수 있다.</p>
+
+<p>공식 문서의 폴더 레이아웃:</p>
+
+<pre>definition/
+├── bookmarks/
+│   ├── [bookmarkName].bookmark.json
+│   └── bookmarks.json
+├── pages/
+│   ├── [pageName]/
+│   │   ├── visuals/
+│   │   │   └── [visualName]/
+│   │   │       ├── mobile.json
+│   │   │       └── visual.json
+│   │   └── page.json
+│   └── pages.json
+├── version.json
+├── reportExtensions.json
+└── report.json</pre>
+
+<p>각 객체가 독립 파일이므로, PBIX로는 고통스러웠던 작업들이 간단해진다. 파일을 복사해 리포트 간 시각 요소를 이동하거나, 페이지 전반의 시각 요소 일관성을 붙여넣기로 확보하거나, 전체 리포트에서 찾기·바꾸기를 실행하거나, 스크립트로 모든 시각 요소를 일괄 편집할 수 있다. AI 에이전트 관점에서 보면 스키마 검증된 구조적 JSON 파일을 작성하는 것은 실현 가능한 문제이지만, 바이너리 덩어리를 편집하는 것은 그렇지 않다. 이것이 바로 리포트가 갑자기 "AI 친화적"이 된 이유다.</p>
+
+<h3>시맨틱 모델 참조: byPath vs byConnection</h3>
+
+<p><code>definition.pbir</code> 파일은 <code>datasetReference</code>를 통해 리포트의 시맨틱 모델을 가리키며, 어떤 형식을 사용하느냐에 따라 실제 동작이 달라진다.</p>
+
+<ul>
+  <li><strong>byPath</strong> — 로컬 시맨틱 모델 폴더로의 상대 경로. Power BI Desktop이 모델을 <strong>완전 편집 모드</strong>로 함께 연다.</li>
+  <li><strong>byConnection</strong> — Fabric 워크스페이스에 이미 있는 모델로의 연결 문자열. Desktop이 모델을 편집용으로 열지 않는다(라이브 연결 동작).</li>
+</ul>
+
+<p>Fabric REST API를 통해 배포할 때는 반드시 <code>byConnection</code>을 사용해야 하며, <code>semanticmodelid</code>만 있으면 된다.</p>
+
+<pre>{
+    "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
+    "version": "4.0",
+    "datasetReference": {
+        "byConnection": {
+            "connectionString": "semanticmodelid=[SemanticModelId]"
+        }
+    }
+}</pre>
+
+<p>문서에서 소개하는 편리한 트릭: 하나의 저장소에 여러 <code>*.pbir</code> 파일을 유지할 수 있다. 예를 들어 일반 작업용 <code>byPath</code> 파일과 리포트 수준 측정값 작업용 <code>definition-liveConnect.pbir</code> 파일을 함께 두는 식이다. Fabric Git 통합은 <code>definition.pbir</code>만 처리하고 나머지는 무시하지만, 공존 자체는 가능하다.</p>
+
+<h3>6월 소식: 기본값 전환, 일시 중지, 그리고 재시도</h3>
+
+<p>Microsoft가 솔직하게 문서화하고 있는 롤아웃 경과다. PBIR은 2026년 1월에 서비스 기본값으로 발표되었지만, 기본값 전환이 넓어지면서 문제가 발생해 일시 중지되었다. 6월 업데이트는 이 기본값 전환 롤아웃을 <strong>다시 활성화</strong>하는 것이다. Microsoft의 명시적 계획(날짜는 의도이며 이후 단계는 앞선 단계의 성공에 조건부다):</p>
+
+<ul>
+  <li><strong>6월</strong> — Power BI 서비스에서 PBIR 기본값 전환 재활성화 시작.</li>
+  <li><strong>7~8월</strong> — Power BI Desktop에서 PBIR 기본값 활성화. <em>서비스 롤아웃이 정상적으로 진행된 경우에 한함.</em></li>
+  <li><strong>GA</strong> — 여름 내내 기본값 롤아웃이 순조롭게 진행된다는 전제 하에 PBIR과 PBIP의 GA가 뒤따른다.</li>
+</ul>
+
+<p>불필요한 혼란을 막기 위한 두 가지 설명:</p>
+
+<p><strong>PBIR이 PBIX를 대체하는 것이 아니다.</strong> PBIX는 여전히 기본 파일 형식이다. 변화는 내부적인 것으로, PBIX 파일이 리포트를 PBIR-Legacy 대신 PBIR로 저장하게 되어 PBIX와 PBIP가 일치하게 된다. PBIX 사용자에게는 "조용한 업그레이드"로 설명된다.</p>
+
+<p><strong>그러나 GA 시점에 PBIR이 필수화된다.</strong> 이것이 계획해야 할 핵심 내용이다: "PBIR이 정식 출시에 도달하면 유일하게 지원되는 리포트 형식이 되며, 전환이 필수가 됩니다." 레거시 <code>report.json</code>을 가정하는 도구, 테마 파이프라인, 프로세스가 있다면 GA가 아니라 지금 마이그레이션을 시작해야 한다.</p>
+
+<h3>롤백 기간, 제한, 알아야 할 엣지 케이스</h3>
+
+<ul>
+  <li><strong>전환은 UI에서 단방향이다.</strong> 리포트가 PBIR로 전환되면 인터페이스를 통해 PBIR-Legacy로 되돌릴 수 없다. Desktop은 <code>TempSaves\Backups</code>에 30일 보관 백업을 자동 생성한다. 서비스는 28일 보관 PBIR-Legacy 백업을 생성하며, <code>리포트 설정 → PBIR-Legacy로 복원</code>을 통해 복원할 수 있다. 단, 서비스에서 직접 업그레이드된 리포트에만 해당된다.</li>
+  <li><strong>서비스 크기 제한</strong>: 리포트당 최대 1,000 페이지, 페이지당 1,000 시각 요소, 1,000 리소스 파일, 총 리포트 크기 300MB, 총 리소스 300MB.</li>
+  <li>리포트 내 파일이 약 500개를 넘으면 <strong>저작(조회가 아닌) 속도가 느려진다.</strong></li>
+  <li><strong>데이터 값이 메타데이터에 남을 수 있다.</strong> 시각 요소를 <code>Company = "Contoso"</code>로 필터링하면 리터럴 "Contoso"가 <code>visual.json</code>에 저장된다. 슬라이서 선택값과 커스텀 컬럼 너비도 마찬가지다. 소스 관리에 무엇이 포함되는지 민감한 조직이라면 알아야 할 사항이다.</li>
+  <li><strong>아직 미지원</strong>: 소버린 클라우드는 GA 전에 자동 업그레이드되지 않으며, 템플릿 앱 워크스페이스도 지원되지 않는다.</li>
+  <li><strong>주의 사항</strong>: 시각 자동 필터는 <strong>편집 중 필터 창을 적어도 한 번 확장한 후에야</strong> <code>visual.json</code>에 저장된다.</li>
+</ul>
+
+<hr>
+
+<h2>3. 에이전트 리포팅 스택: AI가 이제 처음부터 끝까지 리포트를 빌드하고 배포할 수 있다</h2>
+
+<p>이번 릴리스에서 가장 주목받을 기능이지만, 능력은 실재하되 경계가 명확하므로 신중하게 살펴볼 필요가 있다.</p>
+
+<h3>출시된 것</h3>
+
+<p><strong>AI 기반 Power BI 리포트 저작 에이전트 스킬(프리뷰)</strong>은 GitHub Copilot CLI에 최적화된 1등급 공개 AI 에이전트 스킬 카탈로그인 Skills for Fabric의 일부다. 자연어를 사용해 에이전트가 수동 파일 편집이나 클릭 없이 Power BI 리포트를 설계·빌드·검증·배포할 수 있다. 설치는 AI 클라이언트에서 두 개의 명령어면 된다.</p>
+
+<pre>/plugin marketplace add microsoft/skills-for-fabric
+/plugin install powerbi-authoring@fabric-collection</pre>
+
+<p>파이프라인은 대화로 진행되는 다섯 단계로 구성된다.</p>
+
+<ol>
+  <li><strong>계획(Plan)</strong> — 요구사항 수집, 대상 독자 정의, 안내 Q&amp;A를 통한 리포트 사양 확정.</li>
+  <li><strong>설계(Design)</strong> — 페이지 아키타입, 차트 유형, 색상 팔레트, 접근성 기준 선택.</li>
+  <li><strong>저작(Author)</strong> — PBIR 정의 파일(페이지, 시각 요소, 필터, 테마) 생성.</li>
+  <li><strong>검증(Validate)</strong> — Power BI Desktop을 다시 로드하고 시각적 검토를 위한 스크린샷 캡처.</li>
+  <li><strong>배포(Publish)</strong> — 터미널에서 완성된 리포트를 Fabric 워크스페이스로 배포.</li>
+</ol>
+
+<p>검증 단계가 영리한 부분이다. 차트가 올바르게 렌더링되었는지 추측하는 대신, 에이전트가 <strong>Desktop Bridge</strong>를 사용해 이미 열려 있는 Desktop 인스턴스를 다시 로드하고 스크린샷을 캡처한다. 눈 감고 생성하는 것이 아니라 실제 <em>편집 → 확인 → 반복</em> 루프다.</p>
+
+<h3>더 큰 그림 안에서의 위치</h3>
+
+<p>이것은 독립적인 기능이 아니다. Microsoft가 조립해온 스택에 연결된다.</p>
+
+<ul>
+  <li>2025년 11월 <strong>Power BI Modeling MCP 서버</strong>를 출시해 에이전트가 시맨틱 레이어를 저작할 수 있게 했다.</li>
+  <li>리포트 저작 스킬은 해당 Modeling MCP 및 시맨틱 모델 저작 스킬과 함께 작동하므로, 하나의 에이전트 흐름이 모델을 빌드하고 그 위에 리포트를 빌드할 수 있다. 원시 데이터에서 완성된 솔루션까지 프롬프트만으로 가능하다.</li>
+  <li>Build에서 발표된 <strong>시맨틱 모델용 Fabric Apps(프리뷰)</strong>는 같은 아이디어를 커스텀 웹 앱으로 확장한다. 코딩 에이전트가 시맨틱 모델 위에 Fabric 네이티브 웹 앱을 빌드·배포하며, 나머지 분석 환경과 동일한 거버넌스된 비즈니스 로직과 보안을 재사용한다. Microsoft는 이 분야에서 Replit과 파트너십을 맺고 있으며, 앱 백엔드를 코드로 정의하는 오픈소스 SDK/CLI인 Rayfin 등 관련 백엔드 도구도 출시하고 있다.</li>
+</ul>
+
+<h3>경계(흥분하기 전에 읽을 것)</h3>
+
+<ul>
+  <li><strong>현재는 로컬 PBIP 전용이다.</strong> 리포트 저작 스킬은 현재 로컬 PBIP 파일에서만 작동한다. 클라우드 호스팅 원클릭 서비스가 아니다.</li>
+  <li><strong>프리뷰 상태다.</strong> Microsoft가 전용 피드백 스레드와 함께 공개적으로 반복 개선 중이다. 거친 부분을 예상해야 한다.</li>
+  <li><strong>GitHub Copilot CLI에 최적화되어 있다.</strong> 카탈로그는 해당 클라이언트를 타겟으로 한다. 다른 에이전트를 사용한다면 커뮤니티 병렬 도구를 찾아보라. 사이드카 프로세스 없이 밀리초 단위 실행으로 다른 코딩 에이전트에 동일한 PBIR/TMDL 스킬을 제공하는 오픈소스 CLI들이 있다.</li>
+  <li><strong>거버넌스는 여전히 적용된다.</strong> 배포는 당신이 권한을 가진 Fabric 워크스페이스로 이루어진다. 에이전트가 권한 모델을 벗어나지 않는다.</li>
+</ul>
+
+<p><strong>솔직한 평가:</strong> 이것은 이번 릴리스에서 가장 흥미로운 기능이자, 첫날부터 프로덕션 수준의 자율성을 기대한다면 가장 실망할 가능성이 높은 기능이다. 스캐폴딩과 반복 단계의 강력한 가속기로 취급하되, 인간이 사양과 결과물을 검토하는 구조로 접근하는 것이 현재로서는 가치를 얻는 방법이다. 이것은 비판이 아니라 현실적인 조언이다.</p>
+
+<hr>
+
+<h2>4. 웹 모델링에서의 Copilot(프리뷰): 브라우저 안의 AI 모델링 파트너</h2>
+
+<p>이번 달 Power BI 서비스에 순차 배포되는 <strong>웹 모델링 Copilot</strong>은 브라우저 기반 모델 저작 환경에 직접 내장된 AI 어시스턴트다. 자연어로 대화하여 시맨틱 모델을 분석하고 개선할 수 있다.</p>
+
+<p>주요 기능:</p>
+<ul>
+  <li>모델 <strong>분석</strong> — 일관성 없는 명명, 불명확한 구조, 최적화 기회 탐색.</li>
+  <li><strong>스키마 업데이트</strong> — 테이블·컬럼 이름 변경, 관계 생성, DAX 측정값 생성 후 자동 적용.</li>
+</ul>
+
+<p>접근 방법: 서비스에서 시맨틱 모델을 열고 <code>모델 뷰</code>로 이동한 후, <code>편집 모드</code>로 전환하고 리본에서 <code>Copilot</code>을 선택한다.</p>
+
+<h3>안전 모델이 흥미로운 부분이다</h3>
+
+<p>Microsoft는 이 기능을 명확히 제어 가능하고 되돌릴 수 있게 설계했다.</p>
+
+<ul>
+  <li>기존 Power BI 권한을 준수한다. 활성 모델의 관리자, 구성원, 기여자만 변경할 수 있다.</li>
+  <li>분석이나 업데이트 전에 <strong>세션 시작 시 명시적 허가</strong>를 요청한다.</li>
+  <li>시맨틱 버전 기록을 사용해 <strong>자동으로 복원 체크포인트를 생성</strong>하므로 변경이 잘못되면 롤백할 수 있다.</li>
+</ul>
+
+<h3>기억해야 할 실용적인 의존성</h3>
+
+<p>Power BI에서 Copilot의 데이터 쿼리 기능은 Q&amp;A와 같은 엔진에 의존한다. 즉 <strong>모델에서 Q&amp;A가 활성화되어 있어야 한다.</strong> 대부분의 소스에서 기본적으로 켜져 있지만, <strong>DirectQuery와 Direct Lake</strong> 모델에서는 수동으로 활성화해야 할 수 있다. 그리고 생성형 기능에서 항상 그렇듯, 출력은 비결정적이다. 같은 프롬프트와 데이터도 다른 결과를 생성할 수 있으므로 신뢰하기 전에 검증이 필요하다.</p>
+
+<hr>
+
+<h2>5. Microsoft 365 Copilot의 Fabric IQ: Power BI 데이터, Copilot 안에서 바로 답하다</h2>
+
+<p>전략적으로 중요하지만 요약만 보면 과소평가하기 쉬운 기능이다. <strong>Fabric IQ는 Power BI 데이터 답변을 Microsoft 365 Copilot Chat에 직접 통합한다</strong>(현재 Frontier). 비즈니스 사용자가 Power BI를 열지 않고도 이미 사용하는 환경, 즉 파일·이메일·채팅과 함께하는 곳에서 데이터 질문을 던질 수 있다.</p>
+
+<p>M365 Copilot Cowork(Fabric IQ 플러그인을 활성화하면 일상 업무 중 데이터 쿼리 가능)와 Frontier 사용자를 위한 M365 Copilot Chat 메인라인에서도 사용할 수 있다. 라이선스 관련 한 가지 명확히 할 점: Cowork 플러그인 자체는 Power BI 콘텐츠가 이미 요구하는 것 이상의 추가 Fabric 용량을 요구하지 않는다. 리포트 접근에는 해당 리포트에 필요한 라이선스와 용량이 여전히 필요하지만, 플러그인 활성화로 별도 용량 추가 요금은 발생하지 않는다.</p>
+
+<h3>실제로 작동하는 방식</h3>
+
+<p>사용자가 데이터 질문을 하면 Copilot은 해당 사용자의 <strong>기존 권한</strong>을 사용해 관련 리포트와 그 기반 시맨틱 모델에 접근한다. 질문을 연결하는 세 가지 방법이 있다.</p>
+
+<ul>
+  <li>Copilot Chat 창에 <strong>리포트 링크 붙여넣기</strong></li>
+  <li><strong>첨부 메뉴</strong>(+ 버튼 → 기타)에서 최근 조회한 리포트 선택</li>
+  <li>프롬프트에서 <strong>리포트 이름 언급</strong> — Copilot이 유사 일치(fuzzy matching)를 사용하지만, 비슷한 이름의 리포트가 많으면 신뢰도가 떨어진다</li>
+</ul>
+
+<p>중요하게도, Copilot은 데이터 답변에서 멈추지 않는다. 의사결정을 위해 더 완전한 그림을 제공하고자 <strong>더 넓은 M365 컨텍스트(파일, 채팅, 이메일)와 데이터를 연결한다.</strong></p>
+
+<h3>공식 문서가 진가를 발휘하는 부분: 실제 배포 전에 확인해야 할 제약들</h3>
+
+<p>발표문은 "Frontier 사용자에 대해 M365 Copilot에서 지금 사용 가능"이라고 말한다. 문서는 훨씬 더 많은 내용을 말하며, 이것이 전체 이야기다.</p>
+
+<p><strong>라이선스 및 접근(모두 필요):</strong></p>
+<ul>
+  <li>모든 사용자에게 <strong>Microsoft 365 Copilot Premium 라이선스</strong></li>
+  <li><strong>Frontier 접근</strong> — Power BI 기반 데이터 답변은 처음에는 Frontier 전용이다</li>
+  <li>사용자에게 기본 리포트와 시맨틱 모델에 대한 <strong>권한과 라이선스 접근 모두</strong> 필요(Copilot in Fabric은 불필요)</li>
+</ul>
+
+<p><strong>보안은 처음부터 끝까지 준수된다:</strong> Copilot은 시맨틱 모델의 <strong>RLS(행 수준 보안)와 OLS(객체 수준 보안)를 모두 존중한다.</strong> 접근이 제한되어 있다면 답변도 허용된 내용만 반영한다.</p>
+
+<p><strong>콘텐츠 유형 지원 현황:</strong></p>
+<table>
+  <tr><th>콘텐츠 유형</th><th>지원 여부</th><th>비고</th></tr>
+  <tr><td>Power BI 리포트</td><td>예</td><td>전체 지원 (링크, 첨부, 이름 검색)</td></tr>
+  <tr><td>워크스페이스 앱의 리포트</td><td>예</td><td>독립형과 동일</td></tr>
+  <tr><td>조직 앱의 리포트</td><td>부분</td><td>첨부 메뉴에 나타나지만 링크 복사·붙여넣기 불가. 메뉴 또는 이름 검색 사용</td></tr>
+  <tr><td>시맨틱 모델(직접 첨부)</td><td>아니요</td><td>직접 첨부 불가, 단 리포트 답변에서 전체 모델 사용</td></tr>
+  <tr><td>페이지 매김 보고서(RDL)</td><td>아니요</td><td>—</td></tr>
+  <tr><td>대시보드</td><td>아니요</td><td>—</td></tr>
+  <tr><td>앱(최상위 레벨)</td><td>아니요</td><td>—</td></tr>
+</table>
+
+<p><strong>놓치기 쉬운 용량 제외 조건:</strong> Embedded 용량(A 또는 EM SKU)의 시맨틱 모델은 지원되지 않는다. Pro, PPU, Premium, Fabric 용량은 정상 지원된다. A/EM SKU로 임베디드 분석 환경을 구축했다면 이 기능을 사용할 수 없다.</p>
+
+<p><strong>데이터 최신성:</strong> 답변은 시맨틱 모델의 <strong>마지막 새로 고침</strong> 시점의 데이터를 반영한다. 실시간 데이터가 아니다.</p>
+
+<p><strong>기타 실용적 주의 사항:</strong> 리포트에 대한 첫 번째 쿼리는 느리다(Copilot이 콘텐츠를 인덱싱하며, 후속 쿼리는 빠르다). 리포트 공유 링크는 지원되지 않는다(주소 표시줄의 전체 URL을 붙여넣어야 한다). 검색은 아직 개선 중이다. Fabric 데이터 에이전트와 온톨로지는 명시적으로 게시된 M365 에이전트 없이는 Copilot Chat에서 답변할 수 없다. 질문은 Copilot 지원 언어로 해야 한다. Power BI가 유일한 Fabric 워크로드인 지역에서는 사용할 수 없다.</p>
+
+<p><strong>두 개의 관리자 설정이 이를 제어한다:</strong> Microsoft Admin Center의 "M365 Copilot에서 Fabric 데이터 사용 가능"(기본적으로 켜짐, 끄면 모든 Fabric 컨텍스트가 Copilot에서 제거됨)과 Fabric 관리자 포털의 "Microsoft 365 서비스와 Fabric 데이터 공유"(이것만 끄면 리포트가 + 메뉴에서 사라지지만 링크 붙여넣기와 이름 검색은 여전히 가능)다.</p>
+
+<hr>
+
+<h2>6. 리포팅과 시각화: 지금 당장 쓸 수 있는 실용적 개선</h2>
+
+<p>플랫폼·AI 이야기가 헤드라인이지만, 이번 릴리스에는 소소하지만 실질적인 마찰을 제거하는 리포팅 개선이 촘촘히 담겨 있다.</p>
+
+<h3>지도</h3>
+
+<p><strong>셰이프 맵 정식 출시(GA).</strong> 내장 맵 사용, 자체 TopoJSON·GeoJSON 업로드, URL로 맵 참조가 가능하다. 새로운 편의 기능: 커스텀 맵을 업로드한 경우 나중에 편집해 재업로드할 수 있도록 다운로드할 수 있다. 운영 상 기억할 것: 셰이프 맵은 색상으로 지역을 비교하며 정밀한 위치를 표시하지 않는다. 데이터 포인트 상한 1,500개. 범례 분류가 작동하려면 색상 채도 버킷이 설정되어야 한다. 국가·지역명은 안정적인 지오코딩을 위해 세 글자 약어를 사용할 것.</p>
+
+<p><strong>Azure Maps 선택 기능이 기본 활성화.</strong> 원형·직사각형 그리기, 자유형 폴리곤 올가미, 이동 시간·거리 기반 선택 도구가 이전에는 있었지만 기본값이 꺼져 있어 대부분 사용자가 알지 못했다. 이제 자동으로 나타난다. 폴리곤 완료: 첫 번째 포인트 다시 클릭, 마지막 포인트 더블클릭, 또는 C 키 입력. 이전 동작을 선호한다면 서식 → 컨트롤 → 선택에서 비활성화할 수 있다.</p>
+
+<h3>슬라이서와 날짜 처리</h3>
+
+<p><strong>슬라이서용 날짜 피커(프리뷰)</strong>는 이번 릴리스에서 가장 유지보수 시간을 절약해주는 기능이다. 리포팅 주기마다 날짜 슬라이서를 수동으로 앞으로 밀어야 하는 반복 작업을 없앤다. <strong>상대 선택</strong>을 설정하고 배포하면 데이터가 새로 고침될 때 자동으로 앞으로 이동한다. 오늘 날짜, 실제 데이터의 첫 번째 날짜, 또는 마지막 날짜에 고정되므로 선택이 의미 있게 유지된다. 선택 범위가 사용 가능한 데이터 밖에 있으면 명확한 표시기가 나타난다. 활성화: 옵션 → 프리뷰 기능에서 켠 후, 슬라이서에 날짜 컬럼을 추가하고 날짜 피커를 선택한다.</p>
+
+<p><strong>슬라이서 선택 아이콘 색상 서식(GA).</strong> 슬라이서의 체크박스·라디오 버튼을 이제 색상 변경할 수 있다. 이전에는 고정 색상이었다. 어두운 배경에서 선택 상태가 가독성을 유지하거나 브랜드 색상에 맞출 수 있다. 서식 창의 선택 아이콘에서 찾을 수 있다.</p>
+
+<h3>테이블과 매트릭스</h3>
+
+<p><strong>매트릭스 행·열 헤더 자동 확장(GA).</strong> 행과 열 각각에 대해 자동 확장을 켜면 새로 추가된 계층 수준이 기본적으로 완전히 펼쳐진 상태로 표시된다. 이것은 특히 "이 시각 요소 개인화" 기능과 함께 유용하다. 사용자가 자체 필드를 추가할 때 각 수준을 클릭하지 않아도 전체 계층이 즉시 나타난다.</p>
+
+<p><strong>고정 열 너비에 대한 조건부 서식(GA).</strong> 5월의 고정 너비 컬럼 기능을 확장해, 이제 <strong>열 너비를 측정값이나 What-If 파라미터에 바인딩</strong>할 수 있다. 버튼이나 슬라이더를 추가하면 각 열에 얼마나 많은 공간을 할당할지 사용자에게 직접 제어권을 준다. 사용자마다 강조하는 데이터가 다르거나 화면 크기가 다를 때 실용적이다. 열 너비 섹션에서 커스텀 너비를 활성화한 후 열별로 fx 버튼을 사용한다.</p>
+
+<h3>차트</h3>
+
+<p><strong>산점도 마커 자동 맞춤.</strong> 켜면 가장자리와 모서리 근처의 마커와 버블이 완전히 보이도록 플롯 영역이 자동 조정된다. 더 이상 클리핑을 방지하기 위해 최소/최대 축 범위를 수동으로 조정할 필요가 없다.</p>
+
+<p><strong>막대·세로막대형 차트의 축 개선(GA).</strong> 새로운 반올림 범위 옵션으로 축 패딩을 끄면 값 축이 데이터에 바로 붙어 시작된다. 간격 없이 더 타이트한 차트. 그리고 데이터 레이블을 추가해도 이제 <strong>축 범위가 이동하지 않는다.</strong> 레이블 켜기/끄기와 관계없이 축이 제자리를 유지한다.</p>
+
+<h3>카드와 툴팁</h3>
+
+<p><strong>카드 시각 요소 이미지 호버 상태(GA).</strong> 카드 위에 마우스를 올렸을 때 나타나는 다른 이미지 소스, 투명도, 효과, 배경색을 구성할 수 있다. 서식 창의 상태 드롭다운 → 호버에서 설정한다. 카드를 상호작용 가능하게 느끼게 하고 "여기에 더 있다"는 신호를 준다.</p>
+
+<p><strong>툴팁 문장 모드(GA), DAX 불필요.</strong> 이것은 숨겨진 보석이다. 단순히 값을 표시하는 것이 아니라 데이터를 <strong>설명</strong>하도록 툴팁을 구성할 수 있다. 툴팁으로 지정한 필드만 표시하고, 해당 필드를 참조하는 문장을 작성해 숫자에 맥락을 부여한다. 기본 호버 카드와 전체 리포트 페이지 툴팁 사이의 중간 지점이며, DAX가 전혀 필요 없다. 엔지니어링 없이 맥락을 원하는 리포트 저자에게는 조용한 승리다.</p>
+
+<hr>
+
+<h2>7. 협업과 에코시스템</h2>
+
+<p><strong>Teams의 Power BI — 탭이 이제 비공개·공유 채널에서도 작동.</strong> Power BI 탭을 추가하고 대화 바로 옆에서 리포트를 보고 상호작용할 수 있다. 비공개·공유 채널로 확장하면서 이전에는 불가능했던 범위별·크로스팀 협업이 가능해졌다.</p>
+
+<p><strong>타사 시각 요소 주요 업데이트:</strong></p>
+<ul>
+  <li><strong>Network Graph by Powerviz</strong> — 방향성 링크, 다단계 관계, 중복 노드 병합, 클러스터링, 랭킹, 색각이상자를 위한 팔레트 포함 30개 이상의 팔레트를 갖춘 엔티티 관계 시각화.</li>
+  <li><strong>accoMASTERDATA v1.1.16.2</strong> — 직접 데이터베이스 쓰기(생성/업데이트/삭제), 복합 키 지원, 트랜잭션 키 제어 행 생성, 데이터베이스 트리거 호환성, 향상된 감사 로깅을 갖춘 거버넌스 마스터 데이터 관리. 별도 앱 레이어 없이 Power BI 내에서 가능.</li>
+</ul>
+
+<hr>
+
+<h2>이 릴리스가 실제로 의미하는 것</h2>
+
+<p>한 발 물러서면 큰 그림이 보인다. Microsoft는 세 가지 방향으로 나아가고 있다.</p>
+
+<ul>
+  <li><strong>시맨틱 모델이 제품이다.</strong> 리포트도, 대시보드도 아니다. 정의의 거버넌스 레이어다. DAX UDF가 그 레이어를 재사용 가능하고 소스 관리 가능하게 만들고, 웹 모델링 Copilot이 빌드를 돕고, Fabric IQ가 Copilot·Cowork·앱 등 모든 곳에 전파한다.</li>
+  <li><strong>리포트는 코드다.</strong> PBIR의 필수화 행진, 그리고 그 코드를 읽고 쓰는 에이전트 스킬은 리포트 개발이 소프트웨어 개발과 수렴하고 있음을 의미한다. 버전 관리, 스키마 유효성 검사, CI/CD, AI 지원이 포함된다.</li>
+  <li><strong>AI는 그 아래 있는 컨텍스트만큼만 좋다.</strong> 반복되는 주제, 즉 시맨틱 모델 없는 에이전트는 추측자라는 것, 이것이 Microsoft의 핵심 논지다. 이번 릴리스의 모든 기능은 신뢰할 수 있는 컨텍스트를 빌드하거나 배포하는 것 중 하나다.</li>
+</ul>
+
+<p><strong>실무자를 위한 액션 아이템:</strong></p>
+<ul>
+  <li>이제 GA인 만큼 반복되는 DAX를 UDF로 통합하기 시작하라. 단, 호환성 레벨 1702, 서비스 저작 불가 제한, OLS 미전파 함정을 주의하라.</li>
+  <li>레거시 <code>report.json</code>을 가정하는 모든 도구를 감사하고 PBIR 마이그레이션을 GA 전에 계획하라.</li>
+  <li>로컬 PBIP에서 에이전트 스킬을 파일럿하되, 사양과 결과물에 사람이 루프 안에 있어야 한다.</li>
+  <li>M365 Copilot의 Fabric IQ를 실제 제약 조건에 맞게 평가하라: Frontier + Copilot Premium 라이선스, Embedded 용량 미지원, 조직 앱 부분 지원, 마지막 새로 고침 최신성, RLS/OLS 준수.</li>
+  <li>날짜 피커 슬라이서, 툴팁 문장 모드, 축 반올림 범위, 매트릭스 자동 확장 등 비용 없는 즉각적 개선을 바로 채택하라.</li>
+</ul>
+
+</body>
+</html>

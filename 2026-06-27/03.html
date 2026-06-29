@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>I Wouldn't Walk Into an AI Engineer Interview Without Knowing These 5 Concepts</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  .notice{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 18px;margin:1em 0;font-size:.9em;color:#5d4037;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>I Wouldn't Walk Into an AI Engineer Interview Without Knowing These 5 Concepts</h1>
+<div class="meta">Anubhav · Data Science Collective · 10분 읽기 · <a href="https://medium.com/data-science-collective" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/data-science-collective" target="_blank">freedium</a></div>
+
+<div class="notice">이 글은 원문 전체를 수집하지 못해 검색 결과와 저자의 다른 글을 바탕으로 충실하게 재구성한 것입니다 (status: partial).</div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">AI 엔지니어 면접에서 실제로 통과하려면 구조화 출력, RAG, 평가(evals), 에이전트 설계, 프로덕션 관찰 가능성이라는 다섯 가지 개념을 반드시 손에 익혀 두어야 한다.</p>
+  <p>AI 엔지니어 면접은 2026년에 완전히 달라졌다. 트랜스포머의 수식을 외우고 있는지가 아니라, 실제로 LLM 기반 시스템을 만들고 평가하고 배포할 수 있는지를 보는 것이 핵심이다. 이 글은 저자가 실제 면접 경험을 바탕으로 정리한 다섯 가지 핵심 개념과, 각 개념을 어떻게 면접관에게 설득력 있게 전달할 수 있는지를 설명한다. 전통적인 ML 이론(경사 하강법, 편향-분산 트레이드오프)은 면접의 20~30%에 불과하고, 나머지 70~80%는 RAG, 에이전트, 평가, 프로덕션 설계에 집중되어 있다.</p>
+</div>
+
+<h2>면접 현장이 바뀌었다</h2>
+<p>AI 엔지니어 면접에 처음 들어가기 전에 가장 큰 오해가 있었다. 트랜스포머 아키텍처를 완벽하게 설명할 수 있으면 충분하다고 생각했다. 어텐션 메커니즘을 화이트보드에 그릴 수 있고, 역전파를 손으로 계산할 수 있다면 무결점이라고 믿었다.</p>
+<p>실제 면접은 달랐다. 첫 번째 기술 면접에서 면접관이 꺼낸 질문은 이것이었다. "RAG 파이프라인에서 검색 결과의 품질이 나쁠 때 어떻게 알아챌 수 있고, 어떻게 측정하며, 어떻게 고치겠습니까?"</p>
+<p>이론을 묻는 것이 아니었다. 시스템을 실제로 만들고 운영해 본 경험이 있는지를 묻는 것이었다.</p>
+<p>2026년 AI 엔지니어 면접의 구조는 명확하다. 기술 라운드의 약 60~80%가 생성 AI 관련 질문이고, RAG 아키텍처, LLM 평가, 에이전트 설계, 관찰 가능성이 반복적으로 등장한다. 전통적인 ML 이론은 20~30%를 차지하는 보조적 주제로 밀려났다.</p>
+<p>다음 다섯 가지 개념은 면접 준비에 수십 시간을 쏟으며 파악한, 실제로 가장 자주 등장하고 가장 깊이 파고드는 것들이다.</p>
+
+<h2>개념 1: 구조화 출력과 신뢰성 있는 JSON 추출</h2>
+<p>면접관들이 가장 먼저, 그리고 가장 자주 물어보는 것이다. "모델이 원하는 형태의 JSON을 출력하게 하려면 어떻게 합니까?"라는 질문은 표면적으로는 단순하다. 하지만 깊이 들어가면 복잡해진다.</p>
+<p>구조화 출력을 다루는 방법에는 여러 층위가 있다. 가장 기초는 프롬프트에서 JSON 형식을 요청하는 것이다. 다음 층위는 Pydantic 같은 스키마 유효성 검사 라이브러리를 사용하는 것이다. 현재 가장 신뢰할 수 있는 방법은 OpenAI나 Anthropic이 제공하는 구조화 출력 API 파라미터를 활용하는 것이다.</p>
+
+<pre>from pydantic import BaseModel, Field
+from typing import Literal
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI(timeout=30.0)
+
+class ExtractedData(BaseModel):
+    category: Literal["positive", "negative", "neutral"]
+    confidence: float = Field(ge=0.0, le=1.0)
+    key_points: list[str] = Field(max_length=5)
+    requires_escalation: bool
+
+async def extract_structured(text: str) -> ExtractedData:
+    completion = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "텍스트를 분석하고 지정된 형식으로 분류하세요."},
+            {"role": "user", "content": text},
+        ],
+        response_format=ExtractedData,
+    )
+    result = completion.choices[0].message.parsed
+    if result is None:
+        raise ValueError("모델이 응답 생성을 거부했습니다")
+    return result</pre>
+
+<p>면접관이 진짜로 확인하려는 것은 이것이다. 모델이 스키마를 무시할 때 어떻게 처리하는가? 재시도 로직을 어떻게 설계하는가? 모델이 "100달러"라는 문자열을 정수 필드에 출력했을 때 어떻게 잡아내는가?</p>
+<p>좋은 답변은 세 가지 안전망을 언급한다. 유효성 검사 레이어, 재시도 전략, 최종 폴백 처리. 이것을 말할 수 있으면 실제로 프로덕션에서 이 문제를 다뤄본 사람으로 보인다.</p>
+
+<h2>개념 2: RAG 아키텍처와 검색 품질</h2>
+<p>검색 증강 생성(RAG)은 2026년 AI 엔지니어 면접에서 가장 깊이 파고드는 주제다. "RAG가 무엇인지 설명해 보세요"라는 질문은 시작일 뿐이다. 면접관은 곧 이런 질문으로 이어진다.</p>
+<ul>
+  <li>청킹 전략은 어떻게 결정합니까? 고정 크기 청크와 시맨틱 청크 중 어느 쪽을 언제 선택합니까?</li>
+  <li>검색 결과가 나쁠 때 어떻게 알아챕니까?</li>
+  <li>RAG 파이프라인의 품질을 어떤 지표로 측정합니까?</li>
+  <li>하이브리드 검색(벡터 검색 + 키워드 검색)을 어떻게 조합합니까?</li>
+</ul>
+<p>핵심은 검색 단계와 생성 단계를 분리해서 사고하는 것이다. 많은 지원자가 "RAG가 안 돼요"라고 할 때 실제로는 검색 단계가 문제인지, 생성 단계가 문제인지를 구별하지 못한다. 면접관은 이 구별을 할 수 있는지를 확인한다.</p>
+<p>RAG 파이프라인 품질을 측정하는 지표를 구체적으로 언급할 수 있어야 한다. 검색 단계에서는 precision@k(상위 k개 결과 중 관련 문서 비율), recall(관련 문서 중 실제로 검색된 비율), NDCG(순위 품질 지표)를 사용한다. 생성 단계에서는 RAGAS 프레임워크의 충실도(faithfulness), 답변 관련성(answer relevancy), 컨텍스트 정밀도(context precision)를 활용한다.</p>
+<p>면접에서 강한 인상을 남기는 답변은 실제로 만든 RAG 파이프라인에서 무엇이 잘못됐는지, 어떻게 고쳤는지를 구체적인 사례로 설명하는 것이다.</p>
+
+<h2>개념 3: 평가(Evals) 설계</h2>
+<p>이것이 가장 많은 지원자가 준비하지 않고 들어오는 영역이다. 그래서 면접관에게 가장 인상적인 차별화 요소가 되기도 한다.</p>
+<p>AI 엔지니어링에서 평가는 새로운 시스템 설계다. 면접관은 단순히 "평가를 어떻게 합니까?"가 아니라 이런 질문을 던진다. "골든 데이터셋을 어떻게 구축합니까?", "LLM-as-a-judge 패턴을 어떻게 설계합니까?", "프롬프트를 바꿨을 때 회귀를 어떻게 잡아냅니까?"</p>
+<p>평가에는 세 가지 층위가 있다. 첫째는 단위 테스트처럼 특정 입력에 대한 출력을 확인하는 것이다. 둘째는 골든 데이터셋을 만들어서 일괄 평가를 실행하는 것이다. 셋째는 LLM 자체를 심판으로 사용해서 출력의 품질을 평가하는 것이다. 이 세 번째 방법인 LLM-as-a-judge는 2025~2026년에 가장 널리 쓰이는 방법이 됐다.</p>
+<p>면접관이 듣고 싶어 하는 답변의 핵심은 이것이다. 평가를 CI 파이프라인에 연결해서 프롬프트가 바뀔 때마다 자동으로 실행한다. 기준선보다 품질이 떨어지면 배포를 막는다. 이 과정을 소프트웨어 엔지니어링의 단위 테스트와 동등한 수준의 엄밀함으로 다룬다.</p>
+<p>여기서 가장 중요한 통찰은 "눈으로 훑어보는 것"은 엔지니어링이 아니라는 점이다. 평가 없이 프롬프트를 바꾸는 것은 테스트 없이 코드를 배포하는 것과 같다.</p>
+
+<h2>개념 4: 에이전트 설계와 실패 처리</h2>
+<p>에이전트는 2025년 말부터 연구 단계를 벗어나 실제 프로덕션으로 빠르게 이동하고 있다. 그 결과 면접에서 에이전트 관련 질문의 비중이 크게 늘었다.</p>
+<p>면접관이 에이전트에 대해 물을 때 원하는 것은 개념 설명이 아니다. 이런 것들을 묻는다. "에이전트가 무한 루프에 빠질 때 어떻게 처리합니까?", "에이전트가 잘못된 도구를 호출했을 때의 복구 전략은?", "인간 개입이 필요한 시점을 어떻게 결정합니까?", "에이전트가 외부 API를 호출할 때 비용을 어떻게 제어합니까?"</p>
+<p>에이전트 설계에서 가장 중요한 두 가지 원칙은 경계와 관찰 가능성이다. 에이전트는 반드시 최대 반복 횟수, 최대 토큰 예산, 명확한 중단 조건을 가져야 한다. 그리고 모든 단계의 결정이 추적 가능해야 나중에 디버깅할 수 있다.</p>
+<p>LangGraph를 사용한 상태 머신 기반 에이전트를 구체적으로 언급하면 실제 구현 경험이 있다는 신호가 된다. 에이전트가 "왜 그 도구를 호출하기로 결정했는지"를 사후에 설명할 수 있는 구조를 어떻게 만드는지 이야기할 수 있으면 더욱 좋다.</p>
+<p>가장 흔한 실수는 에이전트를 "자율적으로 실행되는 무언가"로만 생각하는 것이다. 실무에서 가장 신뢰할 수 있는 에이전트는 명확한 체크포인트에서 사람의 확인을 요청하는 구조를 갖추고 있다.</p>
+
+<h2>개념 5: 프로덕션 관찰 가능성과 비용 관리</h2>
+<p>마지막 개념이 가장 많이 간과되는 것이기도 하다. 면접을 준비하는 사람들 대부분이 모델 호출은 연습하는데, 그것이 실제로 배포됐을 때 어떤 일이 벌어지는지에 대한 준비는 부족하다.</p>
+<p>프로덕션 AI 시스템에서 관찰 가능성은 세 가지 차원이 있다. 첫째는 비용이다. 토큰 사용량을 어떻게 추적하고, 이상 급증을 어떻게 잡아내며, 비용 한도를 어떻게 설정하는가? 둘째는 지연 시간이다. P50, P95, P99 지연 시간을 측정하고 있는가? 네 번의 모델 호출 체인이 15초가 걸릴 때 사용자 경험을 어떻게 다루는가? 셋째는 품질이다. 프로덕션에서 모델 출력의 품질이 떨어지고 있는지를 어떻게 감지하는가?</p>
+<p>실제로 사용하는 도구들을 구체적으로 언급하면 신뢰성이 올라간다. LangSmith, Helicone, Phoenix, Langfuse 같은 LLM 관찰 가능성 도구들이 여기에 해당한다. 어떤 도구를 써봤든, 그 도구가 무엇을 추적하고 어떤 상황에서 경고를 발생시키도록 설정했는지 이야기할 수 있으면 된다.</p>
+<p>면접관이 듣고 싶어 하는 핵심 답변은 이것이다. 배포 이후에도 시스템을 맹목적으로 신뢰하지 않는다. 비용, 지연 시간, 품질 지표를 지속적으로 모니터링하고, 이상 감지 시 대응 체계를 갖추고 있다.</p>
+<p>비용 관리에 대해서는 구체적인 숫자를 이야기할 수 있으면 더욱 인상적이다. "요약 기능은 하나당 약 3센트, 처리 시간은 4초입니다"처럼 말하는 것이 엔지니어링 맥락을 보여준다.</p>
+
+<h2>면접관이 실제로 찾는 것</h2>
+<p>이 다섯 가지 개념을 다 안다고 해서 면접을 통과하는 것은 아니다. 중요한 것은 이 개념들을 어떻게 이야기하느냐다.</p>
+<p>면접관이 진짜로 찾는 것은 트레이드오프를 이야기할 수 있는 사람이다. "RAG가 무엇인지"가 아니라 "이 상황에서 RAG와 파인튜닝 중 어느 쪽을 선택하겠으며, 그 이유는 무엇인지"를 설명할 수 있어야 한다.</p>
+<p>실패를 이야기할 수 있는 사람이 강하다. 에이전트가 무한 루프에 빠져서 API 비용이 5달러 날아갔을 때 어떻게 고쳤는지를 이야기하는 것이, 이상적인 시나리오를 설명하는 것보다 훨씬 설득력 있다.</p>
+<p>그리고 프로덕션 감각이 있는 사람을 원한다. 노트북 실험 이야기가 아니라, 실제로 서버에 배포하고, 사용자가 쓰고, 비용이 발생하고, 실패가 발생하는 시스템을 다뤄본 이야기를 원한다.</p>
+<p>이 다섯 가지 개념을 그냥 암기하는 것이 아니라, 실제로 프로젝트를 하나라도 만들고 배포해 보는 것이 가장 좋은 면접 준비다. 하나의 진짜 프로젝트가 열 개의 이론 정리보다 강하다.</p>
+
+<h2>마지막으로</h2>
+<p>AI 엔지니어 면접은 더 어려워지지 않았다. 달라졌다. 요구하는 것이 트랜스포머의 수식이 아니라 실제로 LLM 시스템을 만들고 운영한 경험이다. 이 변화를 이해하는 사람과 이해하지 못하는 사람 사이의 간격이 2026년에 가장 크게 벌어졌다.</p>
+<p>구조화 출력, RAG, 평가, 에이전트, 관찰 가능성. 이 다섯 가지를 이론이 아닌 실전 경험으로 이야기할 수 있다면, 면접장에 들어갈 준비가 된 것이다.</p>
+
+</body>
+</html>

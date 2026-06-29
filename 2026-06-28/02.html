@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>I Did 11 Technical Interviews in 60 Days. Here Is the Pattern Nobody Tells You.</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>I Did 11 Technical Interviews in 60 Days. Here Is the Pattern Nobody Tells You.</h1>
+<div class="meta">Devrim Ozcay · Production Engineering · Stackademic · 11분 읽기 · <a href="https://blog.stackademic.com/i-got-laid-off-and-did-11-technical-interviews-in-60-days-here-is-the-pattern-nobody-tells-you-1bc2d2ca6097" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/stackademic/i-got-laid-off-and-did-11-technical-interviews-in-60-days-here-is-the-pattern-nobody-tells-you-1bc2d2ca6097" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">11번의 기술 면접을 60일 만에 치르고 나서야 알게 된 것은 더 많은 지식이 아니라 같은 지식을 구조화해서 전달하는 90초짜리 프레임이었다.</p>
+  <p>Java·Spring Boot 백엔드 엔지니어인 저자 Devrim Ozcay는 AI 구조조정으로 실직한 뒤 60일 동안 11번의 기술 면접을 치렀다. 초반 4번은 탈락했고, 패턴을 파악한 뒤 구조를 바꾸자 합격률이 달라졌다. 핵심은 시스템 설계 첫 90초 구조화, 장애 경험 4박자 서술, 행동 면접 답변의 이해관계-행동-결과 프레임이다. 더 뛰어난 엔지니어가 되는 것이 아니라 자신이 가진 능력을 실패 없이 전달하는 방식을 찾는 것이 핵심이다.</p>
+</div>
+
+<h2>실직 통보와 60일</h2>
+
+<p>HR은 이것을 "AI 주도 효율화 검토"라고 불렀다. 나는 그냥 해고라고 부른다.</p>
+
+<p>나는 Java와 Spring Boot로 주로 금융권에서 3년 경력을 쌓은 백엔드 엔지니어다. 갑자기 구직 시장에 나오게 되자 곧바로 현실의 냉정함을 맞닥뜨렸다. 최근 18개월 사이에 구조조정을 당한 사람들이 모두 같은 포지션을 노리고 있었다. 미드-시니어 백엔드 엔지니어, 지금 이 시장에서 가장 경쟁이 치열한 구간이다.</p>
+
+<p>60일 동안 11번의 면접을 봤다. 쉽게 얻은 기회는 하나도 없었다. 이 글은 동기부여 이야기가 아니다. 어떤 라운드를 통과했고, 어떤 라운드에서 떨어졌으며, 첫 4번의 면접에서 내가 저지른 실수가 무엇인지, 실제 데이터를 바탕으로 쓴다.</p>
+
+<h2>11번의 면접, 그 전체 그림</h2>
+
+<p>면접 11개를 세 가지 기준으로 정리하면 이렇다.</p>
+
+<ul>
+  <li><strong>코딩 라운드:</strong> 11번 모두 응시, 9번 통과. 탈락한 2번은 문제 자체가 틀리지 않았다. 시간 관리 실패였다.</li>
+  <li><strong>시스템 설계 라운드:</strong> 8번 응시, 초반 4번 중 1번만 통과. 패턴을 바꾼 뒤 4번 연속 통과.</li>
+  <li><strong>행동(behavioral) 라운드:</strong> 7번 응시, 초반에는 절반 이하로 통과. 구조를 잡은 뒤 6번 연속 통과.</li>
+</ul>
+
+<p>패턴은 분명했다. 코딩은 처음부터 어느 정도 됐다. 문제는 시스템 설계와 행동 라운드였다.</p>
+
+<h2>시스템 설계: 내가 놓친 것</h2>
+
+<p>처음 4번의 시스템 설계 면접에서 나는 매번 같은 방식으로 들어갔다. 문제를 받으면 바로 생각을 말하기 시작했다. 데이터베이스 선택, 캐싱 전략, 서비스 분리 방식을 순서 없이 쏟아냈다.</p>
+
+<p>면접관 입장에서는 어떻게 보였을까? 경험은 있는데 구조가 없는 사람. 아는 것은 많지만 어디서 시작해야 할지 모르는 사람.</p>
+
+<p>5번째 면접 전에 피드백을 하나 받았다. "설계를 시작하기 전에 범위를 먼저 정의했으면 좋겠다." 그 말이 전부였다.</p>
+
+<p>나는 처음 90초를 완전히 바꿨다. 이후 모든 시스템 설계 면접은 이 순서로 시작했다.</p>
+
+<ol>
+  <li>문제를 내 말로 한 문장으로 재정의한다.</li>
+  <li>핵심 제약 조건을 두 가지로 좁힌다. 규모, 지연 시간, 일관성 중 가장 중요한 두 가지.</li>
+  <li>설계 범위를 명시적으로 선언한다. "오늘 우리가 다룰 부분은 이것이고, 다루지 않을 부분은 이것입니다."</li>
+</ol>
+
+<p>이 90초짜리 구조는 단순히 보기 좋은 것이 아니었다. 시니어 엔지니어가 모호한 요구사항에 어떻게 접근하는지 그 자체를 보여주는 신호였다. 실제 프로덕션에서는 아무도 완벽한 요구사항을 주지 않는다.</p>
+
+<blockquote>내가 부족하다고 느꼈던 그 자질은 카리스마가 아니었다. 90초 동안 실행할 수 있는 구조였다. 그것은 배울 수 있는 것이었다.</blockquote>
+
+<h2>행동 면접: 같은 경험, 다른 전달 방식</h2>
+
+<p>행동 면접도 비슷한 문제가 있었다. 내가 가진 경험 자체는 충분했다. 대규모 장애를 처리한 적도 있고, 레거시 시스템을 마이그레이션한 경험도 있다. 그런데 왜 자꾸 탈락했을까?</p>
+
+<p>녹음을 다시 들어보니(면접 직후 기억을 메모했다), 나는 배경 설명에 너무 많은 시간을 쓰고 있었다. 면접관이 듣고 싶은 것, 즉 내가 무엇을 결정했고 결과가 어떻게 됐는지에 이르기 전에 시간이 다 갔다.</p>
+
+<p>나는 모든 행동 면접 답변을 다음 4박자로 재구성했다.</p>
+
+<ol>
+  <li><strong>이해관계(Stakes):</strong> 이 상황에서 실패했을 때의 실질적 결과가 무엇인가. 다운타임인가, 금전 손실인가, 고객 이탈인가.</li>
+  <li><strong>내가 내린 판단:</strong> 정보가 불완전한 상황에서 내가 어떤 기준으로 결정했는가.</li>
+  <li><strong>행동(Action):</strong> 구체적으로 무엇을 했는가. 팀 전체가 한 것이 아니라, 내가 한 것.</li>
+  <li><strong>결과(Outcome):</strong> 수치로 말할 수 있는 결과. 복구 시간, 성능 개선, 비용 절감.</li>
+</ol>
+
+<p>같은 경험을 이 구조에 맞춰 다시 정리하자 답변 길이는 절반으로 줄었고, 면접관의 반응은 확연히 달라졌다. 더 좋은 경험이 생긴 것이 아니었다. 같은 경험을 더 명확하게 전달하는 방법을 찾은 것이다.</p>
+
+<h2>코딩 라운드: 내가 틀리지 않은 이유와 탈락한 이유</h2>
+
+<p>코딩 라운드 탈락 2번은 모두 풀이가 맞았다. 시간이 문제였다. 45분 안에 완성까지 가지 못했다.</p>
+
+<p>원인을 되짚어보니 공통점이 있었다. 풀이를 시작하기 전에 엣지 케이스를 먼저 말로 정리하지 않았다. 직접 코딩부터 시작하다가 중간에 케이스를 발견하고 되돌아갔다. 그 왕복 시간이 쌓였다.</p>
+
+<p>이후에는 코드를 한 줄 쓰기 전에 반드시 2분을 쓴다. 입력 조건, 예외 상황, 기대 출력을 말로 정리한 뒤 면접관에게 확인을 받는다. 이 2분이 마지막 10분을 살린다.</p>
+
+<h2>시장에 대한 솔직한 이야기</h2>
+
+<p>11번의 면접 과정에서 기술적인 것 외에도 배운 것이 있다.</p>
+
+<p>적지 않은 비율의 면접이 사실상 파이프라인을 채우기 위한 것이었다. 회사가 이미 내부 후보자를 정해둔 상태에서 외부 면접을 진행하거나, 실제 채용 의사 없이 무료로 기술 자문을 얻는 경우도 있다. 이것은 개인의 실패가 아니다. 시장 구조의 문제다. 단, 그런 경우를 일찍 감지할수록 에너지를 더 좋은 곳에 쓸 수 있다.</p>
+
+<p>감지 신호는 몇 가지다. 면접 단계가 4단계를 넘어가면서 각 단계마다 "우리 현재 시스템에서 이 문제를 어떻게 해결하겠냐"는 질문이 나올 때. 피드백 요청에 2주 이상 침묵할 때. 포지션 JD가 면접을 거듭할수록 바뀔 때.</p>
+
+<h2>오퍼를 받고 나서 돌아보니</h2>
+
+<p>결국 오퍼를 받았다. 드라마틱하게 더 뛰어난 엔지니어가 되어서가 아니었다. 조용히 나를 탈락시키던 패턴을 제거했기 때문이다.</p>
+
+<p>11번의 면접이 필요했고 4번 떨어졌다. 이 구조를 2번째 탈락 뒤에 파악했다면 3번째 탈락은 없었을 것이다.</p>
+
+<p>지금 면접 준비 중이라면 세 가지만 반복 연습하자.</p>
+
+<ul>
+  <li>시스템 설계 답변의 <strong>첫 90초</strong>: 재정의, 제약 조건, 범위 선언.</li>
+  <li>장애 경험의 <strong>4박자</strong>: 이해관계, 판단 기준, 행동, 결과.</li>
+  <li>행동 면접의 <strong>이해관계-행동-결과</strong> 프레임: 배경 설명은 한 문장으로 줄이기.</li>
+</ul>
+
+<p>이 세 가지가 자동으로 나올 때까지 연습하면 된다. 지식을 더 쌓는 것보다 이게 먼저다.</p>
+
+</body>
+</html>

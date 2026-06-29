@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8 Terminal Tricks I Use Every Single Day</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>8 Terminal Tricks I Use Every Single Day</h1>
+<div class="meta">Coders Stop · 9분 읽기 · <a href="https://medium.com/@coders.stop/beyond-the-basics-8-terminal-commands-that-reveal-whats-really-happening-on-your-machine-02b02316f86f" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@coders.stop/beyond-the-basics-8-terminal-commands-that-reveal-whats-really-happening-on-your-machine-02b02316f86f" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">컴퓨터는 자신이 무엇을 하는지 끊임없이 말하고 있다. 8가지 터미널 명령을 익히면 그 목소리를 들을 수 있다.</p>
+  <p>저자는 고성능 컴퓨팅 팀에서 선임 엔지니어가 정체불명의 성능 문제를 단 몇 줄의 명령어로 풀어내는 장면을 목격하고 터미널을 다시 배우기 시작했다. 이 글은 <code>lsof</code>·<code>strace</code>/<code>dtrace</code>·<code>iotop</code>·<code>perf</code>·<code>ss</code>·<code>ps</code>·<code>sysdig</code>·<code>/proc</code>&amp;<code>/sys</code>, 8가지 명령을 기본 사용법, 실전 시나리오, 심화 활용법 순으로 소개한다. 단순한 트릭 모음이 아니라 시스템이 실제로 무엇을 하는지 직접 들여다볼 수 있는 진단 능력을 기르는 것이 목표다.</p>
+</div>
+
+<p>고성능 컴퓨팅 팀에 합류하고 3년이 지났을 때, 나는 리눅스 터미널을 제법 안다고 생각했다. 디렉터리 탐색, 파일 관리, 기본 명령 실행 정도는 익숙했다. 그러던 어느 날 선임 엔지니어가 원인을 알 수 없는 성능 문제를 앞에 두고 내가 한 번도 본 적 없는 명령어들을 차례로 입력하며 시스템 동작의 숨겨진 층위들을 눈앞에 펼쳐 보이는 장면을 목격했다.</p>
+
+<p>"거기를 어떻게 봐야 한다고 생각하셨어요?" 내가 물었다.</p>
+
+<p>"컴퓨터는 자기가 무엇을 하는지 항상 말하고 있어요," 그가 답했다. "제대로 물어보는 법만 알면 돼요."</p>
+
+<p>그 대화가 컴퓨터와 내가 상호작용하는 방식을 바꾸었다. 현대 운영체제의 세련된 인터페이스 아래에는 올바른 명령어만 알면 누구든 접근할 수 있는 방대한 정보의 세계가 존재한다는 사실을 그때 깨달았다.</p>
+
+<p>이 글에서는 기초를 넘어서는 여덟 가지 터미널 명령을 소개한다. 단순한 구경거리가 아니라, 성능 문제를 진단하고 시스템 동작을 이해하며 컴퓨터가 실제로 무슨 일을 하는지 더 깊이 파악하는 데 실제로 도움이 된 도구들이다. Linux와 macOS 환경을 중심으로 다루지만, Windows 사용자는 WSL이나 PowerShell에서 유사한 기능을 쓸 수 있다.</p>
+
+<hr>
+
+<h2>1. lsof: 파일을 실제로 누가 쓰고 있는지 보기</h2>
+
+<p><code>lsof</code>(list open files)는 현재 어떤 프로세스가 어떤 파일에 접근 중인지 들여다볼 수 있는 창이다. 일반 문서는 물론, 유닉스 계열 시스템에서 "모든 것은 파일"이라는 원칙에 따라 소켓·파이프·디바이스까지 포함한다.</p>
+
+<h3>기본 사용법</h3>
+
+<pre># 열린 파일 전체 목록
+$ lsof
+
+# 특정 파일을 어떤 프로세스가 열었는지 확인
+$ lsof /path/to/file
+
+# 특정 프로세스가 열어둔 파일 전체 보기
+$ lsof -p 1234
+
+# 특정 포트를 사용 중인 프로세스 확인 (예: 3000번 포트)
+$ lsof -i :3000</pre>
+
+<h3>실전 시나리오: 언마운트가 안 되는 외장 드라이브</h3>
+
+<p>얼마 전 동료가 외장 드라이브를 언마운트하려 했는데 "device busy" 오류가 계속 떴다. 이럴 때 <code>lsof</code>가 진가를 발휘한다.</p>
+
+<pre>$ lsof /Volumes/ExternalDrive
+COMMAND   PID   USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+Terminal  502   john   12r  DIR   1,4    4096    567  /Volumes/ExternalDrive/.Spotlight-V100
+mdworker  623   john   15r  REG   1,4    8560    982  /Volumes/ExternalDrive/document.pdf</pre>
+
+<p>Spotlight 인덱싱 프로세스와 문서 미리보기 프로그램이 아직 드라이브의 파일에 접근 중이었다. 문서를 닫고 Spotlight를 일시적으로 비활성화하자 언마운트가 바로 성공했다.</p>
+
+<h3>심화 활용</h3>
+
+<p><code>lsof</code>가 더욱 빛나는 장면은 복잡한 문제를 진단할 때다.</p>
+
+<pre># 삭제됐지만 아직 열려 있어 디스크 공간을 낭비하는 파일 찾기
+$ lsof +L1
+
+# 특정 프로그램의 모든 네트워크 연결 확인
+$ lsof -i -a -c program_name
+
+# 디렉터리 삭제를 막고 있는 파일 찾기
+$ lsof +D /path/to/directory</pre>
+
+<p>파일이 삭제되더라도 그것을 열어두고 있는 프로세스가 있으면 해당 프로세스가 파일을 닫기 전까지 디스크 공간은 실제로 해제되지 않는다. 눈에 보이는 파일 크기와 디스크 여유 공간이 맞지 않는 이상한 상황은 대부분 이 때문이다.</p>
+
+<hr>
+
+<h2>2. strace / dtrace: 시스템 콜을 실시간으로 추적하기</h2>
+
+<p>시스템 콜은 애플리케이션과 커널 사이의 인터페이스다. 이 호출들을 추적하면 프로그램이 실제로 무엇을 하고 있는지 전례 없는 수준으로 파악할 수 있다.</p>
+
+<h3>기본 사용법</h3>
+
+<p>Linux에서는 <code>strace</code>를 쓴다.</p>
+
+<pre># 명령 실행 시 발생하는 모든 시스템 콜 추적
+$ strace ls -l
+
+# 실행 중인 프로세스에 붙이기
+$ strace -p 1234
+
+# 특정 유형의 시스템 콜만 보기 (예: 파일 관련)
+$ strace -e trace=file ls -l</pre>
+
+<p>macOS에서는 <code>dtrace</code>(또는 <code>dtruss</code> 래퍼)를 사용한다.</p>
+
+<pre># macOS에서 동일한 기능
+$ sudo dtruss ls -l</pre>
+
+<h3>실전 시나리오: 이유 없이 느려진 앱</h3>
+
+<p>개발 중이던 Django 애플리케이션이 갑자기 심하게 느려졌다. 프로세스에 <code>strace</code>를 붙이자 예상치 못한 장면이 나타났다.</p>
+
+<pre>$ strace -p 12345
+[...]
+stat("/home/user/project/templates/xyz.html", {st_mode=S_IFREG|0644, st_size=1274, ...}) = 0
+stat("/home/user/project/templates/xyz.html", {st_mode=S_IFREG|0644, st_size=1274, ...}) = 0
+stat("/home/user/project/templates/xyz.html", {st_mode=S_IFREG|0644, st_size=1274, ...}) = 0
+[수천 번 반복]</pre>
+
+<p>요청 한 건마다 같은 템플릿 파일을 수천 번씩 확인하고 있었다. 템플릿 캐싱 설정이 잘못된 탓이었다. 설정을 고치자 성능이 즉시 정상으로 돌아왔다.</p>
+
+<h3>심화 활용</h3>
+
+<pre># 각 시스템 콜의 소요 시간 보기
+$ strace -T ls -l
+
+# 특정 유형(예: 네트워크)만 필터링
+$ strace -e trace=network wget example.com
+
+# 시스템 콜 횟수와 시간 요약
+$ strace -c python script.py</pre>
+
+<p>처음 보는 애플리케이션을 다룰 때 특히 유용하다. 문서가 뭐라고 설명하든 상관없이, 프로그램이 운영체제와 실제로 어떻게 상호작용하는지 그대로 보여준다.</p>
+
+<hr>
+
+<h2>3. iotop: 디스크를 가장 많이 쓰는 주범 찾기</h2>
+
+<p>특히 전통적인 HDD 환경에서 디스크 I/O는 자주 병목이 된다. <code>iotop</code>은 어떤 프로세스가 디스크를 심하게 사용하는지 바로 보여준다.</p>
+
+<h3>기본 사용법</h3>
+
+<pre># 프로세스별 디스크 읽기/쓰기 활동 보기
+$ sudo iotop
+
+# 실제로 I/O를 하는 프로세스만 표시
+$ sudo iotop -o</pre>
+
+<h3>실전 시나리오: 배터리가 비정상적으로 빨리 닳는 노트북</h3>
+
+<p>팀 동료가 아무것도 안 하는 것 같은데 노트북 배터리가 유독 빨리 닳는다고 했다. <code>iotop</code>을 실행하자 원인이 바로 드러났다.</p>
+
+<pre>$ sudo iotop -o
+TID  PRIO  USER     DISK READ  DISK WRITE  SWAPIN     IO>    COMMAND
+941  be/3  user       0.00 B/s    3.44 M/s  0.00 %  95.73 % dropbox-bin</pre>
+
+<p>Dropbox가 높은 속도로 지속적으로 데이터를 쓰고 있었다. 특정 폴더의 동기화를 일시 중지하자 배터리 수명이 정상으로 돌아왔다.</p>
+
+<h3>심화 활용</h3>
+
+<pre># 대역폭 대신 누적 I/O 표시
+$ sudo iotop -a
+
+# 갱신 주기를 짧게 설정 (순간적인 부하 캡처에 유용)
+$ sudo iotop -o -d 0.1</pre>
+
+<p><code>iotop</code>이 없는 시스템에서는 <code>iostat</code>으로 유사한 디스크 활동 정보를 얻을 수 있다.</p>
+
+<pre># 1초마다 디스크 사용률 통계 갱신
+$ iostat -xz 1</pre>
+
+<hr>
+
+<h2>4. perf: 함수 단위로 CPU 사용량 프로파일링하기</h2>
+
+<p>프로세스 내부에서 어떤 함수가 CPU 시간을 소모하는지 알고 싶다면, <code>perf</code>가 커널 수준의 프로파일링 기능을 제공한다. 예전에는 고가의 상용 도구에서만 볼 수 있던 기능이다.</p>
+
+<h3>기본 사용법</h3>
+
+<pre># 명령의 CPU 사용 데이터 기록
+$ sudo perf record -g command_to_run
+
+# 기록된 데이터 분석
+$ sudo perf report</pre>
+
+<h3>실전 시나리오: CPU를 과도하게 먹는 서비스</h3>
+
+<p>운영 중인 서비스가 예상보다 일관되게 CPU를 많이 사용했다. <code>perf</code>로 정확히 어떤 함수가 원인인지 찾아냈다.</p>
+
+<pre>$ sudo perf record -g -p 12345 -F 99 -- sleep 30
+$ sudo perf report --sort=dso
+
+# 결과 (단순화)
+69.21%  myservice  libcrypto.so.1.1  [.] 0x000000000012a9b0
+15.43%  myservice  myservice         [.] process_request
+ 8.75%  myservice  libc-2.31.so      [.] __memcpy_avx_unaligned_erms
+ 4.12%  myservice  myservice         [.] validate_user_input</pre>
+
+<p>CPU 시간의 69%가 암호화 라이브러리에서 소모되고 있었다. 더 파고들어 보니 설정 오류로 매 요청마다 불필요한 암호화·복호화 작업이 일어나고 있었다. 설정을 수정하자 해결됐다.</p>
+
+<h3>심화 활용</h3>
+
+<pre># 스택 트레이스 포함 프로파일링 (더 풍부한 컨텍스트)
+$ sudo perf record -g command_to_run
+
+# 샘플링 주파수를 높여 더 세밀하게 측정
+$ sudo perf record -F 999 command_to_run
+
+# CPU 외 다른 성능 이벤트 프로파일링
+$ sudo perf record -e cache-misses command_to_run</pre>
+
+<p>CPU 사용량, 메모리 접근 패턴, 캐시 동작 등 저수준 성능 특성을 광범위하게 조사할 수 있다.</p>
+
+<hr>
+
+<h2>5. ss: 네트워크 연결을 속속들이 보기</h2>
+
+<p><code>ss</code>는 소켓 통계를 상세하게 보여준다. <code>netstat</code>이 더 많이 알려져 있지만, <code>ss</code>가 더 강력하고 빠르다.</p>
+
+<h3>기본 사용법</h3>
+
+<pre># 모든 TCP 연결 보기
+$ ss -t
+
+# 리스닝 중인 포트 보기
+$ ss -ltn
+
+# 소켓을 사용 중인 프로세스 보기
+$ ss -p</pre>
+
+<h3>실전 시나리오: 간헐적인 연결 거부</h3>
+
+<p>어떤 애플리케이션이 간헐적으로 데이터베이스 연결에 실패했다. <code>ss</code>를 실행하자 문제가 드러났다.</p>
+
+<pre>$ ss -tan state time-wait | wc -l
+1024</pre>
+
+<p>TIME-WAIT 상태의 연결이 쌓여 가용 포트가 고갈되고 있었다. 커널의 TCP 설정을 조정해 포트 재활용을 빠르게 했다.</p>
+
+<pre># TIME-WAIT 소켓 유지 시간 줄이기
+$ sudo sysctl -w net.ipv4.tcp_fin_timeout=30
+
+# 적절한 상황에서 TIME-WAIT 소켓 재사용 허용
+$ sudo sysctl -w net.ipv4.tcp_tw_reuse=1</pre>
+
+<h3>심화 활용</h3>
+
+<pre># 타이머 상세 정보 보기
+$ ss -ti
+
+# 소켓 메모리 사용량 표시
+$ ss -tm
+
+# 특정 상태의 연결만 보기
+$ ss -t state established
+
+# 소스/목적지 주소로 필터링
+$ ss dst 192.168.1.5</pre>
+
+<p>수천 개의 연결이 있는 바쁜 서버에서 복잡한 네트워킹 문제를 진단할 때 특히 강력하다.</p>
+
+<hr>
+
+<h2>6. ps (커스텀 포맷): 프로세스 전체 그림 보기</h2>
+
+<p>기본적인 <code>ps</code> 사용법은 많이들 알지만, 커스텀 포맷으로 원하는 정보를 정확히 뽑아내는 기능은 잘 활용되지 않는다.</p>
+
+<h3>기본 사용법</h3>
+
+<pre># 모든 프로세스의 상세 정보 보기
+$ ps aux
+
+# 특정 필드만 커스텀으로 지정, CPU 사용률 내림차순 정렬
+$ ps -eo pid,ppid,cmd,%cpu,%mem --sort=-%cpu</pre>
+
+<h3>실전 시나리오: 메모리 누수 조사</h3>
+
+<p>메모리 누수가 의심되는 상황에서 가상 메모리와 실제 메모리를 시간에 따라 추적해야 했다.</p>
+
+<pre>$ watch -n 10 'ps -eo pid,rss,vsz,cmd | grep server_process'
+
+# 10초마다 갱신되는 출력
+PID     RSS     VSZ     CMD
+12345 1024568 4562340 /usr/local/bin/server_process</pre>
+
+<p>이 값들이 시간에 따라 어떻게 변하는지 관찰해서 누수를 확인하고 원인 프로세스를 특정했다.</p>
+
+<h3>심화 활용</h3>
+
+<pre># 부모-자식 관계를 트리로 시각화
+$ ps -ejH
+
+# 프로세스 내 스레드 보기
+$ ps -eLf
+
+# 프로세스 시작 시각과 누적 CPU 시간 보기
+$ ps -eo pid,cmd,etime,cputime --sort=-cputime
+
+# 특정 프로세스의 환경 변수 보기
+$ ps eww -p 1234</pre>
+
+<hr>
+
+<h2>7. sysdig: 시스템 전체를 아우르는 만능 진단 도구</h2>
+
+<p><code>strace</code>, <code>tcpdump</code>, <code>lsof</code>의 기능을 하나로 합친 도구가 있다면 어떨까. <code>sysdig</code>가 바로 그것이다. 시스템 활동 전체를 전례 없는 수준으로 들여다볼 수 있다.</p>
+
+<h3>기본 사용법</h3>
+
+<pre># 모든 시스템 이벤트 캡처
+$ sudo sysdig
+
+# 파일 활동 실시간 감시
+$ sudo sysdig -c spy_file
+
+# CPU 기준 상위 프로세스 보기
+$ sudo sysdig -c topprocs_cpu</pre>
+
+<h3>실전 시나리오: 빌드 중 사라지는 파일들</h3>
+
+<p>빌드 시스템이 파일이 "사라졌다"는 이유로 계속 실패했다. <code>sysdig</code>로 빌드 중 파일 이벤트를 캡처했다.</p>
+
+<pre>$ sudo sysdig -A -c spy_file
+
+19:15:23.546690 build_process creates /tmp/build/output.o
+19:15:23.546820 cleanup_script opens /tmp/build/output.o
+19:15:23.546987 cleanup_script unlinks /tmp/build/output.o</pre>
+
+<p>정리 스크립트가 빌드 프로세스와 동시에 실행되면서 아직 빌드에 필요한 파일을 임시 파일로 착각해 삭제하고 있었다. 정리 스크립트의 실행 시점을 조정하자 해결됐다.</p>
+
+<h3>심화 활용</h3>
+
+<p><code>sysdig</code>는 "chisel"이라는 내장 분석 모듈을 통해 특화된 기능을 제공한다.</p>
+
+<pre># 시스템을 흐르는 HTTP 요청 보기
+$ sudo sysdig -c httplog
+
+# 프로세스별 디스크 I/O 분석
+$ sudo sysdig -c topfiles_bytes
+
+# 프로세스 활동을 인수·반환값 포함해서 추적
+$ sudo sysdig proc.name=nginx</pre>
+
+<p>어디서부터 봐야 할지 막막할 때 특히 유용하다. 시스템 활동 전체를 한눈에 보여주고, 거기서부터 좁혀나갈 수 있기 때문이다.</p>
+
+<hr>
+
+<h2>8. /proc 및 /sys: 커널 정보로 가는 직통 경로</h2>
+
+<p>마지막으로, <code>/proc</code>과 <code>/sys</code> 파일시스템은 프로세스와 시스템 하드웨어에 대한 커널 정보에 직접 접근하는 경로다. 엄밀히 말해 명령어는 아니지만, 이 디렉터리들을 탐색하면 시스템 내부를 타의 추종을 불허하는 수준으로 들여다볼 수 있다.</p>
+
+<h3>기본 사용법</h3>
+
+<pre># 프로세스 상태 정보 보기
+$ cat /proc/12345/status
+
+# 특정 프로세스가 열어둔 파일 보기
+$ ls -l /proc/12345/fd
+
+# 시스템 메모리 정보 보기
+$ cat /proc/meminfo
+
+# CPU 정보 확인
+$ cat /proc/cpuinfo</pre>
+
+<h3>실전 시나리오: 예상치 못한 리소스 한도</h3>
+
+<p>한 서비스가 알 수 없는 "resource unavailable" 오류를 간헐적으로 뿜어냈다. <code>/proc</code>으로 한도를 확인하니 원인이 바로 보였다.</p>
+
+<pre>$ cat /proc/$(pgrep service_name)/limits
+Limit                     Soft Limit           Hard Limit           Units
+Max open files            1024                 4096                 files</pre>
+
+<p>서비스가 기본값인 1024개의 오픈 파일 한도에 부딪히고 있었다. systemd 서비스 설정에서 한도를 늘리자 오류가 사라졌다.</p>
+
+<pre># systemd 서비스 파일에서
+[Service]
+LimitNOFILE=65536</pre>
+
+<h3>심화 활용</h3>
+
+<pre># 프로세스가 지금 이 순간 무엇을 하는지 보기
+$ cat /proc/12345/stack
+
+# 프로세스가 사용하는 메모리 주소 확인
+$ cat /proc/12345/maps
+
+# 네트워크 통계 상세 보기
+$ cat /proc/net/tcp
+
+# 디스크 I/O 통계 확인
+$ cat /proc/diskstats
+
+# CPU별 사용률 모니터링
+$ cat /proc/stat</pre>
+
+<p>하드웨어 정보는 <code>/sys</code>에서 더 상세하게 확인할 수 있다.</p>
+
+<pre># CPU 주파수 스케일링 현황
+$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+
+# 디스크 디바이스 파라미터 (0이면 SSD, 1이면 HDD)
+$ cat /sys/block/sda/queue/rotational</pre>
+
+<hr>
+
+<h2>여덟 명령을 함께 쓴 실전 트러블슈팅</h2>
+
+<p>이 명령들을 조합해서 풀었던 실제 사례를 하나 소개한다.</p>
+
+<p>웹 애플리케이션에서 간헐적으로 응답 속도가 크게 튀는 현상이 발생했다. 사용자들은 페이지 로딩에 10초 이상 걸린다고 했지만, 문제는 조사하기 전에 사라졌다. 기존 모니터링은 부하가 올라갔다는 것만 보여줄 뿐 원인을 알 수 없었다.</p>
+
+<p>다음 순서로 파고들었다.</p>
+
+<ol>
+  <li><code>top</code>으로 시스템 부하를 확인하고 주요 리소스 소모 프로세스를 파악했다.</li>
+  <li>느려지는 시간에 <code>iotop -o</code>를 실행했더니 데이터베이스 프로세스의 디스크 활동이 심했다.</li>
+  <li><code>lsof -p [데이터베이스 PID]</code>로 보니 데이터베이스가 정렬 작업에서 임시 파일을 많이 쓰고 있었다.</li>
+  <li>또 다른 느려짐이 발생하는 동안 <code>perf record -g -p [PID] -F 99 -- sleep 30</code>을 실행하고 <code>perf report</code>로 분석했다.</li>
+  <li>정렬 연산에서 과도한 시간이 소모되고 있었다. 메모리 압박으로 디스크 정렬이 강제되고 있다는 신호였다.</li>
+  <li><code>/proc/meminfo</code>를 보니 가용 메모리가 적고 스와핑이 활발했다.</li>
+  <li><code>/proc/[데이터베이스 PID]/status</code>를 확인하니 데이터베이스가 기본 메모리 한도로 실행 중이었다.</li>
+</ol>
+
+<p>근본 원인이 분명해졌다. 부하가 높을 때 데이터베이스가 정렬 연산에 쓸 수 있는 메모리 한도를 초과해 느린 디스크 정렬로 전환되고 있었던 것이다. 데이터베이스의 메모리 파라미터와 <code>work_mem</code> 설정을 조정하자 디스크 정렬이 사라지고 성능 문제가 해결됐다.</p>
+
+<p>기존 모니터링 도구 중 어느 것도 이 전체 그림을 보여주지 못했다. 오직 이 저수준 명령들로 증상에서 근본 원인까지 실을 따라갈 수 있었다.</p>
+
+<hr>
+
+<h2>마치며: 시스템 직관 키우기</h2>
+
+<p>이 여덟 가지 명령줄 도구는 시스템 동작의 서로 다른 측면을 들여다보는 창들이다. 실제로 무슨 일이 벌어지는지 드러내 준다. 오늘날 가상화·컨테이너·클라우드 인프라가 세부 사항을 점점 더 많이 가리는 상황에서, 이 명령들은 그 추상화를 뚫고 시스템 동작의 실재와 직접 연결해 준다.</p>
+
+<p>개발자든, 시스템 관리자든, 호기심 많은 파워 유저든, 이 도구들을 능숙하게 다룰 수 있다면 시스템을 이해하고 진단하고 최적화하는 데 있어 남다른 능력을 갖추게 된다.</p>
+
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agile is Dead. Welcome to the Era of Agent-Driven Development</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Agile is Dead. Welcome to the Era of Agent-Driven Development</h1>
+<div class="meta">Adi Insights and Innovations · Write A Catalyst · 4분 읽기 · <a href="https://medium.com/write-a-catalyst/agile-is-dead-welcome-to-the-era-of-agent-driven-development-bd70c32970da" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/write-a-catalyst/agile-is-dead-welcome-to-the-era-of-agent-driven-development-bd70c32970da" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">AI 에이전트 시대에 애자일의 2주 스프린트는 이미 시대착오적이며, 그 자리를 연속적 자율 루프 방식인 에이전트 주도 개발(ADD)이 대체해야 한다.</p>
+  <p>저자는 애자일이 인간의 속도에 맞게 설계된 방법론이라는 점을 지적한다. 스탠드업 회의를 하는 동안, IDE 안의 AI 에이전트는 이미 같은 모듈의 변형 50개를 완성했다. 에이전트 주도 개발(ADD, Agent-Driven Development)은 인간이 의도를 정의하면 에이전트가 실행·검증·개선을 반복하는 구조로, 2주 단위 스프린트를 끝없이 돌아가는 연속 루프로 대체한다. 애자일의 핵심 가정들—생물학적 속도 제약, 회의를 통한 조율, 주기적 배포—은 에이전트 환경에서 모두 무너진다는 것이 이 글의 핵심 주장이다.</p>
+</div>
+
+<h2>서론: 속도의 역설</h2>
+
+<p>화요일 아침을 상상해보자. 당신은 Zoom 스탠드업에 접속해 있다. "Auth 모듈이 코드 리뷰 중입니다. 금요일까지 완료될 것 같습니다"라고 설명한다. 프로젝트 매니저는 고개를 끄덕이며 Jira 티켓을 "진행 중"으로 이동하고, 스프린트 번다운 차트를 업데이트한다.</p>
+
+<p>그 사이, 당신의 IDE 안에서 AI 에이전트는 당신이 마이크의 음소거를 해제하는 시간 동안 동일한 모듈의 변형 50개를 이미 작성했다.</p>
+
+<p>우리에게는 속도 문제가 있다.</p>
+
+<p>애자일은 인간을 위해 만들어졌다. 커피가 필요하고, 잠을 자야 하며, 복잡한 요구사항을 이해하는 데 2주가 필요한 생물학적 존재들을 위해. 하지만 우리는 이제 인간만으로 소프트웨어를 만들지 않는다. 에이전트와 함께 만든다. 잠을 자지 않고, 스탠드업이 필요 없으며, 몇 초 만에 반복할 수 있는 에이전트들과 함께.</p>
+
+<p>에이전트 주도 개발(ADD, Agent-Driven Development)의 시대에 오신 것을 환영한다. 2주 스프린트의 시대는 끝났다. 연속 루프의 시대가 열렸다.</p>
+
+<hr>
+
+<h2>이 글에서 배울 것</h2>
+
+<p>이 글을 읽고 나면 다음 두 가지를 명확히 이해하게 된다.</p>
+
+<ul>
+  <li>애자일의 의식들이 AI 기반 워크플로에서 왜 병목이 되는지 진단할 수 있다.</li>
+  <li>에이전트 주도 개발(ADD)의 핵심 원칙들을 정의하고 실제 업무에 적용할 수 있다.</li>
+</ul>
+
+<hr>
+
+<h2>애자일의 핵심 가정이 무너지다</h2>
+
+<p>애자일 선언문은 2001년에 작성되었다. 당시의 소프트웨어 개발 현실—대규모 폭포수 프로젝트, 현실과 동떨어진 기획, 소통 단절—에 대한 반응으로 탄생했다. 스프린트, 스탠드업, 회고는 그 시대의 문제를 해결하기 위한 도구였다.</p>
+
+<p>그런데 그 가정들을 지금의 현실에 대입해보면 어떨까.</p>
+
+<p>첫 번째 가정은 "사람이 작업 단위를 이해하는 데 시간이 필요하다"는 것이다. 에이전트는 스펙 문서를 읽고 즉시 구현에 착수한다. 이해에 소요되는 시간이 없다.</p>
+
+<p>두 번째 가정은 "팀원들이 매일 서로의 진행 상황을 공유해야 한다"는 것이다. 에이전트는 실시간으로 작업 상태를 로깅하고 공유한다. 회의가 필요 없다.</p>
+
+<p>세 번째 가정은 "2주마다 배포 가능한 결과물을 만드는 것이 현실적인 최대 속도"라는 것이다. 에이전트 기반 파이프라인은 변경사항을 분 단위로 배포할 수 있다.</p>
+
+<p>네 번째 가정은 "품질 보증은 작업이 완료된 후 별도 단계로 수행된다"는 것이다. 에이전트는 코드를 작성하면서 동시에 테스트를 생성하고 실행한다.</p>
+
+<p>이 네 가지 가정이 모두 무너지는 순간, 애자일이라는 건물 전체가 흔들린다.</p>
+
+<hr>
+
+<h2>에이전트 주도 개발(ADD)이란 무엇인가</h2>
+
+<p>ADD는 방법론이 아니다. 마인드셋이다. 소프트웨어가 배포되는 것이 아니라 스스로 배포되는 세계로의 전환이다.</p>
+
+<p>ADD의 핵심 구조는 다음과 같다.</p>
+
+<h3>인간은 의도를 정의하고, 에이전트는 실행한다</h3>
+
+<p>팀의 역할이 바뀐다. 인간은 목표, 제약 조건, 우선순위를 명확히 정의하는 데 집중한다. "사용자가 결제 완료 후 3초 이내에 확인 이메일을 받아야 한다"는 것이 의도다. 에이전트는 이 의도를 달성하기 위해 코드를 작성하고, 테스트를 실행하며, 실패하면 스스로 수정한다.</p>
+
+<h3>스프린트 대신 연속 루프</h3>
+
+<p>2주 스프린트는 인위적인 시간 상자다. 에이전트 환경에서는 작업이 완료되는 즉시 다음 작업으로 넘어간다. 루프는 멈추지 않는다. 새벽 3시에도, 주말에도, 연휴에도 에이전트는 작동한다.</p>
+
+<h3>신뢰는 증명으로 쌓인다</h3>
+
+<p>애자일에서 신뢰는 팀원들 사이의 인간적 관계와 과거 성과에서 나온다. ADD에서 신뢰는 코드가 스스로 증명한다. 모든 커밋은 자동화된 테스트를 통과해야 하고, 모든 배포는 품질 게이트를 넘어야 한다. "이번에는 잘 될 것 같아요"가 아니라 "모든 테스트가 통과했습니다"가 배포의 근거다.</p>
+
+<h3>인간의 개입은 예외 처리다</h3>
+
+<p>에이전트가 처리할 수 없는 상황—윤리적 판단이 필요한 경우, 비즈니스 우선순위가 충돌하는 경우, 완전히 새로운 영역의 요구사항—이 생겼을 때만 인간이 개입한다. 나머지는 에이전트가 처리한다.</p>
+
+<hr>
+
+<h2>실제로 이미 일어나고 있는 일들</h2>
+
+<p>이것은 먼 미래의 이야기가 아니다. 이미 진행 중이다.</p>
+
+<p>GitLab의 Duo Workflow는 AI 에이전트가 이슈 티켓을 읽고, 코드를 작성하며, CI 파이프라인을 실행하고, 테스트 실패를 스스로 수정한 뒤, 모든 품질 게이트를 통과했을 때만 머지 리퀘스트를 열도록 설계되어 있다. 이것은 자기 검증 루프다. 품질 검토를 나중에 하기를 바라는 투기적 배포가 아니다.</p>
+
+<p>Meta의 SapFix와 Sapienz는 이미 몇 년째 버그를 자율적으로 패치하고 있다. MetaGPT는 PM, 아키텍트, 코더, QA 테스터 역할을 하는 에이전트들로 이루어진 완전한 소프트웨어 팀을 시뮬레이션한다.</p>
+
+<p>이것들은 데모가 아니다. 실제 운영 중인 시스템들이다.</p>
+
+<hr>
+
+<h2>애자일이 죽었다는 것은 무엇을 의미하는가</h2>
+
+<p>오해하지 말자. 협업이 나빠졌다거나, 사용자 피드백이 중요하지 않다거나, 팀워크가 필요 없다는 말이 아니다.</p>
+
+<p>죽은 것은 특정 형태의 의식들이다. 매일 아침 15분짜리 현황 공유 회의, 2주마다 반복되는 스프린트 계획 회의, 속도(velocity) 점수와 번다운 차트, 기계가 처리할 수 있는 작업을 인간이 수동으로 조율하는 데 낭비되는 시간들.</p>
+
+<p>살아 남아야 하는 것은 그 뒤에 있는 가치다. 사용자에게 실제로 작동하는 소프트웨어를 빠르게 전달한다는 목표, 변화에 빠르게 반응한다는 원칙, 지속적인 개선을 추구한다는 마음가짐. 이것들은 에이전트 시대에도 오히려 더욱 강화된다.</p>
+
+<blockquote>
+  애자일은 프로세스의 루프였다. 에이전트 주도 개발은 학습의 루프다.
+</blockquote>
+
+<hr>
+
+<h2>지금 당신이 해야 할 질문들</h2>
+
+<p>아직도 스프린트를 돌리며 스탠드업을 하고 있다면, 멈추고 스스로에게 물어보라.</p>
+
+<ul>
+  <li>우리의 현재 프로세스는 창의성을 극대화하고 있는가, 아니면 그저 작업을 관리하고 있는가?</li>
+  <li>우리는 스스로 학습하고, 적응하며, 자율적으로 검증할 수 있는 시스템을 만들고 있는가?</li>
+  <li>인간 팀원들은 가장 높은 레버리지를 가진 일에 시간을 쓰고 있는가, 아니면 체크리스트를 채우고 있는가?</li>
+</ul>
+
+<p>답이 불편하다면, 그것은 변화가 필요하다는 신호다.</p>
+
+<hr>
+
+<h2>마치며: 프로세스에서 의도로</h2>
+
+<p>애자일은 우리를 멀리 데려다 주었다. 폭포수 개발의 경직성에서 벗어나게 해주었고, 고객과의 지속적인 소통을 당연한 것으로 만들었으며, "작동하는 소프트웨어"를 "방대한 문서"보다 중요하게 여기도록 가르쳤다.</p>
+
+<p>이제 에이전트 시스템이 그 다음 단계로 데려다 줄 것이다. 인간 팀이 목적을 정의하고, 복잡성을 조율하며, 점점 진화하는 기계 협력자들로 이루어진 시스템을 감독하는 세계로.</p>
+
+<p>미래는 반복적이지 않다. 자율적이다. 백로그 위에 세워지지 않는다. 의도 위에 세워진다.</p>
+
+<p>애자일은 우리를 충분히 먼 곳까지 데려다 주었다. 이제 에이전트 시스템이 더 멀리 데려다 줄 차례다. 다음 단계를 함께 만들어가자—명확한 방향으로, 신뢰를 바탕으로, 에이전트와 함께.</p>
+
+</body>
+</html>

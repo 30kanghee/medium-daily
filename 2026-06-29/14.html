@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Visual Studio Code Setup For 2026</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>My Visual Studio Code Setup For 2026</h1>
+<div class="meta">Hirusha Fernando · Level Up Coding · 6분 읽기 · <a href="https://levelup.gitconnected.com/my-visual-studio-code-setup-for-2026-3964241bd651" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://levelup.gitconnected.com/my-visual-studio-code-setup-for-2026-3964241bd651" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">JetBrains에서 VS Code로 갈아탄 개발자가 직접 구성한 2026년 생산성 중심 VS Code 환경 설정 가이드.</p>
+  <p>저자는 JetBrains IDE를 떠나 VS Code로 전환하면서 JetBrains의 느낌을 재현하기 위해 다양한 설정과 확장을 조합했다. Settings Sync, Auto Save, 프로필 기능 등 내장 설정을 설명하고, Port Forwarding이나 Timeline View 같은 잘 알려지지 않은 기능도 소개한다. 이어서 Project Manager, Scratchpads, Bookmarks, Peacock, SQL Tools, Auto Close/Rename Tag, Postman 확장 등 생산성을 높이는 핵심 확장 목록을 구체적인 사용법과 함께 안내한다.</p>
+</div>
+
+<p>최근 JetBrains IDE에서 VS Code로 전환했다. 맞다, 제대로 들었다. 솔직히 말해 전환이 쉽지는 않았다. VS Code는 JetBrains이 기본 제공하는 모든 것을 처음부터 갖추고 있지 않기 때문에 갑작스러운 교체는 상당히 불편했다. 그래서 VS Code 안에서라도 JetBrains의 감각을 최대한 살리고 싶었다. 여러 가지를 찾아보고 결국 정착한 조합이 바로 이 설정이다. 서드파티 확장과 설정을 섞어 그 간극을 메웠다.</p>
+
+<h2>설정 구성</h2>
+
+<h3>기기 간 설정 동기화 (Settings Sync)</h3>
+
+<p>JetBrains IDE는 여러 IDE와 기기 사이에서 설정을 동기화하는 기능을 제공한다. VS Code에도 동등한 기능이 있다. 왼쪽 하단의 설정 아이콘을 클릭하고 <strong>Settings Sync</strong>를 <strong>On</strong>으로 켜면 된다. 그런 다음 GitHub 또는 Microsoft 계정으로 로그인하면 설정이 저장된다. 활성화하면 설정, 단축키, 스니펫, 확장, MCP 서버까지 동일한 환경으로 여러 기기에서 VS Code를 쓸 수 있다.</p>
+
+<h3>자동 저장 (Auto Save)</h3>
+
+<p>VS Code는 기본적으로 자동 저장이 꺼져 있다. JetBrains처럼 쓰고 싶다면 왼쪽 하단의 설정 아이콘을 클릭하고 Settings로 들어간다. Auto Save 옵션에서 <code>afterDelay</code>를 선택하면 된다.</p>
+
+<h3>VS Code 프로필 (Profiles)</h3>
+
+<p>VS Code에는 <strong>프로필(Profiles)</strong>이라는 꽤 유용한 기능이 있는데, 많은 사용자가 그 활용도를 잘 모른다. 프로필을 사용하면 설정, 키보드 단축키, 확장, MCP 서버, 스니펫, 작업(task)을 별도의 프로필로 저장할 수 있다.</p>
+
+<p>실용적인 활용 사례로는 <strong>.NET, Python, Node.js, 프론트엔드 개발</strong> 같은 개발 환경별로 여러 프로필을 만드는 것이다. 각 프로필은 해당 기술 스택에 맞춘 확장과 설정을 가질 수 있다. 프로필 전환은 빠르고 매끄럽다. 다른 프로필로 전환하면 VS Code가 해당 설정, 확장, 기타 구성을 자동으로 불러와 그 개발 환경에 최적화된 깔끔한 작업 공간을 제공한다.</p>
+
+<h2>잘 알려지지 않은 기능들</h2>
+
+<h3>포트 포워딩 (Port Forwarding)</h3>
+
+<p>ngrok 같은 서드파티 도구 없이도 VS Code 내장 포트 포워딩 기능으로 로컬 포트를 인터넷에 공개할 수 있다. 시작하려면 먼저 로컬 포트에서 서비스가 실행 중인지 확인한다. 그 다음 패널 영역의 <strong>Ports</strong> 뷰로 이동해 <strong>Forward a Port</strong>를 선택한다. 메시지가 표시되면 GitHub 계정으로 로그인하면 포트가 외부에서 접근 가능해진다.</p>
+
+<h3>타임라인 뷰 (Timeline View)</h3>
+
+<p>VS Code에는 시간 경과에 따른 파일 변경을 추적하는 내장 로컬 이력 기능이 있다. 보려면 탐색기 탭을 열고 파일을 선택한 뒤 <strong>Timeline</strong> 섹션을 펼친다. Git 커밋처럼 자동으로 기록된 스냅샷 목록이 보인다. 항목을 클릭하면 현재 코드와 과거 버전을 나란히 비교하는 diff 뷰가 열린다.</p>
+
+<h3>내장 웹 브라우저</h3>
+
+<p>VS Code 안에 웹 브라우저가 내장돼 있다. 웹 앱을 개발할 때 쓰거나, IDE를 벗어나지 않고 인터넷을 둘러볼 수도 있다. 메뉴 바에서 View를 클릭하고 목록에서 Browser를 선택하면 IDE 안에 간단한 웹 브라우저가 열린다.</p>
+
+<h2>생산성을 높이는 확장들</h2>
+
+<h3>Project Manager</h3>
+
+<p>Project Manager 확장은 즐겨 찾는 프로젝트를 한 곳에 저장하고 정리할 수 있게 해준다. 설치하면 왼쪽 사이드바에 폴더 모양 아이콘이 생긴다. 거기서 아직 저장하지 않은 프로젝트를 저장할 수 있다. 저장된 프로젝트 간의 전환은 목록에서 프로젝트 이름을 클릭하는 것만큼 간단하다.</p>
+
+<h3>Scratchpads</h3>
+
+<p>임시 메모를 적거나 빠른 스크립트를 테스트할 때, 보통 프로젝트 폴더를 어지럽히는 임시 파일을 만들게 된다. Scratchpads 확장은 프로젝트 폴더를 오염시키지 않고 빠른 메모와 실험을 위한 임시 파일을 만들 수 있게 해준다. 이 파일들은 git에서도 제외된다. JetBrains의 Scratches and Consoles와 비슷하다. 사용하려면 탐색기 뷰로 이동하면 "Scratchpads"라는 섹션에서 스크래치 파일을 만들 수 있다.</p>
+
+<h3>Bookmarks</h3>
+
+<p>대형 소스 파일에서 작업할 때 특정 줄을 찾아 위아래로 스크롤하는 것은 시간 낭비다. Bookmarks 확장은 JetBrains의 북마크처럼 코드의 중요한 줄을 표시해 즉시 돌아갈 수 있게 한다. 사용하려면 커서를 원하는 줄에 놓고 키보드 단축키를 사용하거나, 마우스 오른쪽 버튼을 클릭해 <strong>Bookmarks</strong> 섹션에서 <strong>Toggle</strong>을 선택한다. 여백에 작은 리본 아이콘이 나타나고, 전용 사이드바 탭에서 활성 북마크 전체 목록을 볼 수 있다.</p>
+
+<h3>vscode-pdf</h3>
+
+<p>기본적으로 파일 탐색기에서 PDF 파일을 클릭하면 VS Code는 읽지 못하고 외부 앱으로 열도록 강제한다. vscode-pdf 확장은 에디터 인터페이스에 직접 내장 PDF 뷰어를 추가한다. 사용하려면 프로젝트 탐색기 탭에서 <code>.pdf</code> 파일을 클릭하면 된다. IDE 안의 새 탭에서 파일이 열려 VS Code를 떠나지 않고 문서나 매뉴얼을 읽을 수 있다.</p>
+
+<h3>Peacock</h3>
+
+<p>VS Code 창이 여러 개 동시에 열려 있을 때 올바른 창을 찾기 어려울 때가 있다. Peacock 확장은 VS Code 작업 공간 테두리 색상을 자동으로 또는 수동으로 변경해 이 문제를 해결한다. 사용하려면 커맨드 팔레트를 열고 <strong>Peacock: Enter a Color</strong>를 입력한 뒤 목록에서 색상을 선택한다. 프로젝트마다 고유한 색상 테마를 부여해 한눈에 식별할 수 있다.</p>
+
+<h3>SQL Tools</h3>
+
+<p>데이터베이스 쿼리를 실행하려면 보통 MySQL Workbench나 pgAdmin 같은 별도의 데스크톱 도구를 열어야 한다. SQL Tools 확장은 완전한 데이터베이스 관리 인터페이스를 IDE 안에 직접 제공한다. 사용하려면 사이드바 활동 막대에 나타나는 SQLTools 아이콘을 클릭하고 "Add New Connection"을 선택한다. 데이터베이스 자격 증명을 입력하면 테이블을 탐색하고 스키마를 보고 내장 편집기 탭에서 SQL 쿼리를 실행할 수 있다.</p>
+
+<h3>Auto Close Tag</h3>
+
+<p>JetBrains IDE에서는 HTML/XML 태그가 자동으로 닫힌다. VS Code에서는 여는 태그를 만든 뒤 닫는 태그를 항상 직접 입력해야 한다. <strong>Auto Close Tag</strong> 확장은 이 과정을 자동화해 키 입력을 줄여준다. 사용하려면 <code>&lt;div&gt;</code>처럼 여는 태그의 닫는 꺾쇠 괄호를 입력하기만 하면 된다. 확장이 커서 바로 뒤에 해당하는 <code>&lt;/div&gt;</code> 태그를 즉시 삽입한다.</p>
+
+<h3>Auto Rename Tag</h3>
+
+<p>HTML 요소를 div에서 section으로 바꾸려면 보통 여는 태그와 닫는 태그를 모두 수동으로 업데이트해야 한다. Auto Rename Tag 확장은 JetBrains처럼 둘을 실시간으로 자동으로 동기화한다. 여는 태그나 닫는 태그 중 하나를 선택하고 변경을 시작하면 된다. 한쪽 태그를 수정하면 짝이 되는 태그가 자동으로 이름을 바꾼다.</p>
+
+<h3>Postman</h3>
+
+<p>API 테스트에는 보통 Postman 데스크톱 앱을 쓴다. Postman VS Code 확장은 이 테스트 환경을 IDE 내부에 직접 통합해 VS Code를 벗어날 필요가 없게 해준다. 사용하려면 확장을 설치하고 사이드바 활동 막대에 나타나는 Postman 아이콘을 클릭한다. Postman 계정으로 로그인하면 새 HTTP, WebSocket, gRPC 요청을 만들고 컬렉션으로 정리하고, 소스 코드 옆에서 환경 변수를 관리할 수 있다.</p>
+
+</body>
+</html>

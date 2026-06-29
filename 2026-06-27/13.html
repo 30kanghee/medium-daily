@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>We Replaced Redis, Elasticsearch, And Kafka With PostgreSQL — Here's What Happened</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>We Replaced Redis, Elasticsearch, And Kafka With PostgreSQL — Here's What Happened</h1>
+<div class="meta">The Thread Whisperer · 6분 읽기 · <a href="https://medium.com/@maahisoft20/we-replaced-redis-elasticsearch-and-kafka-with-postgresql-heres-what-happened-869f438efa0a" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@maahisoft20/we-replaced-redis-elasticsearch-and-kafka-with-postgresql-heres-what-happened-869f438efa0a" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">Redis, Kafka, Elasticsearch를 모두 PostgreSQL로 교체했더니 월 인프라 비용이 줄고 야간 장애 알림도 사라졌다는 실전 경험담이다.</p>
+  <p>중견 B2B SaaS 팀이 한 달에 34건의 장애 알림과 월 420만 원에 달하는 인프라 비용에 지쳐 과감한 결정을 내렸다. Redis(캐싱·pub/sub), Kafka(이벤트 스트리밍), Elasticsearch(전문 검색)를 모두 제거하고, 이미 쓰고 있던 PostgreSQL 하나로 대체한 것이다. UNLOGGED 테이블과 <code>LISTEN/NOTIFY</code>로 Redis를, 잡 큐 테이블로 Kafka를, <code>tsvector/tsquery</code>로 Elasticsearch를 각각 구현했다. 결과는 기대 이상이었다 — 비용이 크게 줄었고 운영 부담도 현저히 낮아졌다. 다만 처리량이 극단적으로 높은 워크로드나 복잡한 전문 검색 요구사항에는 여전히 전용 도구가 더 적합하다는 솔직한 평가도 함께 담았다.</p>
+</div>
+
+<h2>인프라가 이력서가 될 필요는 없다</h2>
+
+<p>인프라는 이력서가 아니다. Redis, Kafka, Elasticsearch가 나란히 적혀 있다고 해서 더 인상적인 시스템이 되는 것은 아니다.</p>
+
+<p>우리 스택에는 세 가지가 모두 있었다. 그리고 한 달에 34건의 장애 알림, 월 4,200달러(약 560만 원)에 달하는 인프라 청구서, 그리고 자신도 모르는 사이 도구 관리인으로 전락해 버린 엔지니어 세 명도 함께 있었다.</p>
+
+<p>우리는 그 세 가지를 이미 쓰고 있던 데이터베이스 하나로 교체했다. 지금부터 실제로 무슨 일이 있었는지 — 좋았던 것, 불편했던 것, 그리고 엔지니어링 매니저를 한동안 말 없게 만든 그 숫자까지 — 솔직하게 풀어놓겠다.</p>
+
+<h2>똑똑해 보였지만 실제로는 그렇지 않았던 스택</h2>
+
+<p>우리는 중견 규모의 B2B SaaS 제품을 운영하고 있었다. 특이한 점은 없었다 — 대시보드, 알림, 검색, 비동기 작업 처리. 수천 개의 회사가 별 탈 없이 돌리는 바로 그 워크로드였다.</p>
+
+<p>그런데 우리 아키텍처는 이렇게 생겼다.</p>
+
+<pre>App Servers
+    |
+    +---> Redis         (캐싱 + pub/sub)
+    |
+    +---> Kafka         (이벤트 스트리밍)
+    |
+    +---> Elasticsearch (전문 검색)
+    |
+    +---> PostgreSQL    (기본 데이터베이스)</pre>
+
+<p>데이터 시스템이 네 개였다. 모니터링, 버전 관리, 업그레이드, 백업, 그리고 새벽 세 시에 무언가 잘못됐을 때 디버깅해야 하는 대상이 네 개였다는 뜻이다.</p>
+
+<p>처음 이 스택을 설계했을 때는 합리적인 결정처럼 느껴졌다. 각 도구는 명확한 역할이 있었고, 생태계도 성숙해 있었으며, 인터넷 어디서나 칭찬하는 글을 찾을 수 있었다. 문제는 도구 자체가 아니었다. 문제는 도구들이 우리에게 요구하는 것들이었다.</p>
+
+<h2>진짜 비용을 계산하기 시작했다</h2>
+
+<p>전환을 결정하게 된 계기는 기술적 통찰이 아니었다. 번아웃이었다.</p>
+
+<p>한 달에 34건의 장애 알림 중 절반 이상이 Kafka 컨슈머 랙(consumer lag) 경보이거나 Elasticsearch 힙 메모리 부족, 또는 Redis 연결 풀 고갈이었다. 실제 애플리케이션 로직 버그에서 비롯된 알림은 소수에 불과했다. 나머지는 전부 인프라가 인프라를 먹어 치우는 소음이었다.</p>
+
+<p>직접 비용도 문제였다. 월 4,200달러 중 상당 부분이 이 세 가지 관리형 서비스(managed service)에 나가고 있었다. 거기에 숨겨진 비용이 더 있었다 — 각 시스템의 운영 방식을 파악하는 데 들어간 엔지니어링 시간, 버전 업그레이드 작업, 그리고 각 도구마다 따로 유지해야 하는 모니터링 대시보드.</p>
+
+<p>어느 날 시니어 엔지니어 한 명이 조용히 말했다. "우리가 Kafka를 운영하는 건지, Kafka가 우리를 운영하는 건지 모르겠어요." 그 말이 결정타였다.</p>
+
+<h2>각 시스템을 어떻게 교체했나</h2>
+
+<h3>Redis 교체: 캐싱과 pub/sub</h3>
+
+<p>캐싱은 생각보다 간단했다. PostgreSQL의 UNLOGGED 테이블은 WAL(Write-Ahead Log)에 기록하지 않아 일반 테이블보다 훨씬 빠르다. 캐시 데이터는 어차피 재생성할 수 있으므로 내구성 보장이 필요 없다 — UNLOGGED 테이블이 딱 맞는 이유다.</p>
+
+<pre>CREATE UNLOGGED TABLE cache (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
+-- 만료된 항목 정리
+DELETE FROM cache WHERE expires_at &lt; NOW();</pre>
+
+<p>pub/sub은 PostgreSQL의 <code>LISTEN</code>/<code>NOTIFY</code>를 활용했다. 채널 이름을 지정해 알림을 보내고 받는 구조로, 간단한 이벤트 전파에는 충분히 빠르다.</p>
+
+<pre>-- 발행 (publisher)
+NOTIFY channel_name, 'payload';
+
+-- 구독 (subscriber, 애플리케이션 코드에서)
+LISTEN channel_name;</pre>
+
+<p>Redis의 고급 자료구조(sorted set, HyperLogLog 등)가 필요한 부분은 일부 있었지만, 실제로 우리 코드베이스에서 그것들을 쓰는 곳은 생각보다 적었다. 대부분은 단순한 키-값 캐싱이었다.</p>
+
+<h3>Kafka 교체: 이벤트 스트리밍과 비동기 작업</h3>
+
+<p>Kafka는 가장 걱정스러운 부분이었다. 하지만 우리의 실제 사용 패턴을 돌아보니 — 이메일 발송, 웹훅 호출, 리포트 생성 — 대부분은 정확히 한 번(exactly-once) 처리 보장이 필요한 고처리량 스트리밍이 아니라 그냥 신뢰할 수 있는 잡 큐(job queue)였다.</p>
+
+<pre>CREATE TABLE job_queue (
+  id          BIGSERIAL PRIMARY KEY,
+  queue       TEXT NOT NULL DEFAULT 'default',
+  payload     JSONB NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'pending',
+  attempts    INT NOT NULL DEFAULT 0,
+  max_attempts INT NOT NULL DEFAULT 3,
+  scheduled_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  locked_at   TIMESTAMPTZ,
+  locked_by   TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX ON job_queue (queue, status, scheduled_at)
+  WHERE status = 'pending';</pre>
+
+<p>워커는 <code>SELECT ... FOR UPDATE SKIP LOCKED</code>를 사용해 잡을 원자적으로 집어간다. 이 패턴은 PostgreSQL 9.5 이후 공식 지원되며, 여러 워커가 동시에 실행되더라도 같은 잡을 중복 처리하지 않는다.</p>
+
+<pre>-- 잡 집어가기 (워커)
+UPDATE job_queue
+SET status = 'running',
+    locked_at = NOW(),
+    locked_by = $1  -- 워커 ID
+WHERE id = (
+  SELECT id FROM job_queue
+  WHERE queue = $2
+    AND status = 'pending'
+    AND scheduled_at &lt;= NOW()
+  ORDER BY scheduled_at
+  LIMIT 1
+  FOR UPDATE SKIP LOCKED
+)
+RETURNING *;</pre>
+
+<p>초당 수만 건의 메시지를 처리해야 하는 규모였다면 이 방식은 맞지 않는다. 우리의 실제 부하에서는 충분하고도 남았다.</p>
+
+<h3>Elasticsearch 교체: 전문 검색</h3>
+
+<p>가장 우려했던 부분이 전문 검색이었다. Elasticsearch는 검색을 위해 태어난 도구이고, PostgreSQL은 그렇지 않으니까. 그런데 PostgreSQL의 <code>tsvector</code>/<code>tsquery</code>는 생각보다 훨씬 강력했다.</p>
+
+<pre>-- 검색 인덱스 컬럼 추가
+ALTER TABLE documents
+  ADD COLUMN search_vector TSVECTOR
+    GENERATED ALWAYS AS (
+      to_tsvector('english',
+        coalesce(title, '') || ' ' ||
+        coalesce(body, '')
+      )
+    ) STORED;
+
+CREATE INDEX ON documents USING GIN (search_vector);</pre>
+
+<pre>-- 전문 검색 쿼리
+SELECT id, title, ts_rank(search_vector, query) AS rank
+FROM documents, to_tsquery('english', 'postgresql &amp; performance') query
+WHERE search_vector @@ query
+ORDER BY rank DESC
+LIMIT 20;</pre>
+
+<p>하이라이팅도 <code>ts_headline()</code>으로 처리할 수 있다. 한국어 등 언어별 사전이 필요한 경우 추가 설정이 필요하지만, 영어 기준으로는 별도 작업 없이 바로 쓸 수 있다.</p>
+
+<p>우리가 Elasticsearch에서 쓰던 기능의 약 80%는 PostgreSQL 전문 검색으로 커버됐다. 나머지 20% — 복잡한 패싯(facet) 필터링, 동의어 처리, 퍼지 매칭 — 는 상당한 공을 들여 구현하거나, 일부는 요구사항 자체를 단순화하는 방향으로 해결했다.</p>
+
+<h2>결과: 좋았던 것들</h2>
+
+<p>전환 후 2개월이 지났을 때 숫자가 나왔다.</p>
+
+<p>인프라 비용은 월 4,200달러에서 1,400달러로 내려갔다. 세 개의 관리형 서비스가 사라진 덕분이다. 66% 절감이었다.</p>
+
+<p>장애 알림은 월 34건에서 6건으로 줄었다. 줄어든 28건은 전부 Kafka, Redis, Elasticsearch에서 오던 것들이었다. 남은 6건은 진짜 애플리케이션 문제였다 — 그게 오히려 더 중요한 정보였다.</p>
+
+<p>온콜 로테이션 중 새벽에 깨는 일이 거의 사라졌다. 엔지니어들이 다시 제품 기능 개발에 집중하기 시작했다. 코드베이스도 단순해졌다 — 세 가지 클라이언트 라이브러리, 세 가지 연결 풀, 세 가지 설정 파일이 줄었다.</p>
+
+<p>PostgreSQL 하나만 이해하면 됐다. 우리 팀은 이미 PostgreSQL을 잘 알고 있었다.</p>
+
+<h2>불편했던 것들</h2>
+
+<p>솔직하게 말하겠다. 모든 게 순탄하지는 않았다.</p>
+
+<p>잡 큐의 처리량 한계는 실재했다. PostgreSQL 잡 큐는 초당 수백 건 수준에서는 문제없이 작동했지만, 초당 수천 건을 넘어가면 락 경합이 증가했다. 우리는 큐를 여러 파티션으로 나누고 워커 수를 조정하는 것으로 해결했지만, 이 작업에 예상보다 시간이 들었다.</p>
+
+<p>전문 검색의 품질 차이는 분명히 있었다. 일부 사용자들이 검색 결과가 달라졌다고 언급했다. 대부분은 무관심했지만, 검색을 집중적으로 사용하는 일부 고객사에서는 불만이 나왔다. 검색 요구사항을 명확히 정의하지 않은 채 전환한 것이 실수였다.</p>
+
+<p>LISTEN/NOTIFY는 메시지를 영속적으로 저장하지 않는다. 구독자가 연결되어 있지 않은 순간에 발행된 메시지는 유실된다. 이것은 Redis pub/sub과 동일한 특성이지만, 우리 코드 일부는 이 사실을 가정하지 않고 작성되어 있었다. 리팩터링이 필요했다.</p>
+
+<p>마이그레이션 자체도 한 번에 끝나지 않았다. 우리는 기능별로 순차적으로 전환했는데, 두 시스템이 병행 운영되는 기간 동안 오히려 복잡도가 일시적으로 높아졌다.</p>
+
+<h2>엔지니어링 매니저를 조용하게 만든 숫자</h2>
+
+<p>분기 리뷰에서 인프라 비용 그래프를 보여줬을 때였다. 월 4,200달러에서 1,400달러로 뚝 떨어진 선이 화면에 나타났고, 방 안이 잠시 조용해졌다.</p>
+
+<p>연간으로 환산하면 33,600달러 절감이었다. 특별한 최적화 프로젝트 없이, 기능 제거 없이, 성능 저하 없이. 그저 이미 운영하던 도구 하나를 더 잘 활용하기로 한 결정 덕분이었다.</p>
+
+<p>매니저가 한참 뒤에 물었다. "왜 진작 안 했죠?"</p>
+
+<p>대답하기 어려운 질문이었다. 아마도 네 개의 도구를 쓰는 것이 더 정교해 보였기 때문일 것이다. 각 도구를 선택할 때마다 합리적인 이유가 있었다. 하지만 전체를 놓고 보면, 그 합리성들이 쌓여 불필요한 복잡성이 되어 있었다.</p>
+
+<h2>다시 한다면 달리할 것들</h2>
+
+<p>처음부터 단순하게 시작했을 것이다. PostgreSQL이 실제로 부족해지는 시점이 오면 그때 전문 도구를 도입하는 것이 올바른 순서였다. 우리는 그 시점이 오기 전에 도구들을 먼저 들여왔다.</p>
+
+<p>전환 전에 검색 품질 요구사항을 명확히 정의했을 것이다. Elasticsearch에서 실제로 쓰는 기능이 무엇인지 먼저 목록으로 정리하고, 그것들이 PostgreSQL로 커버되는지 확인한 뒤 전환했어야 했다.</p>
+
+<p>마이그레이션을 더 과감하게 빠르게 진행했을 것이다. 두 시스템을 오래 병행 운영할수록 복잡도가 높아졌다. 기능별로 완전히 전환하고 구 시스템을 즉시 제거하는 것이 나았다.</p>
+
+<h2>이것이 모두에게 맞는 답은 아니다</h2>
+
+<p>초당 수십만 건의 메시지를 처리하는 스트리밍 파이프라인이 있다면 Kafka가 필요하다. 수억 개의 도큐먼트를 대상으로 복잡한 퍼지 매칭과 패싯 집계가 필요하다면 Elasticsearch가 적합하다. 캐시 히트율이 극도로 중요한 인메모리 세션 저장소가 필요하다면 Redis를 써야 한다.</p>
+
+<p>우리의 요점은 그 도구들이 나쁘다는 게 아니다. 요점은, 실제 필요가 생기기 전에 미리 들여오는 비용이 생각보다 훨씬 크다는 것이다.</p>
+
+<p>우리 규모와 워크로드에서 PostgreSQL은 충분했다. 그리고 "충분하다"는 것은 훌륭한 엔지니어링 결정의 기준이 될 수 있다.</p>
+
+<hr>
+
+<p>인프라는 이력서가 아니다. 지금 실제로 필요한 것을 해결하는 도구가 좋은 도구다. 우리에게는 이미 그 도구가 있었다 — 그냥 더 잘 쓰는 법을 배워야 했을 뿐이다.</p>
+
+</body>
+</html>

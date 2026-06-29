@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why Teams Are Moving Back From Microservices to Modular Monoliths in 2026</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Why Teams Are Moving Back From Microservices to Modular Monoliths in 2026</h1>
+<div class="meta">Abhinav · Coding in Plain English · 4분 읽기 · <a href="https://codingplainenglish.medium.com/why-teams-are-moving-back-from-microservices-to-modular-monoliths-in-2026-76a3eb7162b8" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://codingplainenglish.medium.com/why-teams-are-moving-back-from-microservices-to-modular-monoliths-in-2026-76a3eb7162b8" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">마이크로서비스의 운영 복잡성에 지친 팀들이 모듈형 모놀리스로 회귀하고 있으며, 이는 퇴보가 아니라 현실적인 선택이다.</p>
+  <p>마이크로서비스는 Netflix 같은 초대규모 시스템에는 적합하지만, 대부분의 팀에게는 디버깅 지옥, 배포 혼란, 데이터 일관성 문제, 성능 저하라는 네 가지 고통을 안겨준다. 아마존 프라임 비디오 팀이 마이크로서비스에서 모놀리스로 전환해 비용을 90% 절감했듯이, 2026년 들어 업계 전반에서 조용한 회귀가 일어나고 있다. 모듈형 모놀리스는 단일 배포 단위를 유지하면서도 명확한 모듈 경계와 강한 캡슐화를 갖추어, 마이크로서비스의 장점을 취하면서 운영 부담을 없앤다. 저자는 "처음에는 항상 모듈형 모놀리스로 시작하라"고 권고하며, 실제 확장이 필요할 때 서비스를 분리하면 된다고 강조한다.</p>
+</div>
+
+<p>솔직히 털어놓겠다. 지난 2년 동안 2022년에 열정적으로 구축했던 마이크로서비스 아키텍처와 씨름하다가, 팀 내에서 모듈형 모놀리스로 다시 돌아가는 방안을 진지하게 검토하기 시작했다. 그리고 이런 고민을 하는 팀이 우리만이 아니라는 사실을 깨달았다.</p>
+
+<p>내가 배운 것, 직접 겪은 문제들, 그리고 왜 이 흐름이 일어나고 있는지를 이야기하려 한다.</p>
+
+<h2>마이크로서비스의 꿈과 현실</h2>
+
+<p>마이크로서비스가 모든 문제의 해답으로 여겨지던 시절을 기억하는가? 당시 우리는 모두 같은 Medium 글을 읽고, 같은 컨퍼런스 발표를 보면서 "이거야. Netflix가 이렇게 하니까 우리도 해야 해"라고 생각했다.</p>
+
+<p>문제는 우리가 Netflix가 아니라는 점이었다. 그 깨달음은 약 18개월의 고통으로 돌아왔다.</p>
+
+<h2>실제로 겪은 문제들</h2>
+
+<h3>1. 디버깅 악몽</h3>
+
+<p>이런 상황을 상상해 보자. 사용자가 결제 실패를 신고했다. 간단한 버그 수정처럼 보인다. 하지만 전혀 그렇지 않다.</p>
+
+<p>마이크로서비스 구조에서 나는 다음 순서를 따라야 했다.</p>
+
+<ul>
+  <li>API 게이트웨이 로그를 확인하고</li>
+  <li>사용자 서비스(User Service)를 추적한 뒤</li>
+  <li>주문 서비스(Order Service)로 넘어가고</li>
+  <li>결제 서비스(Payment Service)를 조사한 다음</li>
+  <li>재고 서비스(Inventory Service)까지 살펴보고</li>
+  <li>그 사이 메시지 큐를 전부 점검해야 했다.</li>
+</ul>
+
+<p>30분이면 끝났을 일이 4시간이나 걸렸다. 버그의 정체는 결제 서비스의 단순한 null 포인터 예외였다. 하지만 그것을 찾아내기 위해 분산 로그, 상관관계 ID, 서로 다른 모니터링 도구 세 가지를 헤집어야 했다.</p>
+
+<p>모듈형 모놀리스였다면 단일 스택 트레이스가 정확히 문제 위치를 가리켰을 것이다.</p>
+
+<h3>2. 배포 서커스</h3>
+
+<p>우리 팀은 마이크로서비스가 23개였다. 스물세 개의 독립 배포를 조율해야 했다.</p>
+
+<p>어느 금요일 저녁 배포가 재앙으로 끝났다.</p>
+
+<ul>
+  <li>서비스 A는 정상 배포됐다.</li>
+  <li>서비스 B는 중간에 실패했다.</li>
+  <li>서비스 C는 배포는 됐지만 서비스 B와 통신이 끊겼다.</li>
+  <li>롤백 스크립트까지 실패했다.</li>
+</ul>
+
+<p>결국 3시간 동안 수동으로 시스템을 복구했다. 운영 부담이 팀을 짓눌렀다. Kubernetes 전문 지식, 서비스 메시(service mesh) 이해, 분산 추적 설정, 새벽 2시에 호출당하는 데 지친 DevOps 팀이 필요했다.</p>
+
+<h3>3. 데이터 일관성 지옥</h3>
+
+<p>밤마다 나를 괴롭혔던 시나리오가 있다. 주문이 접수되고 재고가 예약됐는데 결제 서비스가 타임아웃되면 어떻게 할까?</p>
+
+<p>Saga 패턴, 이벤트 소싱(event sourcing), 보상 트랜잭션(compensating transaction) 같은 분산 시스템의 온갖 고급 패턴을 도입했다. 장애 처리 코드가 실제 비즈니스 로직보다 더 복잡해졌다.</p>
+
+<p>단일 데이터베이스를 쓰는 모듈형 모놀리스였다면 평범한 데이터베이스 트랜잭션으로 끝났을 일이다. ACID 속성을 공짜로 얻는 것이다.</p>
+
+<h3>4. 성능 세금</h3>
+
+<p>네트워크 호출은 느리다. 프로세스 내부 메서드 호출에 비하면 정말로 느리다.</p>
+
+<p>마이크로서비스 구조에서 평균 API 응답 시간은 450ms였다. 테스트 삼아 한 모듈을 모듈형 모놀리스로 전환한 뒤에는 80ms로 줄었다. 이 차이는 순전히 서비스 간 네트워크 통신에서 나오는 지연이다. 모든 요청에서 이 세금을 내고 있었던 셈이다.</p>
+
+<h2>2026년, 업계가 솔직해지다</h2>
+
+<p>시니어 엔지니어들이 자신의 경험을 털어놓기 시작했고, 기업들이 "모놀리스로 되돌아갔다"는 사례를 부끄러움 없이 공유하기 시작했다.</p>
+
+<p>몇 가지 실제 사례를 보면 다음과 같다.</p>
+
+<ul>
+  <li>아마존 프라임 비디오 팀은 마이크로서비스에서 모놀리스로 전환하며 비용을 90% 절감했다.</li>
+  <li>내가 직접 알고 있는 스타트업 여러 곳이 시리즈 A 이후 마이크로서비스를 버렸다.</li>
+  <li>대기업에서 시작하는 신규 프로젝트조차 처음부터 모듈형 모놀리스를 선택하는 경우가 늘고 있다.</li>
+</ul>
+
+<h2>모듈형 모놀리스란 무엇인가</h2>
+
+<p>모듈형 모놀리스는 두 세계의 장점을 결합한 구조다.</p>
+
+<ul>
+  <li><strong>단일 배포 단위:</strong> 하나의 애플리케이션, 하나의 배포, 하나(혹은 잘 선별된 몇 개)의 데이터베이스로 운영된다.</li>
+  <li><strong>명확한 모듈 경계:</strong> 코드는 여전히 사용자, 주문, 결제, 재고처럼 별개의 모듈로 구성되지만, 같은 프로세스 안에서 실행된다.</li>
+  <li><strong>강한 캡슐화:</strong> 마이크로서비스처럼 모듈끼리 깔끔한 API를 통해 통신하되, HTTP 대신 인터페이스를 사용한다.</li>
+</ul>
+
+<p>Spring Boot 기준으로 간단한 구조 예시는 이렇다.</p>
+
+<pre>your-app/
+├── user-module/
+│   ├── UserService.java
+│   └── UserRepository.java
+├── order-module/
+│   ├── OrderService.java
+│   └── OrderRepository.java
+└── payment-module/
+    ├── PaymentService.java
+    └── PaymentRepository.java</pre>
+
+<p>각 모듈은 여전히 서로 다른 팀이 소유하고, 명확한 경계를 가지며, 어느 정도 독립적으로 개발할 수 있다.</p>
+
+<h2>마이크로서비스가 여전히 적합한 경우</h2>
+
+<p>마이크로서비스가 나쁘다고 말하는 것이 아니다. 다음과 같은 상황에서는 여전히 합리적인 선택이다.</p>
+
+<ul>
+  <li>실제로 초대규모 트래픽(초당 수천 건 이상의 요청)을 처리하는 경우</li>
+  <li>진정으로 독립적인 팀이 완전히 분리된 배포를 필요로 하는 경우</li>
+  <li>시스템의 서로 다른 부분이 현저히 다른 확장 요구사항을 갖는 경우</li>
+  <li>이 복잡성을 감당할 엔지니어링 역량이 갖춰진 경우</li>
+</ul>
+
+<p>하지만 일반적인 비즈니스 애플리케이션을 구축하는 우리 대부분에게? 그 복잡성은 필요하지 않다.</p>
+
+<h2>진심 어린 권고</h2>
+
+<p>항상 모듈형 모놀리스로 시작하라.</p>
+
+<p>처음부터 명확한 모듈 경계를 만들어 두어라. 나중에 특정 확장 요구나 팀 자율성 때문에 서비스를 분리해야 할 이유가 생기면 그때 분리하면 된다.</p>
+
+<p>그때는 트렌드가 아니라 실제 데이터와 실제 문제를 근거로 결정하게 된다.</p>
+
+<p>엔지니어가 열 명인데 마이크로서비스를 열다섯 개 관리하려는 스타트업을 너무 많이 봐 왔다. 보기 딱하다. 그 팀들은 사용자가 원하는 기능을 만드는 대신 분산 시스템 문제를 해결하는 데 시간을 쏟고 있다.</p>
+
+<h2>결론</h2>
+
+<p>모듈형 모놀리스로의 회귀는 후퇴가 아니다. 더 현명한 아키텍처 선택을 하는 것이다.</p>
+
+<p>우리는 수년간 마이크로서비스가 잘하는 것과 못하는 것을 배웠다. 그 지식은 소중하다. 이제 그 지식을 활용해 일반 규모의 팀이 실제로 유지 관리할 수 있는 더 나은 시스템을 구축할 차례다.</p>
+
+<p>아키텍처는 비즈니스와 팀을 섬겨야 한다. 반대가 되어서는 안 된다.</p>
+
+<p>마이크로서비스가 해결하는 문제보다 일으키는 문제가 더 많다면, 한 발 물러서서 더 단순한 것을 선택해도 괜찮다.</p>
+
+</body>
+</html>

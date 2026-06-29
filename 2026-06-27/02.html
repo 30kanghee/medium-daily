@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How I Would Become an AI Engineer in 2026 If I Had to Start Over</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>How I Would Become an AI Engineer in 2026 If I Had to Start Over</h1>
+<div class="meta">Anubhav · Data Science Collective · 16분 읽기 · <a href="https://medium.com/data-science-collective/how-i-would-become-an-ai-engineer-in-2026-if-i-had-to-start-over-c80bd754c753" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/data-science-collective/how-i-would-become-an-ai-engineer-in-2026-if-i-had-to-start-over-c80bd754c753" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">처음부터 다시 시작한다면, 이론 공부보다 코드를 먼저 짜고 LLM API를 직접 호출하는 것부터 시작해 4단계 로드맵을 따라 AI 엔지니어가 될 것이다.</p>
+  <p>AI 엔지니어가 되려는 사람 대부분은 수십 시간짜리 딥러닝 강의와 역전파 미적분에 몇 달을 낭비하다가, 정작 간단한 애플리케이션을 만들려 할 때 막혀버린다. API 타임아웃 처리 방법도, JSON 출력을 강제하는 방법도, Jupyter 노트북을 실제 서버에 배포하는 방법도 모른다. 저자는 4단계 로드맵(기초 코드 역량 확보 → LLM 앱 기초 학습 → 시스템 레이어 구축 → 프로덕션 현실 파악)과 5개의 심층 프로젝트를 통해, 빠르게 실제로 쓸 수 있는 AI 엔지니어가 되는 방법을 제시한다. 핵심 원칙은 "이론은 실전 중에 채운다"는 것이다.</p>
+</div>
+
+<h2>2026년 AI 엔지니어가 실제로 하는 일</h2>
+<p>어떤 로드맵을 따르든, 그 전에 실제 직무가 무엇인지 이해해야 한다. 오늘날 AI 엔지니어는 대부분 순수 머신러닝 연구자가 아니다. 커스텀 커널을 다듬거나 벤치마크 논문을 읽는 데 하루를 보내지 않는다.</p>
+<p>이 직무는 프로덕트 엔지니어링과 백엔드 엔지니어링의 교차점에 훨씬 가깝다. 한 마디로 LLM 시스템 빌더다.</p>
+<p>실제 업무는 이렇다. API를 통해 모델을 호출한다. 구조화된 출력을 얻기 위한 정밀한 지시문을 작성한다. 회사 데이터베이스에서 데이터를 가져오는 검색 파이프라인을 구축한다. 모델이 실제로 행동을 실행할 수 있도록 도구들을 연결한다. 출력 품질을 평가하는 데 많은 시간을 쏟는다. 시스템이 프로덕션에서 이상 동작할 때 원인을 디버깅한다. 지연 시간과 토큰 비용을 관리한다.</p>
+<p>이 현실을 오해하면 학습 경로 자체가 완전히 틀어진다. AI의 모든 수학을 배우지 않아도 유용한 AI 엔지니어가 될 수 있다. 필요한 것은 언어 모델을 추론 엔진으로 활용하는 신뢰할 수 있는 소프트웨어를 만드는 능력이다.</p>
+
+<h2>처음에 무시해야 할 것들</h2>
+<p>무엇을 건너뛰어야 하는지 명확히 해두겠다. 이 주제들이 쓸모없다는 말이 아니다. 빠르게 취업하거나 제품을 만드는 것이 목표라면 나쁜 출발점이라는 뜻이다.</p>
+<p>처음부터 모델을 밑바닥부터 훈련하는 것은 우선순위에서 과감히 제외한다. 첫날부터 PyTorch로 미니 Llama 모델을 만들 필요가 없다. 고급 파인튜닝도 건너뛴다. 표준 모델을 사용해 기본 애플리케이션을 먼저 구축해야 한다. 파인튜닝은 프롬프트 작성조차 제대로 못 하는 상태에서 매달리면 거대한 방해물이 된다.</p>
+<p>GPU 내부 구조 심화도 무시한다. Nvidia H100에 메모리가 어떻게 할당되는지 몰라도 좋은 지원 봇을 만들 수 있다. 끝없는 벡터 데이터베이스 비교도 무시한다. 그냥 pgvector나 Pinecone 중 하나를 골라 진행한다.</p>
+<p>코드가 실제로 하는 일도 이해 못 한 채 임의의 오픈소스 에이전트 저장소를 복사하는 일, 제대로 된 평가 프레임워크 없이 끊임없이 프롬프트를 손보는 일도 멈춘다. 단어 하나를 바꿔놓고 출력을 눈으로만 훑어보는 것은 엔지니어링이 아니다.</p>
+<p>가장 중요한 것은, 실제 코드를 짜기 전에 이론에 수개월을 쏟지 않는 것이다.</p>
+
+<h2>4단계 로드맵</h2>
+<p>이것이 핵심 진행 순서다. 1단계를 건너뛰지 마라.</p>
+
+<h3>1단계: 코드로 위험해지기</h3>
+<p>첫 번째 목표는 기본적인 소프트웨어 엔지니어링 문제에 발목 잡히지 않는 것이다. 일반 소프트웨어 개발에도 어려움을 겪는다면 AI 시스템을 구축하는 것은 불가능하다.</p>
+<p>Python부터 시작한다. 기본 API와 HTTP 요청을 이해한다. 비동기 프로그래밍의 기초를 배우지 않아서 모델 지연 시간으로 고생하는 사람을 수도 없이 봤다. 복잡한 에이전트 워크플로우로 넘어가기 전에 JSON 스키마와 비동기 호출 처리는 필수다. 로그를 남기고, 에러를 디버깅하고, 문서를 제대로 읽는 것도 매일 빛을 발하는 기술이다.</p>
+<p>가벼운 백엔드 패턴을 익히는 것도 이 단계에 포함된다. 간단한 FastAPI 서버를 세우고, 긴 작업을 위한 백그라운드 워커를 사용하고, API 키가 GitHub에 올라가지 않도록 환경 변수를 안전하게 관리한다. 작은 API 통합을 만들어 보는 것이 가장 좋은 연습이다.</p>
+<p>이 단계가 끝나는 기준은 하나다. 환경 설정에 이틀씩 막히는 것이 아니라, 작은 웹 앱 하나를 처음부터 끝까지 몇 시간 안에 만들 수 있을 때다.</p>
+<p>"코드로 위험해진다"는 것이 실제로 어떤 모습인지 보여주는 예시다. API 호출 실패 시 서버가 죽지 않는 깔끔한 FastAPI 엔드포인트다.</p>
+
+<pre>from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import httpx
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+app = FastAPI()
+http_client: httpx.AsyncClient | None = None
+
+ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
+
+class QueryRequest(BaseModel):
+    user_id: str
+    question: str
+
+class QueryResponse(BaseModel):
+    content: str
+
+@app.on_event("startup")
+async def startup():
+    global http_client
+    http_client = httpx.AsyncClient(timeout=30.0)
+
+@app.on_event("shutdown")
+async def shutdown():
+    if http_client:
+        await http_client.aclose()
+
+@app.post("/process-query", response_model=QueryResponse)
+async def process_query(req: QueryRequest):
+    api_key = os.getenv("LLM_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Server misconfigured")
+
+    try:
+        response = await http_client.post(
+            ANTHROPIC_URL,
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1000,
+                "messages": [{"role": "user", "content": req.question}],
+            },
+        )
+        response.raise_for_status()
+        data = response.json()
+        text = "".join(
+            block["text"] for block in data.get("content", []) if block.get("type") == "text"
+        )
+        return QueryResponse(content=text)
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Upstream API timed out")
+    except httpx.HTTPStatusError as e:
+        logger.error("Anthropic API error: %s %s", e.response.status_code, e.response.text)
+        raise HTTPException(status_code=502, detail="Upstream API error")
+    except Exception:
+        logger.exception("Unexpected error in process_query")
+        raise HTTPException(status_code=500, detail="Internal server error")</pre>
+
+<p>이 코드는 마법 같은 것을 하지 않는다. JSON 페이로드를 받아서 Anthropic으로 전달한다. 하지만 API 키를 안전하게 처리하고, 비동기 클라이언트를 사용해 서버가 다른 요청을 처리하는 동안 블로킹되지 않으며, 30초의 엄격한 타임아웃을 설정하고, 에러를 잡아서 적절한 HTTP 상태 코드를 반환한다. 에이전트 걱정을 하기 전에 갖춰야 할 기본 엔지니어링이 바로 이것이다.</p>
+
+<h3>2단계: LLM 앱 기초 학습</h3>
+<p>이제 모델 기반 앱이 실제로 내부에서 어떻게 돌아가는지 배운다.</p>
+<p>프롬프팅 기초, 특히 시스템 지시문과 사용자 메시지의 차이를 이해하는 것이 첫 걸음이다. 이 단계에서 가장 중요한 기술은 구조화된 출력을 강제하는 것이다. 툴 호출은 또 다른 핵심 개념이며, 컨텍스트 윈도우와 토큰 한도에 대한 깊은 이해도 필요하다. 재시도 루프 작성과 타임아웃 처리는 두 번째 본성이 될 때까지 반복한다.</p>
+<p>이 단계는 모델이 신뢰할 수 있는 JSON 객체를 출력하게 만드는 것이 마법이 아니라 당연한 일처럼 느껴질 때 완료된다.</p>
+<p>2026년 방식으로 Pydantic과 OpenAI SDK를 사용해 구조화된 출력을 처리하는 코드다. 데이터의 정확한 형태를 미리 정의한다.</p>
+
+<pre>from pydantic import BaseModel, Field
+from typing import Literal
+from openai import AsyncOpenAI, APITimeoutError, RateLimitError
+
+client = AsyncOpenAI(timeout=30.0)
+
+CATEGORIES = Literal["billing", "technical", "account", "general"]
+
+class CustomerIssue(BaseModel):
+    category: CATEGORIES
+    urgency_score: int = Field(ge=1, le=5, description="1=low, 5=critical")
+    summary: str = Field(max_length=200)
+    needs_human: bool
+
+SYSTEM_PROMPT = """문의 티켓을 분류하세요. 카테고리: billing, technical, account, general.
+긴급도를 1-5로 평가하세요 (1=낮음, 5=위급). 환불, 법적 위협, 안전 관련 문제는 needs_human=true로 설정하세요."""
+
+async def classify_ticket(text: str) -> CustomerIssue:
+    try:
+        completion = await client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": text},
+            ],
+            response_format=CustomerIssue,
+        )
+        result = completion.choices[0].message.parsed
+        if result is None:
+            raise ValueError("Model refused or returned unparseable response")
+        return result
+    except (APITimeoutError, RateLimitError):
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Classification failed: {type(e).__name__}") from e</pre>
+
+<p><code>CustomerIssue</code>를 Pydantic 모델로 정의하고 <code>response_format</code>에 직접 전달한다. 이 방식은 타입이 있는 출력으로 가는 훨씬 더 신뢰할 수 있는 경로를 제공한다. 그래도 거부 응답, 파싱 실패, 유효성 검사 오류는 여전히 처리해야 한다.</p>
+
+<h3>3단계: 시스템 레이어 학습</h3>
+<p>여기서부터 데모를 만드는 것에서 시스템을 만드는 것으로 전환된다.</p>
+<p>검색 증강 생성(RAG, Retrieval-Augmented Generation)을 배우고, 청킹 전략과 검색 품질을 이해한다. 상태 머신과 워크플로우를 학습하고, 데이터를 저장하고 프로세스를 재개하는 방법, RAG 파이프라인을 평가하는 방법도 익힌다. 기본적인 가드레일과 관찰 가능성도 이 단계에서 다룬다.</p>
+<p>실제로 작동하는 RAG 어시스턴트를 만들고, LangGraph 같은 프레임워크로 상태가 있는 워크플로우를 구축하고, 프롬프트를 테스트하는 평가 하네스를 만든다. 명시적인 중단 조건이 있고 사람의 승인을 요청하는 시스템도 구축한다.</p>
+<p>이 단계는 애플리케이션이 어떻게 실패하는지, 그 실패가 어떻게 측정되는지 쉽게 설명할 수 있을 때 완료된다.</p>
+
+<h3>4단계: 프로덕션 현실 파악</h3>
+<p>이 단계가 팀이 진심으로 신뢰할 수 있는 사람으로 만들어 준다.</p>
+<p>배포를 배운다. 큐와 백그라운드 워커를 사용하는 방법을 배운다. 시스템을 모니터링하는 방법을 배운다. 비용과 지연 시간의 트레이드오프를 이해한다. 재시도와 멱등성 패턴을 반드시 배워야 한다. 장애 발생 시 디버깅 방법을 알아야 한다. 제품 지표를 추적하고, AI가 필연적으로 실수했을 때의 좋은 사용자 경험을 설계해야 한다.</p>
+<p>하나의 기능을 처음부터 끝까지 실제 서버에 배포하고 모니터링 루프를 구축하는 것이 목표다. 테스트와 아키텍처 트레이드오프를 설명하는 문서를 포함한 진지한 포트폴리오 프로젝트를 작성한다.</p>
+<p>이 단계는 Jupyter 노트북 실험 이야기가 아니라 프로덕션 동작에 대해 신뢰할 수 있게 이야기할 수 있을 때 완료된다.</p>
+
+<h2>내가 만들 5개의 프로젝트</h2>
+<p>얕은 챗봇 클론 스무 개를 만드는 것보다 깊이 있는 프로젝트 몇 개를 만드는 것이 훨씬 낫다. 다음 다섯 개 프로젝트는 올바른 교훈을 강제로 가르쳐 준다.</p>
+
+<h3>프로젝트 1: 구조화 출력 추출기</h3>
+<p>어지러운 실세계 데이터를 깔끔한 JSON으로 변환하는 것이 AI 엔지니어링의 핵심이다. 인보이스 파서, 지원 티켓을 분류하는 도구, 계약서 조항 추출기가 모두 적합한 예시다. 프롬프팅과 엄격한 스키마 정의를 가르쳐 주고, 모델이 필드를 환각하거나 잘못된 데이터 타입을 반환할 때 재시도 로직 구현을 강제한다. 스키마가 정수를 요청했는데 모델이 "100달러"라는 문자열을 출력하는 경우를 잡아내고, 모델에게 다시 시도하도록 요청하는 코드를 작성하는 것이 좋은 경험이 된다.</p>
+<p>이 프로젝트가 중요한 이유: 기업 AI 업무의 80%는 단순히 비구조화 텍스트를 일반 소프트웨어가 사용할 수 있는 구조화 데이터로 변환하는 것이다.</p>
+
+<h3>프로젝트 2: 검색 및 RAG 어시스턴트</h3>
+<p>데이터셋을 검색하고 그 데이터셋에만 근거해서 질문에 답하는 애플리케이션을 만드는 것은 필수 프로젝트다. 내부 회사 문서를 위한 어시스턴트나 개인 메모 검색 도구가 적합하다. 청킹을 실용적으로 가르쳐 주는데, 글자 수로 단순 분할하면 대부분 문서의 의미가 파괴된다는 것을 배우면서 시맨틱 청킹의 필요성을 이해하게 된다.</p>
+<p>근거와 인용 규율이 이 프로젝트의 가장 중요한 교훈이다. 모델이 출처를 인용하게 강제하는 것은 놀랄 만큼 어렵다. 검색 단계가 쓰레기를 반환하면 언어 모델은 그 쓰레기를 아름답게 요약한다는 사실을 정면으로 마주하게 된다.</p>
+
+<h3>프로젝트 3: 도구를 사용하는 워크플로우</h3>
+<p>모델이 실제로 행동을 결정하는 시스템은 애플리케이션 설계에 대한 사고를 바꾼다. 데이터베이스를 업데이트하는 티켓 분류 워크플로우나 웹을 검색하고 스크레이핑하는 리서치 워크플로우가 좋은 예시다. 툴 호출과 행동 경계가 핵심 개념이다. 상태 전환 처리와 툴 실패 대응이 주된 과제다. 도구가 서버 오류를 발생시킬 때 모델이 어떻게 반응하는지 확인하게 된다. 때로는 다시 시도하고 때로는 성공 메시지를 환각한다.</p>
+
+<h3>프로젝트 4: 평가가 포함된 상태 저장 에이전트</h3>
+<p>루프 안에서 실행되지만 엄격한 제어가 있는 에이전틱 시스템은 복잡도에서 큰 도약이다. 서버 알림을 조사하는 인시던트 분류 에이전트나 조달 검토 에이전트가 적합한 사례다. LangGraph를 사용해 명시적인 상태 머신을 구축한다. 에이전트의 실행을 일시 중지하고 사람의 승인을 기다리는 중단 조건을 사용하는 방법을 배운다. 과거 인시던트 데이터셋으로 에이전트를 테스트하는 것이 실제로 작동하는지 확인하는 유일한 방법임을 깨닫는다.</p>
+
+<h3>프로젝트 5: 배포된 미니 제품 하나</h3>
+<p>내부 AI 어시스턴트를 배포하거나 NextJS 웹 앱에 작은 AI 기능을 추가한다. 이 프로젝트가 배포를 가르쳐 준다. 텔레메트리도 가르쳐 준다. LangSmith나 Helicone을 연결해 API 호출을 추적한다. 비용과 지연 시간의 트레이드오프를 가르쳐 준다. 네 번의 모델 호출로 이루어진 체인이 15초가 걸리고 사용자가 그만큼 기다리는 것을 싫어한다는 것을 알게 된다. 토큰을 프론트엔드로 스트리밍해서 사용자가 텍스트가 즉시 나타나는 것을 볼 수 있게 하는 방법을 배운다.</p>
+
+<h2>90일 계획</h2>
+<p>퇴근 후나 수업 후에 하루 몇 시간을 투자한다고 가정한 일정이다.</p>
+
+<h3>1~30일차</h3>
+<p>Python, API, 구조화 출력에 집중한다. 작지만 유용한 스크립트 두 개를 만든다. 마일스톤은 간단하다. 추출 도구 하나, 스키마 유효성 검사가 있는 구조화 출력 앱 하나, 깔끔한 GitHub 저장소 하나. 벡터 데이터베이스나 에이전트는 아직 신경 쓰지 않는다. API를 호출하고 응답을 처리하는 것을 편안하게 느끼는 것이 목표다.</p>
+
+<h3>31~60일차</h3>
+<p>검색, 툴 호출, 워크플로우 기초로 집중 전환한다. RAG 프로젝트 하나, 도구를 사용하는 워크플로우 하나를 구축한다. 마주친 트레이드오프와 실패를 설명하는 문서 하나를 작성한다. 모델이 왜 잘못된 도구를 호출하기로 결정했는지 디버깅하는 데 많은 시간을 보내게 된다. 완전히 정상이다. Python 함수에 더 좋은 독스트링을 작성하는 것을 배워서 모델이 더 잘 이해할 수 있게 된다.</p>
+
+<h3>61~90일차</h3>
+<p>평가, 배포, 관찰 가능성, 신뢰성에만 집중한다. 마일스톤은 프로젝트 하나를 실제 서버에 배포하는 것이다. 코드에 기본 평가 루프를 추가해야 한다. 무엇을 만들었고 왜 만들었는지 설명하는 진지한 포트폴리오 README나 블로그 포스트를 공개해야 한다.</p>
+
+<h2>스킬 매트릭스</h2>
+<p>기술들을 카테고리로 나누면 한 번에 모든 것을 배우려는 시도를 막는 데 도움이 된다.</p>
+
+<h3>반드시 갖춰야 할 것</h3>
+<p>Python과 기본 소프트웨어 엔지니어링. 이것은 건너뛸 수 없다. API와 백엔드 기초(HTTP와 JSON). 프롬프팅과 구조화 출력. 커뮤니케이션과 명확한 문서 작성.</p>
+
+<h3>곧 배워야 할 것</h3>
+<p>툴 호출과 기본 워크플로우. RAG와 검색 개념. 기본 관찰 가능성과 API 트레이스 디버깅. 모델에 정확히 어떤 프롬프트가 전달됐는지 볼 수 있어야 한다.</p>
+
+<h3>나중에 배울 것</h3>
+<p>평가와 LLM-as-a-judge 패턴. AI 시스템을 위한 배포와 운영. 실패 시 프로덕트 사고와 사용자 경험.</p>
+
+<h3>있으면 좋은 것</h3>
+<p>모델 파인튜닝. GPU 심화 최적화. 커스텀 임베딩 훈련. 첫 해에는 거의 필요 없다.</p>
+
+<h2>피해야 할 흔한 함정들</h2>
+<ul>
+  <li><strong>아무것도 배포하지 않은 채 끝없이 강의만 듣기.</strong> 튜토리얼 지옥에 갇힌다. 다른 사람이 코딩하는 것을 보면서 배우고 있다고 느끼지만 실제로는 텔레비전을 시청하는 것뿐이다. 브라우저를 닫고 터미널을 열어라.</li>
+  <li><strong>기초 전에 프레임워크 먼저 배우기.</strong> 표준 OpenAI SDK로 기본 API 호출을 할 줄 모르면서 CrewAI나 AutoGen부터 배우지 마라. 프레임워크는 배관을 숨긴다. 배관이 망가졌을 때 고치려면 배관을 이해해야 한다.</li>
+  <li><strong>챗봇만 만들기.</strong> 챗봇은 만들기 가장 쉽고 평가하기 가장 어려운 것이다. 백그라운드 워커를 만들어라. 데이터 추출 파이프라인을 만들어라. 채팅 인터페이스가 없는 것들을 만들어라.</li>
+  <li><strong>평가나 디버깅을 절대 배우지 않기.</strong> 출력을 눈으로 훑어보고 "괜찮아 보이네"라고 하는 것은 엔지니어링이 아니다. 테스트 스위트가 필요하다.</li>
+  <li><strong>모델 벤치마크에 집착하기.</strong> Claude 4.6 Opus가 GPT-5.3 Codex보다 수학 테스트에서 2점 더 높다고 해도 솔직히 관심 없다. 비즈니스 애플리케이션의 99%에는 중요하지 않다. 좋은 모델을 하나 골라서 코드를 작성하기 시작해라.</li>
+  <li><strong>모든 워크플로우를 에이전트라고 부르기.</strong> 세 단계를 엄격한 순서로 실행하는 스크립트가 있다면, 그것은 파이프라인이다. 에이전트가 아니다. 단순한 코드에 유행어를 사용하는 것을 멈춰라.</li>
+  <li><strong>제품과 UX를 무시하기.</strong> AI 기능이 로드되는 데 20초가 걸리는데 로딩 스피너도 없다면 사용자는 떠난다. 사용자 경험은 프롬프트만큼 중요하다.</li>
+  <li><strong>프롬프트의 영리함을 시스템 신뢰성으로 착각하기.</strong> 세상에서 가장 아름답고 복잡한 프롬프트를 작성해도 여전히 무작위로 실패한다. 재시도, 폴백 모델, 예외 처리가 필요하다.</li>
+</ul>
+
+<h2>핵심 원칙: 만들고, 측정하고, 배포하라</h2>
+<p>필요한 철학은 이것뿐이다. 마법적 사고를 피할 만큼의 이론은 배운다. 토큰이 무엇인지 알아야 한다. 모델이 실제로 생각하지 않고, 확률에 기반해 다음 단어를 예측할 뿐이라는 것을 알아야 한다.</p>
+<p>발목 잡히지 않을 만큼의 엔지니어링은 배운다. 패키지를 설치하고, 가상 환경을 설정하고, 서버에 코드를 푸시하는 방법을 알아야 한다.</p>
+<p>신뢰할 수 있게 되기 위한 충분한 프로젝트를 구축한다. 좋은 프로젝트 하나가 나쁜 것 열 개보다 낫다. 신뢰받는 엔지니어가 되기 위한 충분한 실패를 측정한다. 내가 아는 최고의 엔지니어들은 시스템이 실제로 무너지기 전에 어떻게 망가질지 정확히 말할 수 있는 사람들이다.</p>
+<p>AI 시스템을 구축하는 것은 초기 혼란의 벽을 넘고 나면 정말 재밌다. 인공 일반 지능의 미래에 대한 글 읽기를 멈추자. 에디터를 열고, API 키를 붙여 넣고, 첫 번째 스크립트를 작성하라.</p>
+
+</body>
+</html>

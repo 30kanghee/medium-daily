@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FastAPI vs Actix-Web vs Axum: I Built the Same API in Python and Rust</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>FastAPI vs Actix-Web vs Axum: I Built the Same API in Python and Rust</h1>
+<div class="meta">Ramesh Kannan s · 6분 읽기 · <a href="https://medium.com/@rameshkannanyt0078/fastapi-vs-actix-web-vs-axum-i-built-the-same-api-in-python-and-rust-the-results-broke-my-heart-2af5b40109a2" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@rameshkannanyt0078/fastapi-vs-actix-web-vs-axum-i-built-the-same-api-in-python-and-rust-the-results-broke-my-heart-2af5b40109a2" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">Python FastAPI와 Rust 웹 프레임워크(Actix-Web, Axum)로 동일한 API를 직접 구축해본 개발자의 솔직한 비교기.</p>
+  <p>6년 경력의 Python 개발자가 친구의 도발에 자극받아 한 주말 동안 같은 API를 세 가지 프레임워크로 구현했다. FastAPI는 생산성이 탁월하지만 GIL로 인한 동시성 한계가 분명했고, Actix-Web은 벤치마크 수치가 압도적이지만 Rust 학습 곡선이 가파랐다. Axum은 두 가지 사이에서 균형을 잡아 개발자 경험과 성능을 모두 만족시켰다. 결론적으로 소규모 프로젝트는 FastAPI가 여전히 정답이며, 실제 GIL 병목이 확인된 고부하 서비스에서만 Rust로의 전환이 의미 있다.</p>
+</div>
+
+<p>이성을 잃었던 한 주의 이야기를 들려주겠다.</p>
+
+<p>처음엔 별것 아니었다. 단순한 사이드 프로젝트 API 하나였다. JSON 입력, JSON 출력, 데이터베이스 연동, 인증 처리. FastAPI가 눈 감고도 처리할 수 있는 수준이다. 나는 6년째 Python으로 코드를 짜왔다. FastAPI는 내가 누구보다 잘 아는 프레임워크다. 웹 개발이 싫었던 나를 바꿔준 도구이기도 하다.</p>
+
+<p>그런데 친구 Dave가 끊임없이 Hacker News 글을 보내기 시작했다. "Rust 웹 프레임워크가 Python을 잡아먹고 있다." "FastAPI는 확장이 안 된다." "GIL은 우리가 안심하려고 스스로에게 하는 거짓말이다."</p>
+
+<p>그래서 나는 자유 시간이 넘쳐나는 불안한 개발자답게 결심했다. 동일한 API를 세 가지 프레임워크로 다시 짜보기로. 주말 하루, 에너지 드링크 열네 캔, 그리고 실존적 위기 한 번.</p>
+
+<p>실제로 무슨 일이 있었는지 들어보자.</p>
+
+<h3>FastAPI: 계속 문자를 보내오는 편한 전 연인</h3>
+
+<p>FastAPI를 깎아내릴 생각은 없다. Honda Civic이 포뮬러 1에서 못 이긴다고 불평하는 것과 다를 바 없다. FastAPI는 지금도 Python 웹 개발 역사상 가장 탁월한 선택이다. 자동으로 생성되는 OpenAPI 문서? 완벽하다. 실제로 뭔가를 해주는 타입 힌트? 혁신적이다. 열두 줄로 프로덕션 수준의 API를 만들 수 있다는 사실? 그래서 스타트업들이 2026년에도 여전히 Python을 선택하는 것이다.</p>
+
+<p>하지만 Python 밋업에서 아무도 입에 올리지 않는 이야기가 있다.</p>
+
+<p>나는 이 "단순한" API를 월 20달러짜리 VPS에 배포했다. 대단한 것도 아니었다. 동시 사용자 1,000명. 그런데 CPU 사용률이 천장을 향해 치솟는 걸 지켜봐야 했다. 응답 시간도 춤을 추기 시작했다. 80ms, 200ms, 1.2초. GIL은 async/await 키워드 따위는 신경 쓰지 않는다. 그냥 거기 버티고 서서, 한 스레드가 여러 스레드인 척하도록 내버려 두다가, 몰래 모든 것을 틀어막아 버린다. 클럽 입구에 선 경호원처럼.</p>
+
+<p>FastAPI 생태계는 꿈만 같다. SQLAlchemy, Pydantic, Celery, Redis, 모든 것이 갖춰져 있고 성숙했으며 문서도 풍부하다. 2003년에 만들어진 난해한 SOAP 기업 API와 연동해야 한다고? Python 라이브러리가 있다. 아마 두 개쯤은 있을 것이다.</p>
+
+<p>하지만 Dave가 라즈베리 파이 하나로 동시 연결 5만 개를 처리하는 Rust 서버 스크린샷을 보내왔을 때, 내 안의 무언가가 조용히 죽어나갔다.</p>
+
+<h3>Actix-Web: 처음엔 당신을 싫어하는 속도 괴물</h3>
+
+<p>먼저 Actix-Web을 골랐다. 솔직히 말하면 벤치마크 수치가 말도 안 될 정도이기 때문이다. FastAPI라면 녹아버렸을 하드웨어에서 초당 40만 건의 요청을 처리한다. 액터 모델은 그럴싸하게 들린다. 실제로도 그렇다. 그런데 처음 세 시간 동안은 노트북을 창 밖으로 던지고 싶었다.</p>
+
+<p>Rust 컴파일러는 친구가 아니다. 물리학 시험에서 쉼표 하나 잘못 썼다고 감점하는 엄격한 교수 같은 존재다. 함수에서 문자열을 반환하려다가 라이프타임 문제와 스무 분을 싸웠다. 스무 분이다. 고작 <em>문자열 하나</em>를 위해서. Python이었다면 그 시간에 엔드포인트를 다 만들고 테스트까지 작성했을 것이다.</p>
+
+<p>그런데 이상한 일이 생겼다. 네 시간쯤 지나자 컴파일러가 더 이상 소리를 지르지 않았다. 코드가 컴파일됐다. 첫 번째 부하 테스트를 실행했을 때 나도 모르게 소리 내 웃었다. 노트북 팬이 돌아가지도 않았다. 메모리 사용량은 평평하게 유지됐다. 버스를 운전하다가 누군가 전투기 열쇠를 건네준 느낌이었다.</p>
+
+<p>Actix-Web은 무식할 정도로 빠르다. 클라우드플레어가 사용할 만큼 실전 검증도 됐다. 미들웨어 시스템도 일단 익숙해지면 강력하다.</p>
+
+<p>하지만 생태계? 그게 밀월의 끝이다. 특정 OAuth2 흐름이 필요하다고? 행운을 빈다. RFC를 읽으면서 절반은 직접 구현해야 할 것이다. Python의 "배터리 포함" 철학을 Rust는 모른다. 내가 찾은 튜토리얼들은 죄다 낡아있거나, 내가 Rust 책을 이미 외웠다고 가정했다.</p>
+
+<h3>Axum: 당신이 성공하길 진심으로 바라는 Rust 프레임워크</h3>
+
+<p>Actix-Web이 뛰어나지만 예민한 천재라면, Axum은 실제로 설명해주는 친절한 시니어 개발자다. Tokio 팀이 만든 이 프레임워크는 "Rust 웹 개발이 울고 싶게 만들지 않으면 어떨까?"라는 질문에서 출발한 것 같다.</p>
+
+<p>Tower 생태계가 핵심이다. 모든 것이 레이어다. 인증? 레이어. 로깅? 레이어. 속도 제한? 레이어. Actix-Web의 액터 모델이 끝내 내 머릿속에서 클릭되지 않았던 방식으로, Axum은 자연스럽게 맞아 들어갔다. Tokio(지금 인터넷을 돌리는 비동기 런타임)와 잘 맞물리기 때문에, 동시성 모델이 자연스럽게 느껴진다. "자연스럽다"와 "Rust 비동기"를 같은 문장에 쓸 날이 올 줄 몰랐다.</p>
+
+<p>Axum으로 API를 다시 구현하는 데 여섯 시간쯤 걸렸다. FastAPI보다 두 배 길었지만, Actix-Web의 절반이다. 오류 메시지가 도움이 됐다. 미들웨어가 조합하기 쉬웠다. 같은 부하 테스트를 돌렸을 때 결과는 Actix-Web과 거의 동일했다. 2026년에 "가장 빠른" Rust 프레임워크란 사실상 동점이다. 모두 그냥 "GIL에 막히지 않는다"는 뜻이다.</p>
+
+<p>Axum의 진짜 강점은 개발자 경험이다. 현대적이다. 컴퓨터가 코드를 실행하는 방식만이 아니라, 인간이 코드를 작성하는 방식도 고민한 흔적이 느껴진다.</p>
+
+<h3>아무도 듣고 싶지 않은 냉혹한 진실</h3>
+
+<p>이제 몇 가지 환상을 깨야 할 시간이다.</p>
+
+<p>일반적인 CRUD API, 웹훅 수신기, 내부 마이크로서비스를 만든다면 FastAPI가 여전히 올바른 선택일 가능성이 높다. 알고 있다. 이미 Rust 팬들이 분노의 댓글을 달기 시작하는 소리가 들린다. 하지만 진실은 이렇다. 여러분의 API가 느린 이유는 Python 때문이 아니다. N+1 쿼리 때문이거나 거대한 JSON 덩어리를 직렬화하기 때문이다. FastAPI는 코드를 제대로 짜면 초당 수천 건의 요청을 처리할 수 있다. 우리 대부분은 그 한계에 닿지도 못한다.</p>
+
+<p>Rust를 선택해야 할 때:</p>
+<ul>
+  <li>실제로 Python 서비스를 <em>측정</em>해봤더니 GIL이 병목인 경우 (데이터베이스도 아니고 네트워크도 아니고 <em>GIL</em> 그 자체가)</li>
+  <li>고빈도 트레이딩, 실시간 게임, WebSocket 연결 10만 개를 유지해야 하는 채팅 서버를 만드는 경우</li>
+  <li>이미 Rust를 아는 팀이 있거나 제대로 배울 시간이 있는 경우 ("주말에 유튜브 영상 하나 봤다"는 수준이 아닌)</li>
+  <li>신뢰할 수 없는 데이터를 대규모로 처리하기 때문에 메모리 안전성이 필요하고, 세그폴트 한 번에 실제 돈이 나가는 경우</li>
+</ul>
+
+<p>FastAPI를 선택해야 할 때:</p>
+<ul>
+  <li>내일까지 배포해야 할 때</li>
+  <li>팀이 Python 네이티브일 때</li>
+  <li>방대한 생태계가 필요할 때 (ML 연동, 데이터 사이언스 파이프라인 등)</li>
+  <li>"1000만 건에서도 작동"보다 "지금 당장 작동"을 중시할 때</li>
+</ul>
+
+<p>Actix-Web과 Axum 중에서는? 2026년 기준으로 개발자 경험 전쟁에서 Axum이 이기고 있다. Actix-Web이 마이크로벤치마크에서 근소하게 빠르지만, Axum의 조합성과 Tower 생태계 덕분에 새 Rust 프로젝트에서 실용적인 선택은 Axum이다. Actix의 액터 모델이 꼭 필요한 경우가 아니라면 Axum으로 시작하라.</p>
+
+<h3>내 프로젝트를 어떻게 했냐고</h3>
+
+<p>Python 버전을 그냥 유지했다.</p>
+
+<p>허무한 결말이라는 거 안다. 하지만 사실이 이렇다. 내 사이드 프로젝트 사용자는 세 명이다. 그중 한 명은 엄마다. Rust 버전은 GitHub 레포지터리 어딘가에 앉아 있다. 아름답게 만들어졌고, 무섭도록 효율적이며, 내 실제 용도에는 전혀 필요하지 않다.</p>
+
+<p>하지만 회사 프로덕션 서비스는 다르다. ML 모델 추론을 동시 연결 4만 개로 처리하는 그 서비스는 다음 분기에 Axum으로 재작성할 예정이다. 거기서는 GIL이 이론적인 문제가 아니다. 존재하지 않아도 될 월 4,000달러짜리 AWS 비용이다.</p>
+
+<h3>결론</h3>
+
+<p>2026년의 Rust 웹 프레임워크는 단순히 "더 빠른 Python"이 아니다. 다른 사고방식이다. FastAPI는 점심 시간에 작동하는 API를 만들게 해준다. Axum은 오후 내내 컴파일러와 싸우게 만들고, 그 대가로 스마트워치에서도 돌아갈 것 같은 서버를 선물한다.</p>
+
+<p>"최고의" 프레임워크 따위는 없다. "지금 내가 만드는 것에 최고인" 프레임워크만 있을 뿐이다.</p>
+
+<p>그리고 Dave라는 친구가 계속 벤치마크 수치를 보내온다면, 주말에 한번 Axum을 써보는 것도 나쁘지 않다. 에너지 드링크는 미리 쟁여두길 바란다.</p>
+
+<hr>
+
+<p><em>여러분의 생각은 어떤가? 지금도 프로덕션에서 FastAPI를 쓰고 있는가, 아니면 이미 Rust로 갔는가? 아래에 전쟁 이야기를 남겨주길 바란다. 특히 내 GIL 고통을 위로해줄 프로덕션 사고 사례라면 더욱 환영한다.</em></p>
+
+</body>
+</html>

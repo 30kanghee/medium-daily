@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Patterns in C#: Which Ones Still Matter in 2026</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Design Patterns in C#: Which Ones Still Matter in 2026</h1>
+<div class="meta">Kerim Kara · 22분 읽기 · <a href="https://medium.com/@kerimkkara/design-patterns-in-c-which-ones-still-matter-in-2026-f41b057cfede" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@kerimkkara/design-patterns-in-c-which-ones-still-matter-in-2026-f41b057cfede" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">2026년 현재 살아남은 C# 디자인 패턴과 사라진 패턴을 실전 관점에서 정리한 안내서.</p>
+  <p>Gang of Four의 고전 패턴 중 상당수는 현대 C# 환경에서 더 이상 유효하지 않다. 의존성 주입은 이미 언어 인프라가 됐고, 비동기 프로그래밍과 클라우드 환경이 설계 원칙을 바꿨다. 이 글은 Strategy, Decorator, Command, Adapter, Mediator 등 실제로 살아남은 패턴과, Singleton처럼 DI로 대체된 패턴, Template Method처럼 컴포지션에 자리를 내준 패턴을 구분한다. 패턴 자체가 죽은 것이 아니라 패턴 맹신이 죽었다는 것이 핵심 메시지다.</p>
+</div>
+
+<p>오랫동안 디자인 패턴은 "진지한" C# 개발자라면 반드시 익혀야 할 체크리스트처럼 여겨졌다. Singleton, Factory, Repository, Observer — 이것들을 배우고 적용하면 아키텍처가 저절로 깔끔하고 확장 가능해질 것이라 믿었다. 그러나 현실에서는 이 패턴들을 교과서대로 구현한 .NET 시스템이 오히려 경직되고 과도하게 추상화된 채로, 변경하기 어려운 코드가 되는 경우가 많았다. 2026년이 된 지금, 업계는 마침내 불편한 진실을 인정하게 됐다. <strong>모든 패턴이 시간을 이겨내지는 못한다.</strong> 그리고 맹목적으로 패턴을 적용하는 것은 아예 사용하지 않는 것보다 나쁠 수 있다.</p>
+
+<p>현대 C#은 Gang of Four 책이 유행하던 시절과 전혀 다른 모습이다. 의존성 주입(Dependency Injection)은 더 이상 패턴이 아니라 인프라다. <code>async</code>와 <code>await</code>는 제어 흐름의 형태 자체를 바꿔놨다. 클라우드 환경은 불필요한 메모리 할당과 과도한 추상화에 무거운 비용을 청구한다. ORM, 메시지 브로커, 각종 프레임워크가 이미 클래식 패턴의 절반을 우리 대신 구현해주고 있다. 이제 질문은 <em>"어떤 디자인 패턴을 배워야 하나?"</em>가 아니라 <em>"2026년의 실제 .NET 시스템에서 진짜 문제를 해결하는 패턴은 무엇인가?"</em>이다.</p>
+
+<p>이 글은 고전 패턴을 회고하는 글도, 객체지향 순수성을 논하는 이론서도 아니다. 실제 트래픽과 지연 제약, 유지보수 압박 아래 운영되는 실전 C# 시스템의 관점에서 쓰였다. 어떤 패턴은 진화하고 적응함으로써 살아남았다. 어떤 패턴은 기술적으로 여전히 작동하지만, 오늘날 적용했을 때 가독성과 성능, 팀의 생산성을 오히려 해친다.</p>
+
+<p>패턴이 죽은 것이 아니다. 패턴 숭배가 죽었다.</p>
+
+<h2>1. 의존성 주입: 패턴에서 인프라로</h2>
+
+<p>의존성 주입(Dependency Injection)은 2026년의 C#에서 더 이상 단순한 디자인 패턴이 아니다. 인프라다. 클래스 간의 결합을 느슨하게 만들기 위해 시작된 이 기법은 이제 모든 진지한 .NET 애플리케이션의 근간이 됐다. ASP.NET Core, minimal API, 백그라운드 서비스, 클라우드 네이티브 워크로드, 심지어 콘솔 앱조차 첫 줄부터 DI가 있다는 전제 위에서 설계된다. DI는 이제 "적용"하는 것이 아니라 그것을 중심으로 <em>설계하는</em> 것이다.</p>
+
+<p>초기 구현에서 DI는 장황하고 기계적이었다. 개발자가 직접 생성자를 만들고 인터페이스를 전달하고, 비즈니스 로직과 동떨어진 느낌의 composition root에서 모든 것을 연결해야 했다. 2026년에는 내장된 <code>Microsoft.Extensions.DependencyInjection</code> 컨테이너가 빠르고 예측 가능한 런타임 기능으로 성숙했다. 더 중요한 것은, 팀들이 DI의 진짜 가치가 테스트 용이성 하나에 있지 않다는 것을 깨달았다는 점이다. <strong>객체 수명(lifetime)과 아키텍처 경계를 통제하는 것</strong>이 핵심이다.</p>
+
+<pre>public class PaymentService
+{
+    private readonly IPaymentGateway _gateway;
+
+    public PaymentService(IPaymentGateway gateway)
+    {
+        _gateway = gateway;
+    }
+
+    public async Task&lt;bool&gt; ProcessAsync(PaymentRequest request)
+    {
+        return await _gateway.ChargeAsync(request);
+    }
+}</pre>
+
+<p>2026년의 이 코드는 특별하지 않다. 그게 바로 핵심이다. DI는 배경으로 물러나 개발자가 배선이 아닌 의도에 집중할 수 있게 한다. 컨테이너 설정 자체도 더 선언적으로 단순해졌다.</p>
+
+<pre>builder.Services.AddScoped&lt;IPaymentGateway, StripeGateway&gt;();
+builder.Services.AddScoped&lt;PaymentService&gt;();</pre>
+
+<p>여기서 여전히 중요한 것은 패턴 자체가 아니라 <strong>규율</strong>이다. DI를 남용하는 것은 아예 사용하지 않는 것만큼 해롭다. 현대 시스템에서 자주 보이는 안티패턴은 "의존성 주입 난사(DI sprawl)"다. 모든 클래스가 다섯 개 이상의 인터페이스에 의존하면서도 어느 하나도 응집된 책임을 갖지 않는 경우다. 2026년의 숙련된 팀은 DI를 <em>아키텍처 경계선</em>을 표현하는 데 쓴다. 모든 것을 맹목적으로 추상화하는 도구로 쓰지 않는다.</p>
+
+<p>요약하면, DI는 2026년에도 여전히 중요하다. 다만 영리한 패턴으로서가 아니라 아키텍처 계약으로서다. 의도적으로 쓰면 유지보수성과 확장성, 명확성을 얻는다. 남용하면 가치 없는 간접 참조만 쌓인다.</p>
+
+<h2>2. Factory 패턴: 여전히 유효하지만 대폭 단순화됨</h2>
+
+<p>Factory 패턴은 한때 C# 객체지향 설계의 중심이었다. Abstract Factory, Factory Method, Simple Factory는 객체 생성을 관리하는 필수 도구로 가르쳐졌다. 2026년에도 대부분의 Factory는 존재하지만, 훨씬 더 간결하고 실용적인 형태로 변했다. 현대 C# 언어와 런타임이 Factory가 해결하려 했던 문제를 상당 부분 흡수했기 때문이다.</p>
+
+<p>역사적으로 Factory는 복잡한 생성 로직을 숨기기 위해 쓰였다. 특히 객체 생성이 런타임 조건에 달려 있을 때. 오늘날 DI 컨테이너가 이미 대규모 객체 팩토리 역할을 한다. 따라서 기존의 Factory 구현 상당수는 중복이다. 하지만 <strong>생성 로직 자체가 도메인의 일부</strong>일 때 Factory는 여전히 의미가 있다.</p>
+
+<p>예를 들어 사용자 선호도와 규제 제약에 따라 여러 채널을 지원하는 알림 시스템을 생각해보자. 이것은 단순한 기술적 배선이 아니라 비즈니스 로직이다.</p>
+
+<pre>public interface INotification
+{
+    Task SendAsync(string message);
+}
+
+public class NotificationFactory
+{
+    public static INotification Create(User user)
+    {
+        if (user.IsInEU)
+            return new EmailNotification();
+        if (user.PrefersSms)
+            return new SmsNotification();
+        return new PushNotification();
+    }
+}</pre>
+
+<p>이 Factory는 그 자체를 위한 추상화가 아니다. 시간이 지남에 따라 바뀔 수 있는 의사결정 규칙을 캡슐화한다. 현대 C# 기능은 보일러플레이트를 대폭 줄여줬다. 패턴 매칭과 switch 표현식을 쓰면 가독성을 희생하지 않고도 간결하게 쓸 수 있다.</p>
+
+<pre>public static INotification Create(User user) =>
+    user switch
+    {
+        { IsInEU: true } => new EmailNotification(),
+        { PrefersSms: true } => new SmsNotification(),
+        _ => new PushNotification()
+    };</pre>
+
+<p>여기서 빠진 것에 주목하자. 인터페이스 위의 인터페이스, 추상 기반 Factory, 과도한 상속 계층이 없다. 2026년에 의미 있는 Factory는 <strong>명확한 의도를 가진 단순한 함수</strong>다. 아키텍처 기념비가 아니다. Abstract Factory는 프레임워크나 SDK를 개발하는 경우가 아니면 현대 .NET에서 거의 정당화되지 않는다.</p>
+
+<h2>3. Strategy 패턴: 현대 C# 시스템의 조용한 중추</h2>
+
+<p>Strategy 패턴은 C#의 어떤 디자인 패턴보다도 잘 노화됐다. 2026년에도 개발자들이 명시적으로 그 이름을 붙이지 않더라도 가장 유연하고 유지보수하기 좋은 시스템들을 조용히 떠받치고 있다. 핵심은 행동을 캡슐화하고 런타임에 교환 가능하게 만드는 것인데, 이 개념은 현대 C# 관행과 완벽하게 맞아떨어진다.</p>
+
+<p>이커머스 시스템의 가격 책정 로직을 생각해보자. 할인은 지역, 고객 등급, 시간, 규제 제약에 따라 달라질 수 있다. 이 로직을 하드코딩하면 금방 관리가 불가능해진다.</p>
+
+<pre>public interface IPricingStrategy
+{
+    decimal Calculate(decimal basePrice);
+}
+
+public class VipPricingStrategy : IPricingStrategy
+{
+    public decimal Calculate(decimal basePrice) => basePrice * 0.9m;
+}
+
+public class RegularPricingStrategy : IPricingStrategy
+{
+    public decimal Calculate(decimal basePrice) => basePrice;
+}</pre>
+
+<p>올바르게 사용하면 Strategy는 기존 로직을 건드리지 않고도 새로운 행동을 추가할 수 있게 한다. 2026년에는 전략을 선택하는 방식도 달라졌다. 거대한 <code>if</code> 블록이나 설정이 복잡한 Factory 대신, DI와 메타데이터를 활용해 전략을 동적으로 선택한다.</p>
+
+<pre>public class PricingService
+{
+    private readonly IEnumerable&lt;IPricingStrategy&gt; _strategies;
+
+    public PricingService(IEnumerable&lt;IPricingStrategy&gt; strategies)
+    {
+        _strategies = strategies;
+    }
+
+    public decimal Calculate(string customerType, decimal price)
+    {
+        var strategy = _strategies.First(s => s.GetType().Name.Contains(customerType));
+        return strategy.Calculate(price);
+    }
+}</pre>
+
+<p>이 패턴은 마이크로서비스와 모듈형 모놀리스 아키텍처에서 탁월하게 확장된다. 핵심 워크플로는 그대로 두면서 행동을 자주 바꿔야 할 때 특히 강력하다. Strategy는 비동기 프로그래밍, 피처 플래그, A/B 테스트와도 자연스럽게 결합된다. 소프트웨어가 계속 변하는 한 Strategy는 C#에서 가장 가치 있는 패턴 중 하나로 남을 것이다.</p>
+
+<h2>4. Decorator 패턴: 횡단 관심사가 여전히 속하는 곳</h2>
+
+<p>Decorator 패턴은 2026년에도 깊이 관련성을 유지하고 있다. 특히 관찰 가능성(observability), 복원력(resilience), 보안을 중시하는 시스템에서. 프레임워크와 미들웨어가 일부 역할을 흡수했지만, 핵심 로직을 오염시키지 않고 동작을 투명하게 계층화해야 할 때 Decorator는 빛을 발한다.</p>
+
+<p>외부 API에서 데이터를 가져오는 서비스를 상상해보자. 시간이 지나면서 로깅, 재시도, 캐싱, 메트릭이 필요해진다. 하지만 원래 서비스를 매번 재작성하고 싶지는 않다.</p>
+
+<pre>public class CachedWeatherService : IWeatherService
+{
+    private readonly IWeatherService _inner;
+    private readonly IMemoryCache _cache;
+
+    public CachedWeatherService(IWeatherService inner, IMemoryCache cache)
+    {
+        _inner = inner;
+        _cache = cache;
+    }
+
+    public async Task&lt;WeatherData&gt; GetAsync(string city)
+    {
+        return await _cache.GetOrCreateAsync(city, _ => _inner.GetAsync(city));
+    }
+}</pre>
+
+<p>이 패턴은 자연스럽게 확장된다. 각 Decorator는 단일 책임을 갖고 핵심 서비스는 손대지 않는다. 2026년에는 DI 컨테이너와 자연스럽게 통합돼 자동으로 Decorator를 구성할 수 있다. Decorator는 비즈니스 로직이 아닌 <em>직교적 관심사(orthogonal concerns)</em>에 강점이 있다.</p>
+
+<h2>5. Singleton 패턴: 대부분 죽었지만 가끔 필요함</h2>
+
+<p>2026년에 Singleton 패턴은 대체로 퇴장했다. 전역 상태, 숨겨진 의존성, 테스트의 악몽이 Singleton을 모범 사례가 아닌 반면교사로 만들었다. 그렇다고 완전히 죽었다고 하면 솔직하지 못하다. Singleton은 아직 살아 있지만, 매우 좁고 잘 이해된 시나리오에서만.</p>
+
+<p>현대 DI 컨테이너는 이미 단일 인스턴스 수명을 안전하게 관리한다.</p>
+
+<pre>builder.Services.AddSingleton&lt;ITelemetryCollector, TelemetryCollector&gt;();</pre>
+
+<p>이것은 Singleton의 의도를 단점 없이 달성한다. 컨테이너가 생성, 수명, 소멸을 제어하면서 소비자는 인스턴스의 전역적 성격을 알 필요가 없다. 정적 인스턴스 접근자, 지연 초기화, 이중 잠금 확인 — 이런 진짜 Singleton 구현은 이제 드물고 대개 권장되지 않는다. 2026년의 핵심 차이는 <em>의도성</em>이다. Singleton이 존재한다면 문서화되고, 격리되고, 신중하게 정당화된 것이다.</p>
+
+<h2>6. Observer 패턴: 여전히 유효하지만 대부분 숨어있음</h2>
+
+<p>Observer 패턴은 완전히 사라진 적이 없다. 하지만 2026년에는 교과서적 형태로 거의 나타나지 않는다. 대신 현대 C# 프레임워크, 이벤트 기반 아키텍처, 반응형 시스템의 표면 아래에 산다. 개발자들이 더 이상 <code>Attach</code>, <code>Detach</code>, <code>Notify</code> 메서드를 명시적으로 작성하지 않더라도, Observer의 핵심 — 강한 결합 없이 상태 변화에 반응하는 것 — 은 여전히 근본적이다.</p>
+
+<p>현대 C#은 이벤트와 델리게이트에 대한 일급 언어 지원으로 대부분을 대체했다.</p>
+
+<pre>public class Order
+{
+    public event EventHandler&lt;OrderShippedEvent&gt; Shipped;
+
+    public void Ship()
+    {
+        Shipped?.Invoke(this, new OrderShippedEvent(DateTime.UtcNow));
+    }
+}</pre>
+
+<p>분산 시스템에서는 Observer가 더 강력해진다. 관찰자가 메모리 내 객체가 아니라 메시지 브로커나 이벤트 스트림을 통해 게시된 이벤트에 반응하는 별개의 서비스가 된다.</p>
+
+<pre>public class OrderShippedHandler
+{
+    public async Task HandleAsync(OrderShippedEvent evt)
+    {
+        await _emailService.SendAsync(evt);
+        await _analyticsService.TrackAsync(evt);
+    }
+}</pre>
+
+<p>더 이상 중요하지 않은 것은 수동 Observer 관리다. 애플리케이션 코드에서 직접 구독 목록을 작성하는 것은 2026년에 거의 항상 실수다. MediatR, 메시지 버스, 반응형 라이브러리가 이미 훨씬 더 잘 해결한다.</p>
+
+<h2>7. Command 패턴: 현대 애플리케이션 경계에 완벽한 적합</h2>
+
+<p>Command 패턴은 현대 C# 시스템에서 가장 유용한 패턴 중 하나가 됐다. 명확한 경계, 감사 가능성, 확장성을 중시하는 애플리케이션에 특히 그렇다. 2026년에는 UI 버튼이나 메뉴 액션과 주로 연관되지 않는다. 대신 API, 백그라운드 작업, 도메인 기반 워크플로의 자연스러운 적합지가 됐다.</p>
+
+<pre>public record CreateOrderCommand(Guid CustomerId, IReadOnlyList&lt;OrderItem&gt; Items);</pre>
+
+<p>이 한 줄은 많은 전통적 서비스 메서드보다 의도를 훨씬 명확하게 전달한다. 커맨드는 기술적 작업이 아닌 비즈니스 행동을 나타낸다. 핸들러는 실행 로직이 된다.</p>
+
+<pre>public class CreateOrderHandler
+{
+    public async Task HandleAsync(CreateOrderCommand command)
+    {
+        // 유효성 검사, 영속화, 이벤트 발행
+    }
+}</pre>
+
+<p>Command의 가장 큰 장점 중 하나는 <strong>시간적 분리(temporal decoupling)</strong>다. 커맨드는 즉시 실행될 필요가 없다. 큐에 넣거나 스케줄링하거나 재시도할 수 있다. 또한 유효성 검사, 권한 확인, 로깅, 트랜잭션을 미들웨어 스타일 파이프라인으로 일관되게 적용할 수 있어 비즈니스 로직을 오염시키지 않는다.</p>
+
+<pre>public class LoggingCommandHandler&lt;TCommand&gt;
+{
+    private readonly ICommandHandler&lt;TCommand&gt; _inner;
+
+    public async Task HandleAsync(TCommand command)
+    {
+        _logger.Log(command);
+        await _inner.HandleAsync(command);
+    }
+}</pre>
+
+<h2>8. Adapter 패턴: API 중심 세계에서 여전히 필수</h2>
+
+<p>Adapter 패턴은 2026년에도 가장 논란 없이 사용되는 패턴 중 하나다. 호환되지 않는 인터페이스를 함께 작동시키려는 목적은 서드파티 API, 레거시 시스템, 끊임없이 변하는 계약이 지배하는 세계에서 여전히 절실하다.</p>
+
+<pre>public class LegacyPaymentAdapter : IPaymentGateway
+{
+    private readonly LegacyPaymentClient _client;
+
+    public async Task&lt;bool&gt; ChargeAsync(PaymentRequest request)
+    {
+        var legacyRequest = new LegacyChargeRequest
+        {
+            AmountInCents = request.Amount * 100,
+            CardNo = request.CardNumber
+        };
+        return await _client.ProcessAsync(legacyRequest);
+    }
+}</pre>
+
+<p>이 Adapter는 메서드 호출을 번역하는 것 이상을 한다. 시스템의 나머지 부분을 외부의 변동성으로부터 보호한다. 레거시 API가 변경되면 Adapter만 업데이트하면 된다. 2026년에는 Adapter가 프로토콜 차이, 오류 정규화, 복원력 정책도 처리하는 경우가 많다. 통제가 끝나고 불확실성이 시작되는 시스템 엣지에서 가장 효과적이다.</p>
+
+<h2>9. Template Method 패턴: 대부분 대체됨, 가끔 유용</h2>
+
+<p>Template Method 패턴은 다른 패턴만큼 잘 노화되지 못했다. 2026년에는 추상 메서드를 오버라이드하는 기반 클래스 형태가 제약적으로 여겨지는 경우가 많다. 현대 C#은 상속보다 컴포지션을 선호하는데, Template Method는 상속에 크게 의존한다.</p>
+
+<pre>public abstract class DataImporter
+{
+    public async Task ImportAsync()
+    {
+        var data = await ReadAsync();
+        Validate(data);
+        await SaveAsync(data);
+    }
+
+    protected abstract Task&lt;object&gt; ReadAsync();
+    protected abstract void Validate(object data);
+    protected abstract Task SaveAsync(object data);
+}</pre>
+
+<p>결과적으로 Template Method는 파이프라인 기반의 컴포지션 설계로 대체됐다.</p>
+
+<pre>public class ImportPipeline
+{
+    public async Task RunAsync(
+        Func&lt;Task&lt;object&gt;&gt; read,
+        Action&lt;object&gt; validate,
+        Func&lt;object, Task&gt; save)
+    {
+        var data = await read();
+        validate(data);
+        await save(data);
+    }
+}</pre>
+
+<p>동일한 목표를 더 높은 유연성과 테스트 용이성으로 달성한다. 행동이 상속되는 대신 주입된다. Template Method는 프레임워크 수준의 코드에서 실행 순서를 엄격하게 제어해야 할 때는 여전히 유용하다. 2026년의 교훈은 상속이 비싸다는 것이다. 변형이 예상될 때 컴포지션이 거의 항상 이긴다.</p>
+
+<h2>10. Repository 패턴: 여전히 유용하지만 자주 오용됨</h2>
+
+<p>Repository 패턴은 C#에서 가장 오해받는 패턴 중 하나다. 2026년에도 그 상황은 변하지 않았다. 원래 영속성 세부 사항을 추상화하기 위해 설계됐으며, 데이터 저장소 위에 컬렉션과 같은 인터페이스를 제공하려 했다.</p>
+
+<pre>public interface IOrderRepository
+{
+    Task&lt;Order&gt; GetAsync(Guid id);
+    Task SaveAsync(Order order);
+}</pre>
+
+<p>올바르게 구현되면 도메인 로직과 인프라 사이에 깔끔한 경계를 만든다. 하지만 Entity Framework Core 같은 현대 ORM이 이미 이 추상화의 많은 부분을 제공한다. 그 결과 많은 Repository가 <code>DbContext</code>를 그대로 감싸기만 하고 가치를 추가하지 않는다. 2026년의 경험 있는 팀은 Repository를 데이터 지향이 아닌 <strong>행동 지향</strong>으로 유지함으로써 이 실수를 피한다. 기본값으로 Repository를 만드는 것은 더 이상 중요하지 않다.</p>
+
+<h2>11. Mediator 패턴: 분리된 현대 시스템의 중추</h2>
+
+<p>Mediator 패턴은 현대 C# 시스템에서 조용한 르네상스를 경험했으며, 2026년에는 엔터프라이즈와 클라우드 네이티브 애플리케이션에서 가장 실용적으로 유용한 패턴 중 하나가 됐다. 객체 간의 직접 의존성을 줄이기 위해 통신을 중앙화한다는 원래 의도는 오늘날 시스템의 복잡성과 완벽하게 일치한다.</p>
+
+<pre>public record ShipOrder(Guid OrderId);
+
+public class ShipOrderHandler
+{
+    public async Task HandleAsync(ShipOrder command)
+    {
+        // 주문 로드, 유효성 검사, 상태 업데이트
+    }
+}</pre>
+
+<p>Mediator의 진정한 힘은 횡단 관심사가 도입될 때 나타난다. 로깅, 유효성 검사, 트랜잭션, 재시도, 메트릭을 비즈니스 로직을 수정하지 않고 중앙에서 적용할 수 있다.</p>
+
+<pre>public class ValidationBehavior&lt;TRequest&gt;
+{
+    public async Task HandleAsync(TRequest request, Func&lt;Task&gt; next)
+    {
+        Validate(request);
+        await next();
+    }
+}</pre>
+
+<p>2026년에는 자체 Mediator 인프라를 처음부터 만드는 것이 더 이상 중요하지 않다. 성능 오버헤드, 복잡성, 미묘한 버그의 위험이 너무 높다. 확립된 라이브러리와 프레임워크가 이미 이 문제를 훨씬 잘 해결한다.</p>
+
+<h2>12. Flyweight 패턴: 틈새지만 메모리를 살리는 패턴</h2>
+
+<p>Flyweight 패턴은 주류였던 적이 없고 2026년에도 틈새 도구로 남아 있다. 그러나 완전히 사라졌다고 선언하는 것은 실수다. Flyweight는 여러 객체 간에 불변 데이터를 공유해 메모리 사용을 줄이는 것에 집중한다. 고처리량 로깅 시스템, 원격 측정 파이프라인, 데이터 처리 엔진 등 대량의 유사한 데이터가 있는 곳에 자연스럽게 맞아들어간다.</p>
+
+<pre>public static class GlyphFactory
+{
+    private static readonly Dictionary&lt;char, Glyph&gt; _cache = new();
+
+    public static Glyph Get(char symbol)
+    {
+        if (!_cache.TryGetValue(symbol, out var glyph))
+        {
+            glyph = new Glyph(symbol);
+            _cache[symbol] = glyph;
+        }
+        return glyph;
+    }
+}</pre>
+
+<p>필요할 때 <strong>이보다 효과적으로 문제를 해결하는 것은 없다</strong>는 점에서 Flyweight는 살아남는다. 공유 객체는 반드시 불변이어야 하고 접근이 스레드 안전해야 한다는 규율이 필요하다.</p>
+
+<h2>13. Proxy 패턴: 분산 시스템에서 어느 때보다 유효</h2>
+
+<p>Proxy 패턴은 시스템이 더 분산될수록 점점 더 관련성이 높아졌다. 2026년에 서비스는 네트워크를 통해 통신하고 신뢰 경계를 넘으며 예측 불가능한 조건에서 작동한다. Proxy는 이러한 상호작용에 대한 제어된 게이트웨이를 제공한다.</p>
+
+<pre>public class SecureDocumentProxy : IDocument
+{
+    private readonly IDocument _inner;
+    private readonly IUserContext _user;
+
+    public SecureDocumentProxy(IDocument inner, IUserContext user)
+    {
+        _inner = inner;
+        _user = user;
+    }
+
+    public string Read()
+    {
+        if (!_user.HasAccess())
+            throw new UnauthorizedAccessException();
+        return _inner.Read();
+    }
+}</pre>
+
+<p>2026년에 Proxy는 종종 동적으로 생성된다. HTTP 클라이언트, gRPC 스텁, 데이터베이스 드라이버가 모두 원격 리소스에 대한 Proxy로 작동한다. Proxy는 경계를 강제한다. 분산 시스템에서 경계는 선택 사항이 아니라 생존 메커니즘이다.</p>
+
+<h2>14. Builder 패턴: 복잡한 객체 생성에 여전히 유용</h2>
+
+<p>Builder 패턴은 현대 C#에 잘 적응했다. 단계별로 복잡한 객체를 구성하는 원래 목적은 여전히 유효하다. 특히 많은 선택적 매개변수나 불변식을 가진 객체를 다룰 때.</p>
+
+<pre>public class ReportBuilder
+{
+    private string _title = string.Empty;
+    private bool _includeCharts;
+
+    public ReportBuilder WithTitle(string title)
+    {
+        _title = title;
+        return this;
+    }
+
+    public ReportBuilder IncludeCharts()
+    {
+        _includeCharts = true;
+        return this;
+    }
+
+    public Report Build()
+    {
+        return new Report(_title, _includeCharts);
+    }
+}</pre>
+
+<p>플루언트 Builder는 의도를 명확하게 하고 생성자 오버로드 폭발을 줄인다. 2026년에는 단순한 DTO에는 Builder를 만들지 않는다. 명확성과 정확성이 추상화의 비용보다 클 때를 위해 남겨둔다.</p>
+
+<h2>15. State 패턴: 조건문 없이 복잡성 관리</h2>
+
+<p>State 패턴은 복잡한 상태 의존 행동을 관리하는 가장 우아한 해결책 중 하나로 남아 있다. 2026년에는 주문 처리, 승인 흐름, 장기 실행 비즈니스 프로세스 같은 워크플로 중심 시스템에서 특히 가치 있다.</p>
+
+<pre>public interface IOrderState
+{
+    void Advance(Order order);
+}
+
+public class PaidState : IOrderState
+{
+    public void Advance(Order order)
+    {
+        order.State = new ShippedState();
+    }
+}</pre>
+
+<p>이 접근 방식은 행동을 로컬로 유지하고 새 상태가 추가될수록 로직이 뒤엉키는 것을 방지한다. 현대 C#에서 State는 비동기 작업 및 영속성과 잘 결합된다. 상태를 저장하고 다시 로드하고 재개할 수 있다.</p>
+
+<h2>16. Facade 패턴: 진실을 숨기지 않고 시스템 단순화</h2>
+
+<p>Facade 패턴은 2026년의 C#에서 가장 실용적이고 관련성 높은 디자인 패턴 중 하나다. 현대 시스템이 점점 더 복잡해지기 때문이다. Facade는 복잡한 하위 시스템에 단순화된 인터페이스를 제공한다. 중요한 것은 복잡성을 없애는 것이 아니라 <strong>담아두는</strong> 것이다.</p>
+
+<pre>public class OrderProcessingFacade
+{
+    private readonly InventoryService _inventory;
+    private readonly PaymentService _payment;
+    private readonly ShippingService _shipping;
+
+    public async Task ProcessAsync(Order order)
+    {
+        await _inventory.ReserveAsync(order);
+        await _payment.ChargeAsync(order);
+        await _shipping.ScheduleAsync(order);
+    }
+}</pre>
+
+<p>이것이 없으면 애플리케이션 서비스가 여섯 개의 의존성을 가져다 손으로 조율하는 오케스트레이션 밀림이 된다. 2026년에 Facade는 더 이상 모든 것을 아는 거대한 "God 클래스"가 아니다. 의도적으로 얇고 실제 작업을 전문화된 서비스에 위임한다. Facade가 너무 커지면 아키텍처 문제를 해결하는 것이 아니라 신호를 보내는 것이다.</p>
+
+<h2>17. Chain of Responsibility: 여전히 강력하지만 대부분 보이지 않음</h2>
+
+<p>Chain of Responsibility 패턴은 시스템이 더 동적이고 설정 가능해지면서 조용히 더 중요해졌다. 2026년에는 핸들러의 연결 목록으로 명시적으로 구현되는 경우가 드물다. 대신 파이프라인, 미들웨어, 필터로 나타난다.</p>
+
+<pre>public abstract class Middleware
+{
+    protected Middleware? Next;
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        await HandleAsync(context);
+        if (Next != null)
+            await Next.InvokeAsync(context);
+    }
+
+    protected abstract Task HandleAsync(HttpContext context);
+}</pre>
+
+<p>ASP.NET Core 미들웨어가 이 패턴의 가장 명확한 현대적 예다. 인증, 권한 부여, 로깅, 속도 제한, 오류 처리가 모두 연결된 책임으로 구현된다. 새로운 행동을 기존 코드를 수정하지 않고 추가하거나 재정렬할 수 있다는 구성 가능성이 핵심 이점이다.</p>
+
+<h2>18. Interpreter 패턴: 드물지만 사라지지 않음</h2>
+
+<p>Interpreter 패턴은 항상 드물었고 2026년에도 그렇다. 하지만 완전히 사라졌다고 선언하면 틀린 말이다. 비즈니스 규칙, 표현식, 또는 설정을 동적으로 평가해야 하는 좁지만 중요한 시나리오에서 빛을 발한다.</p>
+
+<pre>public interface IExpression
+{
+    bool Evaluate(Context context);
+}
+
+public class AndExpression : IExpression
+{
+    private readonly IExpression _left;
+    private readonly IExpression _right;
+
+    public bool Evaluate(Context context)
+        => _left.Evaluate(context) &amp;&amp; _right.Evaluate(context);
+}</pre>
+
+<p>피처 플래그 시스템, 접근 제어 로직, 설정 기반 워크플로에 등장한다. 일부 문제는 근본적으로 로직이 아닌 <strong>언어</strong>에 관한 것이다. 행동을 코딩이 아니라 기술(describe)해야 할 때 Interpreter는 구조적 접근 방식을 제공한다.</p>
+
+<h2>19. Memento 패턴: 상태를 안전하게 기억하기</h2>
+
+<p>Memento 패턴은 2026년에 처음 보이는 것보다 더 관련성이 높다. 애플리케이션이 실행 취소/다시 실행, 감사, 상태 복구를 점점 더 많이 지원하면서 상태를 안전하게 캡처하고 복원하는 필요성이 커졌다.</p>
+
+<pre>public record OrderSnapshot(Guid Id, string Status);
+
+public class Order
+{
+    public OrderSnapshot Save() => new(Id, Status);
+    public void Restore(OrderSnapshot snapshot) => Status = snapshot.Status;
+}</pre>
+
+<p>이 패턴은 부분 실패가 롤백이나 보상을 필요로 하는 장기 실행 워크플로에서 특히 가치 있다. 현대 시스템에서는 이벤트 소싱이나 스냅샷 메커니즘과 함께 작동한다. 상태는 취약하다. 한번 잃으면 정확하게 재구성하기가 불가능한 경우가 많다.</p>
+
+<h2>20. Bridge 패턴: 변화의 차원 분리</h2>
+
+<p>Bridge 패턴은 2026년에도 정교하지만 매우 효과적인 패턴이다. 추상화와 구현을 분리해 둘 다 독립적으로 발전할 수 있게 하는 것이 목적이다. 여러 차원의 변형을 지원해야 하는 시스템에서 특히 가치 있다.</p>
+
+<pre>public interface IMessageSender
+{
+    Task SendAsync(string message);
+}
+
+public abstract class Notification
+{
+    protected IMessageSender Sender;
+
+    protected Notification(IMessageSender sender)
+    {
+        Sender = sender;
+    }
+
+    public abstract Task NotifyAsync(string message);
+}</pre>
+
+<p>알림 유형과 전달 메커니즘이 독립적으로 변경될 수 있다. 이것은 서브클래스의 조합 폭발을 방지한다. Bridge는 독립적 발전이 진정으로 필요할 때만 적용해야 한다는 자제력이 필요하다. 시스템이 여러 방향으로 변할 때 이 패턴이 없으면 복잡성은 곱절로 증가한다.</p>
+
+<hr>
+
+<blockquote>2026년에 C#의 디자인 패턴은 사라지지 않았다. <strong>성숙했다.</strong> 여전히 중요한 패턴은 비동기 실행, 클라우드 환경, 의존성 주입, 끊임없는 복잡성이라는 현대의 현실에 적응한 것들이다. 나머지는 역사 속으로 사라지거나 언어 기능으로 변했다.</blockquote>
+
+</body>
+</html>

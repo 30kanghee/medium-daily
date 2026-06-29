@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Python interview questions that quietly filter out almost everyone in 2026</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>The Python interview questions that quietly filter out almost everyone in 2026</h1>
+<div class="meta">Faisal Haque · Python in Plain English · 7분 읽기 · <a href="https://python.plainenglish.io/the-python-interview-questions-that-quietly-filter-out-almost-everyone-in-2026-3eb0e4ec20f4" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://python.plainenglish.io/the-python-interview-questions-that-quietly-filter-out-almost-everyone-in-2026-3eb0e4ec20f4" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">중급 Python 개발자 채용 면접에서 실제로 사람들을 탈락시키는 건 알고리즘 문제가 아니라, 언어의 작동 원리를 제대로 이해하고 있는지를 묻는 기본 질문들이다.</p>
+  <p>저자는 Python 중급 개발자 채용 스크리닝 콜에 배석하면서, 훌륭한 이력서를 가진 지원자들이 첫 15분 만에 탈락하는 이유를 관찰했다. 문제는 어려운 알고리즘 문제가 아니라, 가변 기본값, 얕은 복사와 깊은 복사, 제너레이터의 실행 모델, GIL, <code>is</code>와 <code>==</code>의 차이, 데코레이터 부작용, 클로저의 변수 캡처 같은 언어 내부 동작에 관한 질문들이었다. 이 질문들은 읽으면 쉬워 보이지만, 직접 설명하려 하면 막히는 경우가 많다. 면접관이 원하는 건 언어를 잠깐 써본 사람이 아니라, 실제로 써보면서 부딪혀본 사람이다.</p>
+</div>
+
+<p>몇 주 전, 나는 Python 중급 개발자 채용 스크리닝 콜에 배석했다. 질문을 직접 던지는 역할은 아니었다. 구석에 앉아 메모하는 사람이었다. 인상적인 이력서를 가진 지원자들이 첫 15분 만에 왜 고꾸라지는지 파악하고 싶었다.</p>
+
+<p>결과는 의외였다. 탈락한 사람들의 문제는 자료 구조나 까다로운 문제 풀이 능력이 아니었다. 특정 종류의 질문들에서 막혔다. 읽으면 쉬워 보이는데, 막상 소리 내어 설명하려 하면 얼어붙는 그런 질문들이었다.</p>
+
+<p>그 질문들을 따로 정리했다. 어떤 점에서 중요한지, 좋은 답변은 어떤 모습인지 함께 소개한다.</p>
+
+<h2>함수 기본값에 가변 객체를 쓰면 어떻게 될까?</h2>
+
+<p>Python에서 오래된 함정 중 하나인데, 시니어 개발자도 여전히 당하는 경우가 많다. 보통 이런 식으로 질문이 위장하고 등장한다.</p>
+
+<pre>def add(item, bucket=None):
+    if bucket is None:
+        bucket = []
+    bucket.append(item)
+    return bucket</pre>
+
+<p>면접관이 이 코드를 보여줄 때 정말 알고 싶은 건 함수가 어떻게 동작하는지 이해하고 있느냐는 것이다. 함수 정의는 실행되는 문장이고, 함수의 기본값은 그 실행 시점에 생성되어 함수 객체에 묶인 객체다. 코드가 동작하기만 하면 된다는 식으로 일해온 사람들은 이 부분을 제대로 생각해본 적이 없다. 그냥 코드를 짜고, 돌아가니까 넘어간다. 하지만 함수 정의가 실행 문장이며 기본값이 생명 주기를 가진 객체라는 사실을 제대로 이해하는지가 면접관의 관심사다.</p>
+
+<h2>이 복사본, 진짜 복사본일까?</h2>
+
+<p>중첩 리스트를 주고, 원본을 건드리지 않고 수정할 수 있는 복사본을 만들어보라고 한다. 어떤 방법을 선택하는지 지켜보는 것이 핵심이다.</p>
+
+<pre>original = [[1, 2], [3, 4]]
+copy = original[:]
+copy[0][0] = 99
+print(original)  # [[99, 2], [3, 4]]</pre>
+
+<p>슬라이스는 바깥 리스트만 새로 만들었을 뿐이다. 안쪽 리스트들은 두 변수가 여전히 같은 객체를 공유하고 있다. 이것이 얕은 복사와 깊은 복사의 차이다. 두 단어를 들어본 사람은 많아도, 그 차이를 실제로 몸으로 겪어본 사람은 드물다.</p>
+
+<blockquote>프로덕션에서 벌어지는 버그의 절반은 사실 별개라고 생각했던 두 이름이 같은 객체를 가리키고 있는 문제에서 비롯된다.</blockquote>
+
+<p>좋은 답변이라면 <code>copy.deepcopy</code>를 자연스럽게 꺼낸다. 하지만 더 중요한 신호는 그것을 반사적으로 떠올리는지, 아니면 과거에 이 문제로 직접 데어본 경험이 느껴지는지다. 설명 방식에서 그 흔적이 들린다.</p>
+
+<h2>제너레이터를 "지연 평가"라는 말 없이 설명해보라</h2>
+
+<p>이 질문이 좋은 이유는 기술 용어가 결국 지식의 허울이 되기 때문이다. 제너레이터가 지연 평가(lazy)이고 메모리 효율적이라고 암송하는 사람은 많다. 하지만 <code>next()</code>를 호출할 때 함수 실행에 실제로 무슨 일이 벌어지는지 설명할 수 있는 사람은 훨씬 적다.</p>
+
+<pre>def counter():
+    n = 0
+    while True:
+        yield n
+        n += 1</pre>
+
+<p>핵심은 이것이다. <code>yield</code>는 함수를 얼린다. 지역 변수 <code>n</code>의 값, 루프에서의 위치, 모든 상태가 그 자리에서 멈춘다. 다음 값을 요청할 때 정확히 멈춘 지점부터 이어서 실행된다. 함수가 실행되다가 잠깐 멈추는 게 아니다. 멈춰있는 상태를 내가 다시 깨우는 것이다.</p>
+
+<p>이걸 이해하는 사람은 제너레이터를 단 한 번만 순회할 수 있는 이유, 무한 제너레이터를 리스트로 변환하면 메모리가 터지는 이유도 자연스럽게 안다. 기술 용어는 그 이해에서 따라온다. 반대 순서로는 절대 작동하지 않는다.</p>
+
+<h2>GIL이 실제로 막는 게 무엇인가?</h2>
+
+<p>오랫동안 이 질문엔 정해진 답이 있었다. 하지만 2026년에는 상황이 달라지고 있다. 답이 빠르게 변하는 중이다.</p>
+
+<blockquote>Python 3.13에서 GIL을 제거한 실험 버전이 출시됐고, Python 3.14에서는 그 작업이 더 발전했다.</blockquote>
+
+<p>많은 사람이 GIL이 "Python을 느리게 만든다"고 말한다. 너무 두루뭉술한 설명이다. GIL의 핵심은 한 번에 하나의 스레드만 Python 바이트코드를 실행할 수 있다는 것이다. 따라서 CPU 연산이 집중적인 작업이라면 스레드를 여러 개 써도 성능 향상이 거의 없다.</p>
+
+<p>반면 네트워크나 디스크 I/O처럼 기다리는 작업이라면 스레딩이 효과적이다. 대기 중인 스레드는 GIL을 반납하기 때문이다. 무거운 연산을 병렬화하고 싶다면 프로세스를 사용하거나, NumPy처럼 GIL을 직접 관리하는 라이브러리를 쓰는 것이 맞다. 아니면 이제는 GIL을 제거한 자유 스레딩 인터프리터(free-threaded interpreter) 옵션도 있어서, 기존의 조언이 점점 덜 명확해지고 있다.</p>
+
+<h2><code>is</code>와 <code>==</code>의 차이, 어디서 물리나?</h2>
+
+<p><code>==</code>는 값을 비교하고 <code>is</code>는 동일성을 비교한다는 건 다들 안다. 그걸 암송하는 게 포인트가 아니다. 진짜 재미있는 부분은 이거다.</p>
+
+<pre>a = 256
+b = 256
+a is b  # True
+
+c = 257
+d = 257
+c is d  # often False</pre>
+
+<p>CPython은 -5부터 256까지의 정수를 미리 캐싱한다. 이 범위 안의 숫자는 항상 동일한 객체다. 하지만 이 범위를 벗어나면 그 보장이 사라진다. 이걸 아는 사람은 단순히 기억력이 좋은 게 아니다. <code>is</code>라는 키워드가 두 변수가 실제로 같은 객체인지를 확인한다는 개념을 제대로 이해하고 있는 것이다. 빠르게 테스트했을 때 통과한다고 해서 <code>is</code>로 값을 비교하면 안 된다는 것도 안다.</p>
+
+<p>원칙은 간단하다. <code>is</code>는 <code>None</code>을 확인하거나 두 변수가 정말로 같은 객체를 가리키는지 알고 싶을 때만 쓴다. 나머지는 모두 <code>==</code>다. CPython의 정수 캐싱이 바로 이 원칙을 따라야 하는 이유다.</p>
+
+<h2>데코레이터를 작성해보라, 그리고 어디서 문제가 생기는지도 말해보라</h2>
+
+<p>함수 실행 시간을 측정하는 간단한 데코레이터를 써보라고 한다. 대부분은 작성한다. 그런 다음 데코레이터를 적용한 함수의 이름과 docstring이 어떻게 되는지 물어본다.</p>
+
+<pre>import time
+
+def timed(fn):
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = fn(*args, **kwargs)
+        print(time.perf_counter() - start)
+        return result
+    return wrapper</pre>
+
+<p>이 코드는 조용히 문제를 만든다. 데코레이터를 적용하면 함수 이름이 <code>wrapper</code>로 바뀐다. 원본 docstring도 사라진다. 함수를 다른 것으로 교체했기 때문이다. 해결책은 단순하다. <code>functools.wraps</code>를 import해서 <code>wrapper</code>에 적용하면 된다. 이를 자연스럽게 아는 사람들은 대개 오랜 시간 디버깅하다가 <code>wrapper</code>라는 이름이 계속 나와 혼란스러웠던 경험이 있다.</p>
+
+<p>이 질문이 까다로운 이유는 단순한 방식으로 써도 일단 동작하기 때문이다. 에러가 나지 않는다. 문제는 나중에 도구를 쓰거나 코드를 파악하려 할 때 혼란으로 나타난다. 면접이 테스트하고 싶은 건 바로 그 차이, 일단 돌아가는 코드와 제대로 된 코드의 차이다.</p>
+
+<h2>이 리스트 컴프리헨션, 어디서 누수가 생기나?</h2>
+
+<p>마지막으로 작은 문제 하나. 기초를 이미 넘어섰다고 생각하는 사람들을 걸러낸다.</p>
+
+<pre>funcs = [lambda: i for i in range(3)]
+print([f() for f in funcs])  # [2, 2, 2]</pre>
+
+<p>0, 1, 2가 나올 거라고 예상한다. 실제로는 2, 2, 2가 나온다. 각 람다 함수가 <code>i</code>라는 변수를 참조하기 때문이다. 함수가 만들어지던 시점의 <code>i</code> 값이 아니라, 변수 <code>i</code> 자체를 캡처하는 것이다. 어떤 함수를 호출할 시점에는 루프가 이미 끝나 있고, <code>i</code>는 마지막 값인 2에 멈춰 있다.</p>
+
+<p>고치려면 람다의 기본 인자로 값을 캡처해야 한다. <code>lambda i=i: i</code>처럼 작성하면 그 시점의 값이 고정된다. 루프 변수와 클로저의 조합은 은밀한 버그다. 한동안 숨어 있다가 나중에 크게 터진다. 이 질문은 클로저가 변수 자체를 캡처한다는 것, 즉 특정 시점의 값이 아니라는 것을 이해하는지 확인한다.</p>
+
+<h2>이 질문들이 테스트하는 것</h2>
+
+<p>목록을 다시 보면 패턴이 보인다. 이 질문들 중 알고리즘 교과서가 필요한 건 하나도 없다. 모두 코드가 어떻게 실행되는지에 관한 질문이다. 이해 없이 동작하는 코드가 아니라, 동작하는 이유를 아는 코드에 관한 것이다.</p>
+
+<p>가변 기본값, 공유 참조, 일시 정지된 제너레이터, GIL, 동일성과 동등성, 데코레이터가 조용히 바꾸는 것, 클로저가 실제로 캡처하는 것. 이것이 필터다.</p>
+
+<p>문제의 난이도가 핵심이 아니다. 면접관이 알고 싶은 건 이 언어를 충분히 써보면서 직접 부딪혀봤는지 여부다. 잠깐 써본 것인지, 아니면 진짜로 함께 살아온 것인지. 문제를 겪은 경험은 흉내 내기가 어렵다. 그래서 이 단순해 보이는 질문들이 효과적인 필터가 된다.</p>
+
+<p>이 질문들이 불편하게 느껴졌다면, 그건 좋은 신호다. 오늘 밤 터미널에서 직접 깨뜨려보라. 누군가 전화로 먼저 물어보기 전에.</p>
+
+</body>
+</html>

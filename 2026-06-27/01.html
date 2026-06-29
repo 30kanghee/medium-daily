@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anthropic Ships 17 Skills for Code and 11 Plugins for Cowork.</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+
+<h1>Anthropic Ships 17 Skills for Code and 11 Plugins for Cowork.</h1>
+<div class="meta">Noor Mohamad · 12분 읽기 · <a href="https://medium.com/@reactjsbd/anthropic-ships-17-skills-for-code-and-11-plugins-for-cowork-c752d2ae5a20" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@reactjsbd/anthropic-ships-17-skills-for-code-and-11-plugins-for-cowork-c752d2ae5a20" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">Claude Code와 Claude Cowork는 같은 아키텍처 위에서 동작하지만, Anthropic이 별도로 관리하는 두 개의 공식 저장소를 통해 각각의 환경에 최적화된 스택을 제공한다.</p>
+  <p>대부분의 "Claude Skills" 튜토리얼은 Code와 Cowork를 하나의 환경으로 다루지만, Anthropic은 실제로 두 개의 공식 저장소를 별도로 운영한다. 개발자용 터미널 환경인 Claude Code를 위한 <code>anthropics/skills</code>(17개 공식 스킬)와, 지식 노동자용 데스크탑 앱인 Claude Cowork를 위한 <code>anthropics/knowledge-work-plugins</code>(Slack, Notion, Asana, Jira 등 11개 플러그인)가 그것이다. 두 환경은 같은 에이전틱 아키텍처를 공유하지만, 작업 공간의 전제가 다르기 때문에 최적의 스택 구성도 다르다. Claude Code에서는 스킬이 기본 단위이고, Cowork에서는 스킬·커넥터·슬래시 명령·서브에이전트를 번들로 묶은 플러그인이 기본 단위다. 두 환경 모두 월 1회 감사(audit)를 통해 실제로 활성화되지 않는 스킬이나 플러그인을 삭제하고 적정 수준으로 유지하는 규율이 중요하다.</p>
+</div>
+
+<h2>핵심 구분: 두 환경은 무엇을 위한 것인가</h2>
+<p>Claude Code와 Claude Cowork는 동일한 에이전틱 아키텍처 위에서 구동된다. 같은 모델 지능, 같은 스킬 시스템, 같은 툴 호출 메커니즘, 같은 컨텍스트 관리 방식을 공유한다. Anthropic의 공식 Cowork 문서에 따르면 "Cowork는 Claude Code를 구동하는 것과 동일한 에이전틱 아키텍처를 Claude Desktop 안에서 사용할 수 있도록 한 것"이다.</p>
+<p>차이는 작업 공간의 전제에 있다.</p>
+<p>Claude Code는 프로젝트 폴더 안에서, 터미널 환경에서, 코드 관련 작업을 한다고 가정한다. 세션은 길고 여러 단계에 걸쳐 진행되며, 파일 시스템을 직접 다루는 경우가 많다. 프로젝트의 <code>.claude/</code> 폴더가 저장소와 함께 버전 관리된다. 세션은 단일 문제를 해결하는 데 몇 시간씩 이어질 수 있고, 결과물은 대부분 코드이거나 기존 파일에 대한 수정이다.</p>
+<p>Claude Cowork는 문서와 앱이 중심인 환경에서 지식 업무를 한다고 가정한다. 초안 작성, 분석, 커뮤니케이션, 이미 사용 중인 도구들과의 조율이 주된 작업이다. 세션은 비교적 짧고 목적이 명확하며, 통합 연동이 프로젝트 구조보다 더 중요하다. 결과물은 문서, Slack 메시지, Notion 페이지, Jira 티켓, 혹은 여러 도구에 걸친 조율된 작업인 경우가 많다.</p>
+
+<h2>스킬 vs. 플러그인: 아키텍처 차이</h2>
+<p>두 환경은 패키징 방식도 조금 다르다.</p>
+<p><strong>스킬(skill)</strong>은 <code>SKILL.md</code>라는 단일 마크다운 파일(과 선택적 참고 자료)로 구성되며, 특정 작업 하나를 수행하는 방법을 Claude에게 가르친다. 관련 컨텍스트가 나타나면 자동으로 발동된다. Claude Code에 설치하는 기본 단위이기도 하고, Cowork 플러그인 내부의 구성 요소이기도 하다.</p>
+<p><strong>플러그인(plugin)</strong>은 스킬, 커넥터, 슬래시 명령, 서브에이전트를 특정 직무에 맞게 묶은 완전한 패키지다. 플러그인을 설치하면 단일 기능이 아니라 완전히 구성된 워크플로우 전체를 Claude에게 부여한다.</p>
+<p>Anthropic의 Cowork 문서에 따르면, "각 플러그인은 특정 직무에 맞는 스킬, 커넥터, 슬래시 명령, 서브에이전트를 번들로 묶어, 해당 역할에서 Claude가 강력한 출발점을 갖출 수 있게 해준다."</p>
+<p>실용적인 차이를 정리하면 이렇다. Claude Code에서는 개별 스킬 8~12개를 설치한다. Cowork에서는 3~5개의 플러그인을 설치하는데, 각 플러그인은 내부적으로 여러 스킬과 커넥터, 명령이 함께 작동한다.</p>
+
+<h2>Claude Code 스택 (개발자 환경)</h2>
+
+<h3>공식 스킬 중 설치할 만한 것들</h3>
+<p><code>anthropics/skills</code> 저장소에서 시니어 개발자들의 감사(audit)를 꾸준히 통과하는 6개 스킬은 다음과 같다.</p>
+<ul>
+  <li><strong>docx</strong> — Word 문서 생성 및 편집 (개발자 워크플로우에서도 스펙 작성과 문서화에 자주 발동된다)</li>
+  <li><strong>pdf</strong> — PDF 조작, 생성, 양식 작성, OCR</li>
+  <li><strong>pptx</strong> — 기술 발표용 PowerPoint 생성</li>
+  <li><strong>xlsx</strong> — 구조화 데이터 작업을 위한 Excel</li>
+  <li><strong>Frontend Design</strong> — 2026년 3월 기준 27만 건 이상 설치, Claude가 웹·UI 작업에서 의도적인 심미적 선택을 하도록 유도한다</li>
+  <li><strong>MCP Builder</strong> — MCP 서버 보일러플레이트를 생성하여 통합 레이어를 빠르게 구축할 수 있게 한다</li>
+</ul>
+
+<h3>팀 맞춤 스킬</h3>
+<p>시니어 개발자 환경에서 가장 높은 가치를 발휘하는 스킬 2~3개는 대개 팀 전용으로 직접 만든 것들이다. 팀의 코딩 컨벤션, 리뷰 체크리스트, 배포 런북, 도메인 지식을 담은 스킬이 여기에 해당한다. 이런 스킬은 <code>.claude/skills/</code> 폴더에 두고 코드 저장소와 함께 버전을 관리한다.</p>
+
+<h3>스킬 8개 상한선</h3>
+<p>Anthropic의 가이드라인은 8~12개를 넘기면 "컨텍스트 세금"이 유의미하게 누적되기 시작한다고 설명한다. 스킬 하나당 대략 60개 토큰이 세션 시작마다 로드되는데, 설치 스킬이 31개에 달하면 세션마다 약 2만 3,000개의 토큰이 아무런 역할도 못 한 채 소비된다는 것이 실제 감사 데이터로 확인됐다.</p>
+<p>감사 방법론은 간단하다. 매달 30일 이내에 발동되지 않은 스킬을 삭제하고, 8~12개 수준으로 재조정한다. 이것이 시니어의 방식이고, 주니어는 계속 모으기만 하고 절대 삭제하지 않는 경향이 있다.</p>
+
+<h2>Claude Cowork 스택 (지식 노동자 환경)</h2>
+<p>대부분의 스킬 관련 콘텐츠가 다루지 않는 부분이 바로 이 Cowork 쪽 스택이다. 터미널이 아닌 Claude Desktop에서 구동된다.</p>
+
+<h3>Anthropic의 11개 공식 플러그인</h3>
+<p>Anthropic은 자사 팀의 실제 워크플로우를 바탕으로 11개의 플러그인을 오픈소스로 공개했다. 2026년 중반 기준 라인업은 다음과 같다.</p>
+<ul>
+  <li><strong>작업·프로젝트 관리</strong> — Asana, Linear, Jira, Monday, ClickUp 연동 조율</li>
+  <li><strong>캘린더 및 회의 워크플로우</strong> — Google Calendar, Microsoft 365 연동</li>
+  <li><strong>문서 및 지식 관리</strong> — Notion, Microsoft 365(Word, Excel, OneDrive) 연동</li>
+  <li><strong>팀 커뮤니케이션</strong> — Slack, Microsoft Teams 연동</li>
+  <li><strong>일상 워크플로우 자동화</strong> — 개인 컨텍스트 관리, 반복 작업 처리</li>
+  <li><strong>고객·CRM 워크플로우</strong> — 영업 및 고객 성공 팀용</li>
+  <li><strong>엔지니어링 조율</strong> — Jira, GitHub, Slack을 연결하는 엔지니어링 매니저용</li>
+  <li><strong>마케팅 운영</strong> — 캠페인 관리, 콘텐츠 워크플로우</li>
+  <li><strong>사람 관리(HR)</strong> — 도구 간 HR 조율</li>
+</ul>
+<p>각 플러그인에는 관련 스킬(예: "Notion 회의 요약 작성 방법"), 필요한 커넥터(예: "Notion API 인증"), 슬래시 명령(예: <code>/summarise-meeting</code>), 서브에이전트(예: 고객 관계 관리 시스템에서 컨텍스트를 먼저 가져온 뒤 영업 이메일 초안을 작성하는 리서치 서브에이전트)가 번들로 포함된다.</p>
+
+<h3>11개 전부가 아닌 3~5개를 선택해서 설치하기</h3>
+<p>스킬과 마찬가지로 감사 규율이 동일하게 적용된다. 11개를 전부 설치하면 컨텍스트 세금이 발생한다. 실제 업무에 맞는 것을 골라 설치해야 한다.</p>
+<ul>
+  <li><strong>PM·프로덕트 리드</strong>: Linear(또는 Jira) + Slack + Notion + Asana 플러그인 — 4개로 프로젝트 업무의 90%를 처리한다</li>
+  <li><strong>영업·고객 담당</strong>: CRM + Slack + 캘린더 + 이메일/Microsoft 365 플러그인 — 4개로 고객 대면 업무 대부분을 처리한다</li>
+  <li><strong>마케팅 담당</strong>: 마케팅 운영 + Notion + Slack + 캘린더 플러그인</li>
+  <li><strong>엔지니어링 매니저</strong>: 엔지니어링 조율 + Slack + Linear/Jira + 캘린더 플러그인</li>
+</ul>
+<p>원칙은 하나다. 실제로 매일 사용하는 도구에 해당하는 플러그인만 설치한다. 거의 쓰지 않는 도구의 플러그인은 발동률 제로인 순수 컨텍스트 세금에 불과하다.</p>
+
+<h3>커넥터: 통합 레이어</h3>
+<p>Cowork가 Claude Code보다 실용적으로 우위에 있는 가장 큰 이유가 바로 커넥터 생태계다. 각 플러그인은 해당 SaaS 도구에 대한 인증된 접근 권한과 함께 설치된다. 한 번 설치하고 한 번 인증하면, 이후 Claude는 단일 대화 안에서 Slack을 읽고, Notion에 초안을 작성하고, Jira 티켓을 생성하고, Asana 작업 공간을 조회할 수 있다.</p>
+<p>Cowork에서 단일 Claude 대화가 할 수 있는 일의 예를 들면 이렇다. 특정 Slack 채널의 지난 일주일치 메시지를 읽고, 그 내용을 Notion 페이지로 요약하고, 액션 아이템 세 개를 Asana 작업으로 생성하고, 담당자에게 Slack DM을 보낸다. 이 모든 일이 앱을 전환하거나 도구 간에 내용을 복사·붙여넣기 할 필요 없이 이루어진다.</p>
+
+<h2>두 환경 모두에서 유용한 교차 스킬</h2>
+<p>일부 스킬은 두 환경 모두에서 유용하며, 양쪽 감사에서 꾸준히 높은 순위를 차지한다.</p>
+<ul>
+  <li><strong>docx, pdf, pptx, xlsx</strong> — 문서 생성 스킬은 두 환경에서 동일하게 작동한다. Cowork에는 기본 포함되어 있고, Claude Code에는 명시적으로 설치해야 한다.</li>
+  <li><strong>브랜드 가이드라인·글쓰기 스타일 스킬</strong> — 팀의 목소리와 시각적 정체성을 담아 두면, 코드 측 문서화와 Cowork 측 커뮤니케이션 모두에 도움이 된다.</li>
+  <li><strong>도메인 지식 스킬</strong> — "우리 제품 작동 방식", "우리 가격 모델", "우리 고객 세그먼트" 같은 내용은 해당 도메인에 닿는 코드를 작성할 때도, 그에 관한 지식 업무 콘텐츠를 만들 때도 모두 유용하다.</li>
+</ul>
+<p>이런 스킬은 한 번 만들어서 두 환경 모두에 설치한다.</p>
+
+<h2>두 환경을 위한 감사 방법론</h2>
+<p>30일 감사 규율은 두 환경 모두에 적용되며, 방식은 조금 다르다.</p>
+
+<h3>Claude Code 감사 (월 1회)</h3>
+<ol>
+  <li><code>~/.claude/skills/</code>와 <code>.claude/skills/</code>에 설치된 모든 스킬 목록을 확인한다</li>
+  <li>최근 30일간의 세션 로그를 검토하여 각 스킬을 "발동됨 / 수동 호출됨 / 발동 없음"으로 표시한다</li>
+  <li>"발동 없음" 스킬을 삭제한다</li>
+  <li>8~12개 수준으로 재조정한다</li>
+</ol>
+
+<h3>Cowork 감사 (월 1회)</h3>
+<ol>
+  <li>Cowork 플러그인 디렉터리에 설치된 모든 플러그인 목록을 확인한다</li>
+  <li>최근 30일간의 대화를 검토하여 어떤 플러그인의 툴·커넥터·슬래시 명령이 실제로 호출됐는지 파악한다</li>
+  <li>최근 30일 동안 아무것도 발동되지 않은 플러그인을 제거한다</li>
+  <li>3~5개 활성 플러그인 수준으로 재조정한다</li>
+</ol>
+<p>Cowork 감사가 Claude Code 감사와 다른 점이 하나 있다. 플러그인은 더 큰 단위이기 때문에, 플러그인 하나를 제거하면 여러 스킬과 커넥터, 명령이 한꺼번에 사라진다. 따라서 제거로 인한 충격이 더 크고, 삭제 판단의 기준도 개별 스킬보다 높게 잡는 것이 적절하다.</p>
+
+<h2>통합 사고 모델</h2>
+<p>2026년 Claude를 가장 명확하게 이해하는 방법은 이것이다.</p>
+<blockquote>같은 엔진, 두 개의 조종석.</blockquote>
+<ul>
+  <li><strong>엔진</strong> = 모델 지능, 에이전틱 루프, 스킬 아키텍처, MCP 지원, 훅, 서브에이전트</li>
+  <li><strong>조종석 1 (Claude Code)</strong> = 개발자 터미널, 프로젝트 범위, 코드 인식, 장시간 에이전틱 세션, 개별 스킬이 기본 단위</li>
+  <li><strong>조종석 2 (Cowork)</strong> = 지식 노동자 데스크탑, 문서·앱 범위, 통합 중심, 짧은 개별 세션, 플러그인(번들)이 기본 단위</li>
+</ul>
+<p>Claude를 완전히 활용한다는 것은 어떤 작업에 어떤 조종석을 선택해야 하는지 아는 것이고, 각 조종석의 스택을 적절히 구성하는 것이다. 대부분의 사람은 조종석 하나만 앉아 있다. 통합 사고 모델이 나머지를 열어 준다.</p>
+
+<h2>90일 숙달 플랜</h2>
+<p>두 환경 모두에서 Claude를 진정으로 숙달하고 싶다면 다음 일정을 따른다.</p>
+<ul>
+  <li><strong>1~14일</strong>: Claude Code를 로컬에 설치하고 Anthropic Academy의 Claude Code 101 및 Claude Code in Action 과정을 완료한다. 기본 <code>.claude/</code> 폴더 구조(CLAUDE.md, 공식 스킬 6개, 훅이 하나 포함된 settings.json)를 갖춘 프로젝트를 설정하고, 실제 코딩 프로젝트 하나를 처음부터 끝까지 진행한다.</li>
+  <li><strong>15~28일</strong>: Claude Cowork를 데스크탑에 설치한다. 실제 직무에 맞는 플러그인 3개를 설치하고 연동(Slack, Notion, Linear, Jira 중 실제로 쓰는 것)을 연결한다. 실제 지식 업무 워크플로우 하나를 처음부터 끝까지 실행한다(예: 일주일치 Slack을 요약해 Notion 업데이트로 만들고, 결과 Asana 작업을 생성한다).</li>
+  <li><strong>29~60일</strong>: Claude Code용 맞춤 스킬 하나를 만든다. 반복적으로 수행하는 코드베이스 내 워크플로우를 담는다. Cowork용 맞춤 플러그인 하나도 만든다. 반복적으로 수행하는 지식 업무 워크플로우를 담는다. 맞춤 제작에서부터 실제 복리 효과가 시작된다.</li>
+  <li><strong>61~90일</strong>: 두 스택에 대해 첫 번째 월간 감사를 진행한다. 발동되지 않은 것을 삭제한다. 각 환경이 자신의 역할에서 어느 쪽이 더 많은 가치를 만들어 내는지 파악하고 다음 사이클에서 집중한다. 다음 감사 일정을 캘린더에 등록한다.</li>
+</ul>
+<p>90일이 지나면 두 조종석 모두에서 운용 능력을 갖추고, 감사된 두 스택과, 그것을 유지하는 규율을 보유하게 된다.</p>
+
+<h2>앞으로의 전망: 2026년 이후</h2>
+<ul>
+  <li><strong>환경 간 스킬 이식성</strong>: Anthropic은 한 환경에서 만든 스킬이 적용 가능한 경우 다른 환경에서도 작동해야 한다는 방향을 시사했다. 향후 저장소 업데이트에서 "이 스킬은 두 환경에서 모두 작동합니다" 배지가 생길 것을 주목하자.</li>
+  <li><strong>Cowork 플러그인 마켓플레이스</strong>: 11개의 공식 플러그인이 패턴을 정착시키면서, 2026년을 거치며 커뮤니티 마켓플레이스가 형성될 것으로 보인다.</li>
+  <li><strong>Cowork에서 MCP 통합 강화</strong>: 현재 Cowork에서 MCP 서버를 설치하는 과정이 Claude Code보다 다소 복잡하다. 이 부분이 수렴되어 Cowork에서 MCP 서버 설치가 플러그인 설치만큼 간단해질 것이다.</li>
+  <li><strong>"나만의 Claude" 패턴</strong>: 두 환경이 성숙해지면서, 같은 사용자가 업무용 노트북에서는 Claude Code를, 개인 기기에서는 Cowork를 사용하는 패턴이 자연스러워질 것이다. 기기 간 스킬과 대화 연속성이 다음 프론티어이며, 2025년 말부터 출시 중인 Anthropic의 영구 메모리 기능이 그 초기 버전이다.</li>
+</ul>
+
+<h2>솔직한 결론</h2>
+<p>Claude Skills 관련 콘텐츠 대부분은 Code와 Cowork를 하나의 제품처럼 다룬다. Anthropic은 그렇지 않다. 그것이 두 개의 별도 공식 저장소가 서로 다른 콘텐츠, 다른 대상 독자, 다른 최적 구성을 갖추고 존재하는 이유다.</p>
+<p>2026년에 Claude를 진정으로 숙달하려는 사람에게 실질적인 함의는 다음과 같다.</p>
+<ul>
+  <li>작업에 맞는 환경을 선택한다. 프로젝트 범위의 개발자 업무는 Code, 문서·앱 기반의 지식 업무는 Cowork, 때로는 같은 프로젝트의 다른 단계에서 둘 다 사용한다.</li>
+  <li>맞는 저장소에서 설치한다. Code에는 <code>anthropics/skills</code>, Cowork에는 <code>anthropics/knowledge-work-plugins</code>. 같은 아키텍처, 다른 기본 패키지.</li>
+  <li>두 환경 모두에 감사 규율을 적용한다. Code에는 스킬 8~12개, Cowork에는 플러그인 3~5개, 월 1회 검토.</li>
+  <li>팀의 실제 워크플로우를 담은 맞춤 스킬과 플러그인을 만든다. 공식 번들은 보편적인 패턴을 다루고, 맞춤 제작은 팀만이 아는 것을 담는다.</li>
+  <li>통합 사고 모델을 진짜 핵심 통찰로 받아들인다. 같은 엔진, 두 개의 조종석. 각각을 따로 숙달하고, 의도적으로 전환한다.</li>
+</ul>
+<p>복리 효과는 두 환경을 하나의 제품으로 취급하는 것을 멈추는 순간부터 시작된다.</p>
+
+</body>
+</html>

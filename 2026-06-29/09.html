@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>I Hired a Penetration Tester to Attack My FastAPI App. He Owned Everything in 45 Minutes</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">&#8592; 목록으로</a>
+
+<h1>I Hired a Penetration Tester to Attack My FastAPI App. He Owned Everything in 45 Minutes</h1>
+<div class="meta">Ramesh Kannan s &#183; 9분 읽기 &#183; <a href="https://medium.com/@rameshkannanyt0078/i-hired-a-penetration-tester-to-attack-my-fastapi-app-he-owned-everything-in-45-minutes-b66818704f6b" target="_blank">원문</a> &#183; <a href="https://freedium-mirror.cfd/https://medium.com/@rameshkannanyt0078/i-hired-a-penetration-tester-to-attack-my-fastapi-app-he-owned-everything-in-45-minutes-b66818704f6b" target="_blank">freedium</a></div>
+
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">JWT, Pydantic 검증, 속도 제한까지 갖췄다고 믿었던 FastAPI 앱이 전문 침투 테스터 앞에서 45분 만에 완전히 무너졌다.</p>
+  <p>저자는 6개월에 걸쳐 구축한 FastAPI 사이드 프로젝트가 실제 사용자와 결제 기능을 갖춘 서비스로 성장하자, 시간당 120달러를 받는 전문 침투 테스터를 고용해 보안을 검증했다. 결과는 충격적이었다. 테스터는 45분 만에 전체 사용자 데이터베이스를 다운로드하고, 자신을 관리자로 권한을 상승시키고, 결제 webhook URL까지 탈취했다. 이 글은 자신이 만든 코드를 너무 믿게 되는 함정, 그리고 겉으로 보기에 잘 설계된 API도 전문가 앞에서 얼마나 취약할 수 있는지를 생생하게 보여준다. BOLA(객체 수준 접근 권한 취약점), JWT 설정 오류, rate limiting 우회, async 경쟁 조건 등 실제 발견된 취약점과 수정 방법을 다룬다.</p>
+</div>
+
+<h2>나는 내 API가 충분히 안전하다고 생각했다</h2>
+
+<p>철옹성 수준은 아니었다. 하지만 <em>충분히</em> 안전하다고 믿었다. JWT 토큰이 있었다. HTTPS가 있었다. 타입 이론가를 눈물짓게 할 만큼 꼼꼼한 Pydantic 모델로 입력 검증을 했다. OWASP API 보안 Top 10도 한 번 읽고, 고개를 끄덕이며 '아마 괜찮겠지'라고 생각했다.</p>
+
+<p>그런데 지난주 화요일, 나는 다른 시간대에 있는 낯선 사람이 내 커피를 다 마시기도 전에 전체 사용자 데이터베이스를 다운로드하고, 자신을 관리자로 승격시키고, 결제 webhook URL을 자신의 서버로 바꾸는 것을 지켜봤다.</p>
+
+<p>45분이 걸렸다. 그는 시간당 120달러를 받고 있었다.</p>
+
+<h2>자신감, 그리고 추락 직전</h2>
+
+<p>나는 이 FastAPI 앱을 6개월 동안 만들었다. 부업으로 시작했다가 어쩌다 보니 진짜 제품이 되어버린 것이었다. 수천 명의 사용자, 실제로 결제가 오가고, 정성스럽게 만든 SQLAlchemy 모델 뒤 PostgreSQL 데이터베이스에 실제 사람들의 데이터가 있었다.</p>
+
+<p>아키텍처가 자랑스러웠다. 비동기 엔드포인트. 깔끔한 의존성 주입. SlowAPI로 속도 제한. 읽은 블로그 포스트 하나가 나를 충분히 겁줬기 때문에 refresh token rotation까지 구현했다.</p>
+
+<p>하지만 혼자 개발하다 보면 어느 순간 자신의 코드를 너무 믿게 된다. 같은 파일을 충분히 오래 들여다보면, 그것들이 공격 표면처럼 보이지 않는다. <em>내</em> 파일처럼 보이기 시작한다. 내가 만든 것처럼. 그것이 함정이다.</p>
+
+<h2>테스터가 처음 45분 안에 한 일</h2>
+
+<p>테스터는 먼저 자동화 도구를 돌리지 않았다. 그는 API 명세를 읽었다. <code>/docs</code>로 가서 FastAPI가 자동 생성한 Swagger UI를 열었다. 나는 프로덕션에서 이걸 비활성화하는 것을 생각조차 하지 않았다.</p>
+
+<p>거기서 그는 전체 엔드포인트 목록을 확인하고, 각 요청/응답 스키마를 보고, 어떤 필드가 있는지 파악했다. 10분도 걸리지 않았다. 그것이 정찰(reconnaissance)이었다.</p>
+
+<h3>첫 번째 타격: BOLA (객체 수준 접근 권한 취약점)</h3>
+
+<p>그는 내 <code>/users/{user_id}/orders</code> 엔드포인트를 테스트했다. 나는 사용자가 로그인했는지 확인했다. 하지만 <em>그 사용자_id가 로그인한 사람의 것인지</em>는 확인하지 않았다.</p>
+
+<p>그는 자신의 계정으로 로그인하고 JWT 토큰을 얻었다. 그런 다음 내 user_id를 추측해서—사실 순차 정수였다—<code>/users/1/orders</code>를 요청했다. 그리고 다른 사람의 주문 내역을 받았다. 그 다음 <code>/users/2/orders</code>를, 그 다음 <code>/users/3/orders</code>를 요청했다. 자동화 스크립트 하나로 전체 사용자 주문 데이터베이스를 긁어갔다.</p>
+
+<p>이것이 BOLA(Broken Object Level Authorization)다. OWASP API Security Top 10에서 1위다. 나는 그것을 읽었다. 그리고 내 코드에는 없다고 생각했다.</p>
+
+<pre>
+# 내가 작성한 코드 (취약점 있음)
+@app.get("/users/{user_id}/orders")
+async def get_orders(user_id: int, current_user: User = Depends(get_current_user)):
+    return await db.fetch_orders(user_id)  # user_id 검증 없음!
+
+# 수정된 코드
+@app.get("/users/{user_id}/orders")
+async def get_orders(user_id: int, current_user: User = Depends(get_current_user)):
+    if current_user.id != user_id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="접근 권한이 없습니다")
+    return await db.fetch_orders(user_id)
+</pre>
+
+<h3>두 번째 타격: 속도 제한 우회</h3>
+
+<p>나는 SlowAPI로 속도 제한을 구현했다. IP 주소 기반으로 분당 60개의 요청으로 제한했다. 충분하다고 생각했다.</p>
+
+<p>그는 <code>X-Forwarded-For</code> 헤더를 조작했다. 내 서버가 이 헤더를 신뢰하도록 설정되어 있었기 때문에, 그는 단순히 각 요청에 다른 IP 주소를 넣어 속도 제한을 완전히 우회했다. 실제로 IP 주소 확인 없이 무제한 요청이 가능했다.</p>
+
+<h3>세 번째 타격: 관리자 권한 상승</h3>
+
+<p>사용자 프로필 업데이트 엔드포인트가 있었다. <code>PUT /users/me</code>로, 사용자가 이름과 이메일을 변경할 수 있었다. Pydantic 모델로 허용된 필드를 정의했다고 생각했다.</p>
+
+<p>하지만 그는 요청 본문에 <code>is_admin: true</code>를 추가했다. 내 Pydantic 모델에는 <code>is_admin</code> 필드가 없었다. 하지만 나는 <code>model.dict()</code>를 사용해 업데이트 딕셔너리를 만들고 그것을 그대로 데이터베이스에 전달했다. Pydantic이 필드를 무시하지 않고, 추가 필드를 허용 설정으로 구성되어 있었던 것이다. 그는 자신을 관리자로 만들었다.</p>
+
+<h3>네 번째 타격: 결제 webhook 탈취</h3>
+
+<p>관리자 권한을 얻자, 그는 관리자 대시보드에 접근했다. 거기서 결제 서비스의 webhook URL 설정을 찾았다. 그리고 그것을 자신이 제어하는 서버의 URL로 변경했다. 이제 모든 결제 알림은 그의 서버로 갔다.</p>
+
+<h2>그 이후: 무엇을 바꿨는가</h2>
+
+<p>테스터의 보고서를 받았을 때, 숨이 막혔다. 총 11개의 취약점이 있었다. 그 중 3개는 치명적, 5개는 고위험, 나머지는 중간 수준이었다.</p>
+
+<p>수정에는 이틀이 걸렸다. 가장 중요한 변경 사항들은 다음과 같다.</p>
+
+<ul>
+  <li>모든 객체 수준 접근에 소유권 확인 추가 (BOLA 수정)</li>
+  <li>Pydantic 모델에서 <code>extra = 'forbid'</code> 설정으로 추가 필드 차단</li>
+  <li>속도 제한을 IP 대신 인증된 사용자 ID 기반으로 변경</li>
+  <li>프로덕션 환경에서 <code>/docs</code>와 <code>/redoc</code> 비활성화</li>
+  <li>관리자 기능을 완전히 분리된 내부 서비스로 이전</li>
+  <li>민감한 작업에 async 경쟁 조건 방지를 위한 데이터베이스 트랜잭션 잠금 추가</li>
+</ul>
+
+<pre>
+# Pydantic 모델 수정
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+    class Config:
+        extra = 'forbid'  # 추가 필드 거부
+
+# 속도 제한 수정: 사용자 ID 기반
+@limiter.limit("60/minute", key_func=lambda request: str(get_user_id(request)))
+@app.put("/users/me")
+async def update_user(update: UserUpdate, current_user: User = Depends(get_current_user)):
+    return await db.update_user(current_user.id, update.dict(exclude_none=True))
+</pre>
+
+<h2>배운 것: 자신의 코드를 믿지 마라</h2>
+
+<p>가장 충격적인 교훈은 기술적인 것이 아니었다. 심리적인 것이었다.</p>
+
+<p>나는 내 코드를 너무 오래 봤다. 그것들이 공격 표면처럼 보이지 않았다. 내가 만든 것이었으니까. 전문 테스터는 그런 애착이 없었다. 그는 내 코드를 처음 보는 사람의 눈으로, 악의적인 의도로 바라봤다.</p>
+
+<p>FastAPI는 훌륭한 프레임워크다. 자동 문서화, Pydantic 통합, async 지원 모두 생산성을 크게 높인다. 하지만 그것이 당신의 API를 자동으로 안전하게 만들지는 않는다. 보안은 기능을 구현한 후에 추가하는 것이 아니다. 매 엔드포인트를 설계할 때부터 함께 생각해야 한다.</p>
+
+<p>120달러짜리 1시간이 몇 달간의 사용자 신뢰와 사업을 구했다. 저렴한 투자였다.</p>
+
+<h2>FastAPI 보안 체크리스트</h2>
+
+<ul>
+  <li>모든 객체 수준 접근에 소유권 확인 (BOLA 방지)</li>
+  <li>Pydantic 모델에 <code>extra = 'forbid'</code> 설정</li>
+  <li>속도 제한을 IP가 아닌 인증된 사용자 ID 기반으로</li>
+  <li>프로덕션에서 <code>/docs</code>, <code>/redoc</code>, <code>/openapi.json</code> 비활성화 또는 보호</li>
+  <li>JWT 알고리즘 명시적으로 화이트리스트에만 허용 (<code>none</code> 알고리즘 차단)</li>
+  <li>민감한 비동기 작업에 데이터베이스 트랜잭션 잠금 적용</li>
+  <li>refresh token을 경로 파라미터가 아닌 요청 본문으로 전달</li>
+  <li>관리자 기능을 일반 API와 완전히 분리</li>
+  <li>정기적으로 외부 침투 테스트 수행</li>
+</ul>
+
+<p>당신의 API가 "충분히 안전하다"고 생각한다면, 아마 이 목록의 절반은 아직 확인하지 않은 것이다.</p>
+
+</body>
+</html>
