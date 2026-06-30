@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Modeling for Data Engineers: OLTP, OLAP, Inmon, and Kimball Explained</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Data Modeling for Data Engineers: OLTP, OLAP, Inmon, and Kimball Explained</h1>
+<div class="meta">lhungen · · 8분 · <a href="https://medium.com/@lhungen/data-modeling-for-data-engineers-oltp-olap-inmon-and-kimball-explained-9ba98f46a9b7" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@lhungen/data-modeling-for-data-engineers-oltp-olap-inmon-and-kimball-explained-9ba98f46a9b7" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">OLTP·OLAP부터 Inmon·Kimball까지, 데이터 모델링 핵심 개념을 하나의 흐름으로 정리한다.</p>
+<h3>요약</h3>
+<p>데이터 엔지니어링을 배우다 보면 OLTP, OLAP, 정규화, Inmon, Kimball, 스타 스키마 같은 용어들이 한꺼번에 쏟아져 혼란스러워지기 쉽다. 이 글은 가상의 고객 'Mr. Data'가 온라인 주문을 완료하는 순간부터 분석가가 트렌드 리포트를 실행하는 순간까지의 여정을 따라가며, 각 개념이 어떤 문제를 해결하기 위해 존재하는지를 보여준다. OLTP는 트랜잭션을 빠르고 정확하게 처리하기 위해 정규화된 구조를 사용하고, OLAP(데이터 웨어하우스)는 대규모 분석 쿼리에 최적화된다. 웨어하우스를 어떻게 구조화할지에 대해서는 Inmon의 하향식 접근법(기업 전사 정규화 모델 우선)과 Kimball의 상향식 접근법(스타 스키마 기반 데이터 마트 우선)이 서로 다른 답을 제시한다. 현대 데이터 스택에서는 dbt의 스테이징 레이어(Inmon 방식)와 마트 레이어(Kimball 방식)처럼 두 철학을 혼합하는 것이 일반적이다.</p>
+</div>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*rCKadyeGCc7NNv0zb1z6Ow.png" alt="OLTP에서 OLAP으로 (Kimball과 Inmon)">
+<figcaption>OLTP에서 OLAP으로 — Kimball과 Inmon 방식</figcaption>
+</figure>
+
+<p>데이터 엔지니어링을 처음 공부할 때 OLTP, OLAP, 정규화, Inmon, Kimball, 스타 스키마 같은 용어들이 계속 등장했다. 처음에는 이것들이 서로 어떻게 연결되는지 도무지 감이 잡히지 않았다.</p>
+
+<p>사실 이것들은 별개의 주제가 아니다.</p>
+
+<p>모두 같은 질문에 대한 서로 다른 답이다. 바로 이것이다: <em>특정 목적에 맞게 데이터를 어떻게 저장할 것인가?</em></p>
+
+<p>정의를 나열하는 대신, 가상의 고객 'Mr. Data'가 결제 버튼을 누르는 순간부터 데이터 분석가가 그에 관한 트렌드 리포트를 실행하는 순간까지의 여정을 함께 따라가며 각 개념이 어떻게 연결되는지 살펴보자.</p>
+
+<h2>1단계: Mr. Data가 주문하다 — OLTP 소개</h2>
+
+<p>Mr. Data는 온라인 쇼핑몰을 둘러보다가 키보드를 발견하고 장바구니에 담는다. 신용카드 번호를 입력하고 결제 버튼을 누르는 순간, 화면 뒤에서는 세 가지 일이 동시에 일어난다.</p>
+
+<ul>
+<li>주문이 정확하게 기록되어야 한다.</li>
+<li>결제가 완료되어야 한다.</li>
+<li>재고 수량이 하나 줄어야 한다.</li>
+</ul>
+
+<p>지연도, 절반만 기록된 데이터도, 중복도 허용되지 않는다.</p>
+
+<p>이것이 바로 OLTP(온라인 트랜잭션 처리, Online Transaction Processing) 시스템의 역할이다.</p>
+
+<p>결제 버튼 뒤에서 동작하는 데이터베이스가 OLTP다. PostgreSQL, MySQL, Oracle 같은 시스템이 여기에 해당하며, 이 시스템들은 한 가지에 최적화되어 있다. 대량의 짧고 정밀한 읽기·쓰기 작업을 빠르고 정확하게 처리하는 것이다.</p>
+
+<p>Mr. Data의 결제가 처리되는 동시에 재고가 차감되어야 한다. 만약 그 사이에 시스템이 다운된다면, 돈은 빠져나갔는데 키보드는 여전히 재고에 남아 있는 상황이 발생해서는 안 된다.</p>
+
+<p>OLTP 데이터베이스는 이를 위해 ACID 속성을 강제한다.</p>
+
+<ul>
+<li><strong>원자성(Atomicity)</strong> — 트랜잭션 전체가 성공하거나, 아니면 아무것도 실행되지 않는다.</li>
+<li><strong>일관성(Consistency)</strong> — 데이터베이스는 항상 유효한 상태에서 다른 유효한 상태로 이동한다.</li>
+<li><strong>격리성(Isolation)</strong> — 동시에 실행되는 두 트랜잭션이 서로를 오염시키지 않는다.</li>
+<li><strong>지속성(Durability)</strong> — 커밋된 데이터는 시스템이 다운되어도 살아남는다.</li>
+</ul>
+
+<p>ACID를 구현하기 위해 OLTP 데이터베이스는 정규화(normalization)를 사용한다. 데이터를 중복 없이 작고 집중된 여러 테이블로 분산시키는 방식이다.</p>
+
+<ul>
+<li>Mr. Data의 이름과 주소는 <code>customers</code> 테이블에 저장된다.</li>
+<li>그의 주문은 <code>orders</code> 테이블에 저장된다.</li>
+<li>키보드는 <code>products</code> 테이블에 저장된다.</li>
+</ul>
+
+<p>모두 ID로 연결되고 데이터는 중복되지 않는다. 정규화 덕분에 쓰기 작업이 깔끔해진다. 새 주문이 들어오면 기존 데이터를 건드리지 않고 작은 레코드 하나만 삽입하면 된다. Mr. Data가 주소를 바꾸더라도 수천 개의 주문 행을 수정할 필요 없이 한 곳만 업데이트하면 된다.</p>
+
+<p>정규화된 OLTP 스키마에서 Mr. Data의 주문은 다음과 같이 표현된다.</p>
+
+<pre><code>Customers              Orders                Order_Items
+-----------            -----------           ----------------------
+customer_id (PK)  ←── customer_id (FK)      order_item_id (PK)
+first_name             order_id (PK)    ←── order_id (FK)
+last_name              order_date            product_id (FK) ──→ Products
+email                  status                quantity               -----------
+address_id (FK)        payment_id (FK)       unit_price             product_id (PK)
+    ↓                                                               product_name
+Addresses          Payments                                         category_id (FK)
+-----------        -----------                                      price
+address_id (PK)    payment_id (PK)
+street             amount
+city               method
+country            status</code></pre>
+
+<p>테이블이 많고 외래 키가 많지만, 중복은 최소화된다.</p>
+
+<p>Mr. Data의 주문은 안전하게 저장되었다. 결제가 완료되고 재고도 차감됐다. OLTP는 제 역할을 다했다.</p>
+
+<p>그런데 이 데이터를 다음에 어떻게 활용할지 결정해야 하는 시점이 온다. 바로 여기서 길이 갈라진다.</p>
+
+<h2>갈림길: 웨어하우스를 구축하는 두 가지 방법</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*npIbjWF2h84U2A1qooK6qQ.png" alt="데이터 웨어하우스 갈림길">
+<figcaption>OLTP에서 OLAP으로 이동하는 두 가지 길</figcaption>
+</figure>
+
+<p>세 달이 지났다. Mr. Data뿐만 아니라 수많은 고객이 주문을 했다. 이제 사업주가 이런 질문을 던진다.</p>
+
+<ul>
+<li>지난 분기에 어느 상품 카테고리가 매출을 가장 많이 견인했는가?</li>
+<li>반품률이 가장 높은 지역은 어디인가?</li>
+<li>한 번만 구매하고 사라진 고객은 누구인가?</li>
+</ul>
+
+<p>이런 질문을 OLTP에서 직접 처리하면 심각한 성능 문제가 생긴다. 정규화 때문에 수많은 조인이 필요하기 때문이다.</p>
+
+<pre><code>-- 2024년 3분기 상품 카테고리별 매출
+-- 숫자 하나를 얻으려면 5개 테이블을 조인해야 한다
+SELECT
+    p.category_id,
+    SUM(oi.quantity * oi.unit_price) AS total_revenue
+FROM order_items oi
+JOIN orders o      ON oi.order_id    = o.order_id
+JOIN customers c   ON o.customer_id  = c.customer_id
+JOIN products p    ON oi.product_id  = p.product_id
+JOIN payments pay  ON o.payment_id   = pay.payment_id
+WHERE o.order_date BETWEEN '2024-07-01' AND '2024-09-30'
+  AND pay.status = 'completed'
+GROUP BY p.category_id;</code></pre>
+
+<p>이것이 바로 OLAP(온라인 분석 처리, Online Analytical Processing)에 최적화된 데이터 웨어하우스가 필요한 이유다.</p>
+
+<p>Snowflake, BigQuery, Redshift, DuckDB 같은 시스템이 여기에 해당한다. 이 시스템들은 초당 수천 건의 소규모 쓰기를 처리하는 데가 아니라, 대량의 과거 데이터를 빠르게 읽는 데 최적화되어 있다.</p>
+
+<p>Mr. Data의 데이터를 웨어하우스로 옮기면 성능 문제는 해결된다. 하지만 더 근본적인 질문이 남는다.</p>
+
+<p><em>웨어하우스 내부 구조는 어떻게 설계해야 하는가?</em></p>
+
+<p>여기서 두 가지 철학이 등장한다. 바로 Bill Inmon과 Ralph Kimball이다. 두 길 모두 분석 질문에 답할 수 있는 웨어하우스로 이어지지만, 도달하는 방식은 정반대다.</p>
+
+<h2>A 경로: Inmon — 기업 핵심부터 구축하기</h2>
+
+<p>Bill Inmon의 고민은 쿼리가 아니라 데이터 자체였다.</p>
+
+<p>Mr. Data는 단 하나의 시스템에만 존재하지 않는다.</p>
+
+<ul>
+<li>그의 주문은 이커머스 데이터베이스에 있다.</li>
+<li>고객 서비스 이력은 CRM에 있다.</li>
+<li>결제 정산 데이터는 재무 플랫폼에 있다.</li>
+<li>배송 이벤트는 물류 시스템에 있다.</li>
+</ul>
+
+<p>각 시스템은 그를 가리키는 ID가 다르고, 필드 이름도 다르며, '고객'의 정의조차 다를 수 있다. Inmon은 분석가가 리포트를 실행하기 전에 이 혼란부터 정리해야 한다고 말한다.</p>
+
+<p>그의 제안은 모든 소스 시스템을 통합하는 단일 정규화된 기업 데이터 웨어하우스를 먼저 구축하는 것이다. OLTP와 동일한 3NF(제3정규형) 구조를 유지하며, 이것을 회사 전체의 유일한 Mr. Data 정보로 삼는다.</p>
+
+<p>그런 다음 이 깨끗한 핵심을 기반으로 팀별 데이터 마트를 만든다. 이커머스 팀은 자신들의 필요에 맞는 마트를 받고, 재무팀은 또 다른 마트를 받는다. Mr. Data는 모든 리포트에서 일관된 단일 레코드로 유지된다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*3zKRR3Y1v5Nwz_8417-b9Q.png" alt="Inmon의 하향식 접근법">
+<figcaption>Inmon의 하향식 접근법: 기업 웨어하우스가 먼저, 데이터 마트는 그 다음</figcaption>
+</figure>
+
+<p>이것이 Inmon의 하향식(top-down) 접근법이다. 기업 웨어하우스가 먼저 오고 데이터 마트는 나중에 온다.</p>
+
+<pre><code>소스 시스템
+──────────────
+이커머스 DB  ──┐
+CRM          ──┼──→  기업 데이터 웨어하우스  ──→  이커머스 데이터 마트
+재무 DB      ──┤      (정규화, 3NF)          ──→  재무 데이터 마트
+물류 시스템  ──┘      단일 진실의 원천       ──→  물류 데이터 마트
+                       Mr. Data는 단 한 번만 존재</code></pre>
+
+<h2>B 경로: Kimball — 납작하게 펼쳐서 빠르게 제공하기</h2>
+
+<p>Ralph Kimball은 같은 문제를 반대쪽 끝에서 바라봤다. 분석가들이 실제로 무엇을 묻는지에서 출발한 것이다.</p>
+
+<p>그는 모든 분석 질문이 같은 형태를 가진다는 사실을 발견했다. <em>어떤 기간 동안, 어떤 기준으로, 얼마나?</em></p>
+
+<ul>
+<li>분기별, 상품 카테고리별 매출</li>
+<li>월별, 지역별 반품 건수</li>
+<li>연도별, 고객 세그먼트별 주문 수</li>
+</ul>
+
+<p>'얼마나'는 항상 집계되는 숫자다. '기준'은 필터와 그룹화 조건이다.</p>
+
+<p>Kimball은 분석가가 여러 조인을 통해 이 구조를 매번 재구성하지 않아도 되도록, 스키마 자체를 이 형태로 미리 만들자고 생각했다.</p>
+
+<ul>
+<li>'얼마나'는 <strong>팩트 테이블(fact table)</strong>이 된다. 주문 항목 하나당 행 하나로, 수량·가격·합계를 담는다.</li>
+<li>'기준' — 상품, 고객, 날짜 — 은 주변을 감싸는 <strong>차원 테이블(dimension table)</strong>이 된다.</li>
+</ul>
+
+<p>이를 가능하게 하는 기법이 바로 비정규화(denormalization)다. OLTP와 Inmon의 접근법과 정반대다.</p>
+
+<p>예를 들어, 트랜잭션 데이터베이스에서는 주소 정보와 고객 정보가 별도 테이블에 분리되어 있어서 Mr. Data의 이름과 거주지를 함께 조회하려면 조인이 필요하다. 하지만 Kimball 방식에서는 이 둘을 합쳐 <code>dim_customer</code>라는 하나의 테이블로 만든다.</p>
+
+<p>Mr. Data의 주문 데이터를 재구성하면 다음과 같다.</p>
+
+<pre><code>                           dim_customer
+                          ----------------------
+                          customer_key (PK) ─────→
+                          customer_name         |
+                          email                 |
+                          street                |
+                          city                  |
+                          region                |
+                          country               |
+                                                |
+                                                |
+dim_date               fact_orders              |   dim_product
+------------           -------------------------|    ----------------
+date_key (PK)  ←────    date_key (FK)           |    product_name
+full_date               customer_key (FK)─────→ |    category
+day_of_week             product_key (FK)   ─────→    product_key (PK)
+month                   order_id (PK)                brand
+quarter                 quantity                     unit_cost
+year                    unit_price
+                        total_revenue
+                        order_status</code></pre>
+
+<p>팩트 테이블을 중심에 두고 차원 테이블들이 주변을 둘러싸는 구조가 바로 <strong>스타 스키마(star schema)</strong>다. Mr. Data의 주문은 여전히 존재하지만, 이제 분석가는 다섯 번이 아닌 두 번의 조인만으로 데이터에 접근할 수 있다.</p>
+
+<pre><code>-- 2024년 상품 카테고리별 매출
+-- 조인이 두 번뿐이다
+SELECT
+    p.category,
+    d.quarter,
+    SUM(f.total_revenue) AS revenue
+FROM fact_orders f
+JOIN dim_product  p ON f.product_key = p.product_key
+JOIN dim_date     d ON f.date_key    = d.date_key
+WHERE d.year = 2024
+GROUP BY p.category, d.quarter
+ORDER BY revenue DESC;</code></pre>
+
+<p>이것이 Kimball의 상향식(bottom-up) 접근법이다. 데이터 마트를 비즈니스 프로세스 하나씩 먼저 만들고, 그 주변으로 웨어하우스가 성장한다.</p>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/0*9x7Nw49c-VtDDpDm" alt="Kimball의 스타 스키마">
+<figcaption>Kimball의 스타 스키마 구조</figcaption>
+</figure>
+
+<h2>Mr. Data의 최종 여정</h2>
+
+<figure>
+<img src="https://freedium-mirror.cfd/img/700/1*w-m-4GjD0yVfRteAL3SAng.png" alt="Mr. Data의 OLTP에서 OLAP까지의 여정">
+<figcaption>Mr. Data가 OLTP에서 OLAP으로 이동하는 전체 여정</figcaption>
+</figure>
+
+<h2>어느 길을 선택해야 할까?</h2>
+
+<p>데이터 웨어하우스를 구축하기 전에 다음 기준으로 방향을 잡아볼 수 있다.</p>
+
+<ul>
+<li>여러 시스템에 Mr. Data 정보가 흩어져 있고 정의가 충돌하는 경우처럼, 리포팅 전에 단일 권위 있는 레코드가 필요하다면 Inmon을 선택하라.</li>
+<li>분석가에게 빠르게 쿼리 가능한 데이터와 즉각적인 가치를 제공하고 싶다면 Kimball의 스타 스키마를 선택하라.</li>
+</ul>
+
+<p>때로는 둘 다 사용하기도 한다. 현대 데이터 스택에서 dbt 프로젝트는 대개 정규화된 소스 구조를 유지하는 스테이징 레이어(Inmon의 사고방식)와 그 위에 구축된 스타 스키마 마트 레이어(Kimball의 산출물)를 모두 갖춘다.</p>
+
+<p>Databricks의 메달리온 아키텍처(브론즈, 실버, 골드)도 같은 패턴을 따른다. 골드 레이어는 거의 항상 스타 스키마다.</p>
+
+<h2>정리</h2>
+
+<p>오늘 등장한 용어들을 간단히 정리하면 다음과 같다.</p>
+
+<ul>
+<li><strong>OLTP와 OLAP</strong>은 워크로드의 종류다. OLTP는 쓰기를 보호하고, OLAP은 읽기를 서빙한다.</li>
+<li><strong>정규화</strong>는 OLTP를 빠르고 정확하게 만들고, <strong>비정규화</strong>는 웨어하우스 쿼리를 빠르게 만든다.</li>
+<li><strong>Inmon</strong>은 Mr. Data를 단일 기업 핵심에 정규화된 형태로 유지하고, 그 위에 팀별 마트를 구축한다. <strong>Kimball</strong>은 처음부터 Mr. Data를 스타 스키마로 납작하게 펼치고, 공유 키를 통해 마트들을 통합한다. 둘 다 데이터 웨어하우스의 개념이다.</li>
+</ul>
+</body>
+</html>

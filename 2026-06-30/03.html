@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Top SQL Patterns to Master for MAANG Data Engineer Interviews</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Top SQL Patterns to Master for MAANG Data Engineer Interviews</h1>
+<div class="meta">Satyam Sahu · · 6분 읽기 · <a href="https://medium.com/@satyamsahu671/top-sql-patterns-to-master-for-maang-data-engineer-interviews-321ff2d0ec91" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@satyamsahu671/top-sql-patterns-to-master-for-maang-data-engineer-interviews-321ff2d0ec91" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">MAANG 데이터 엔지니어 면접에서 반복 출제되는 핵심 SQL 패턴 5가지와 실전 풀이 전략</p>
+<h3>요약</h3>
+<p>MAANG(Meta, Amazon, Apple, Netflix, Google) 면접은 SQL 문법을 아는지가 아니라 SQL로 사고할 수 있는지를 테스트한다. 경험 많은 엔지니어도 윈도우 함수에서 막히고, 신입도 패턴을 익히면 통과한다. 이 글은 실제 면접에서 반복되는 5가지 핵심 패턴—누적 합계, 연속 이벤트 감지, 코호트 리텐션 분석, 그룹별 Top-N 순위, 세션화—을 실전 예제와 함께 설명한다. 패턴을 외우는 것이 아니라 문제를 보는 순간 어떤 패턴인지 인식하는 속도를 키우는 것이 합격의 관건이다.</p>
+</div>
+
+<p>Meta, Amazon, Apple, Netflix, Google 데이터 엔지니어 면접을 준비하고 있다면, 먼저 이것을 알아야 한다.</p>
+
+<blockquote>
+<p><em>면접관은 SQL을 아는지 확인하려는 게 아니다. 이미 안다고 가정한다. 진짜 테스트는 SQL로 생각할 수 있는가—복잡한 비즈니스 문제를 보고 어떤 패턴을 써야 할지 즉각 떠올릴 수 있는가—다.</em></p>
+</blockquote>
+
+<p>SQL 라운드를 통과하는 사람과 탈락하는 사람의 차이가 바로 그것이다.</p>
+
+<p>3~4년 경력자도 윈도우 함수 문제 앞에서 멍해지는 경우를 봤다. 실무에서 GROUP BY만 써왔기 때문이다. 반면 신입이 MAANG SQL 면접을 통과하는 경우도 있었는데, 올바른 패턴을 의도적으로 반복 훈련했기 때문이었다. 이 글은 그 패턴들에 관한 것이다. 이론이나 문법 튜토리얼이 아니라, 상위 기술 기업들이 실제로 사용하는 반복 출제 패턴이다.</p>
+
+<h2>왜 MAANG SQL 면접은 다른가</h2>
+
+<p>대부분의 SQL 튜토리얼은 쿼리 방법을 가르친다. MAANG 면접은 모델링과 문제 해결 능력을 테스트한다. 문제는 현실적인 비즈니스 시나리오로 포장되어 나온다. 사용자 활동 테이블, 이벤트 로그, 라이드 데이터, 광고 노출 데이터 같은 것들이다. 시간 압박 속에서 원시 데이터로부터 인사이트를 뽑아내야 한다.</p>
+
+<p><strong>좋은 소식이 있다.</strong> 패턴은 반복된다. 패턴을 인식하게 되면, 매번 처음부터 풀지 않아도 된다. 패턴을 매칭하면 된다.</p>
+
+<h2>패턴 1: 누적 합계와 누계 집계</h2>
+
+<p><strong>테스트 항목:</strong> <code>ROW_NUMBER()</code>를 넘어서 윈도우 함수를 제대로 이해하는지 여부.</p>
+
+<p>Meta와 Amazon에서 가장 자주 출제되는 패턴 중 하나다. 일별 거래나 이벤트 테이블이 주어지고, 사용자별 누적 합계, 7일 이동 평균, 또는 누계를 구하라는 문제가 나온다.</p>
+
+<blockquote>
+<p><strong>예제 시나리오:</strong> <em>제품별 일별 매출 테이블이 있을 때, 각 날짜의 매출과 해당 제품의 누적 매출을 함께 보여주는 쿼리를 작성하라.</em></p>
+</blockquote>
+
+<pre><code>SELECT
+  product_id,
+  sale_date,
+  daily_revenue,
+  SUM(daily_revenue) OVER (
+    PARTITION BY product_id
+    ORDER BY sale_date
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  ) AS running_total
+FROM sales;</code></pre>
+
+<p>핵심은 프레임 절이다. <code>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>. 많은 입문자가 <code>SUM() OVER (PARTITION BY ... ORDER BY ...)</code>만 쓰고 기본 프레임이 맞을 거라고 가정한다. 대부분의 경우 맞지만, 면접관은 왜 작동하는지 알고 있는지를 반드시 파고든다. 프레임 절을 완전히 이해하고 있어야 한다.</p>
+
+<h2>패턴 2: 연속 이벤트와 스트릭(streak) 감지</h2>
+
+<p><strong>테스트 항목:</strong> LAG/LEAD 함수, 날짜 연산, 논리적 사고.</p>
+
+<p>사용자 행동 데이터를 다루는 모든 MAANG 기업에서 자주 등장하는 패턴이다. N일 연속 로그인한 사용자를 찾거나, 3개월 연속 가격이 하락한 제품을 찾는 문제가 나온다.</p>
+
+<blockquote>
+<p><strong>예제 시나리오:</strong> <em>3일 이상 연속으로 로그인한 사용자를 모두 찾아라.</em></p>
+</blockquote>
+
+<p><strong>접근법:</strong> <code>LAG()</code>로 이전 행의 날짜를 조회하고 차이를 계산한 후, 그루핑 트릭으로 스트릭을 식별한다.</p>
+
+<pre><code>WITH login_gaps AS (
+  SELECT
+    user_id,
+    login_date,
+    login_date - LAG(login_date) OVER (
+      PARTITION BY user_id ORDER BY login_date
+    ) AS gap
+  FROM user_logins
+),
+streak_groups AS (
+  SELECT
+    user_id,
+    login_date,
+    SUM(CASE WHEN gap = 1 THEN 0 ELSE 1 END) OVER (
+      PARTITION BY user_id ORDER BY login_date
+    ) AS streak_id
+  FROM login_gaps
+)
+SELECT user_id, streak_id, COUNT(*) AS streak_length
+FROM streak_groups
+GROUP BY user_id, streak_id
+HAVING COUNT(*) >= 3;</code></pre>
+
+<p>연속 시퀀스 그루핑 로직을 한 번도 생각해본 적 없는 지원자가 막히는 패턴이다. 스트릭 그루핑 로직이 자동으로 떠오를 때까지 반복 연습해야 한다.</p>
+
+<h2>패턴 3: 리텐션(유지율) 및 코호트 분석</h2>
+
+<p><strong>테스트 항목:</strong> 셀프 조인 또는 윈도우 함수, 날짜 절삭, 비즈니스 이해.</p>
+
+<p>Meta와 Google이 특히 좋아하는 패턴이다. 가입 테이블과 활동 테이블이 주어지고 Day 1, Day 7, Month 1 리텐션율을 구하라는 문제가 나온다.</p>
+
+<blockquote>
+<p><strong>예제 시나리오:</strong> <em>2024년 1월에 가입한 사용자 중 가입 후 7일 이내에 다시 활동한 사용자의 비율은?</em></p>
+</blockquote>
+
+<pre><code>WITH cohort AS (
+  SELECT user_id, DATE_TRUNC('month', signup_date) AS cohort_month
+  FROM users
+  WHERE signup_date >= '2024-01-01' AND signup_date < '2024-02-01'
+),
+returned AS (
+  SELECT DISTINCT c.user_id
+  FROM cohort c
+  JOIN user_activity a ON c.user_id = a.user_id
+  WHERE a.activity_date BETWEEN c.signup_date + INTERVAL '1 day'
+    AND c.signup_date + INTERVAL '7 days'  -- 실전에서는 서브쿼리로 조인 조건 조정
+)
+SELECT
+  COUNT(DISTINCT r.user_id) * 100.0 / COUNT(DISTINCT c.user_id) AS day7_retention_rate
+FROM cohort c
+LEFT JOIN returned r ON c.user_id = r.user_id;</code></pre>
+
+<p>면접관이 보는 것은 숫자의 정확성뿐만 아니라, 리텐션이 무엇을 의미하는지 이해하는지, 활동이 전혀 없는 사용자 같은 엣지 케이스를 쿼리가 처리하는지다. 코호트 테이블에서 반드시 <code>LEFT JOIN</code>을 사용해야 한다. <code>INNER JOIN</code>이 아니다.</p>
+
+<h2>패턴 4: 그룹별 순위 및 Top-N</h2>
+
+<p><strong>테스트 항목:</strong> <code>ROW_NUMBER()</code>, <code>RANK()</code>, <code>DENSE_RANK()</code>—그리고 이 셋의 차이.</p>
+
+<p>MAANG SQL 면접의 워밍업 문제로 가장 자주 나오는 패턴이다. 겉보기에는 단순해 보이지만 후속 질문이 빠르게 까다로워진다.</p>
+
+<blockquote>
+<p><strong>예제 시나리오:</strong> <em>카테고리별로 매출 상위 3개 제품을 찾아라.</em></p>
+</blockquote>
+
+<pre><code>WITH ranked AS (
+  SELECT
+    category,
+    product_id,
+    total_sales,
+    DENSE_RANK() OVER (
+      PARTITION BY category
+      ORDER BY total_sales DESC
+    ) AS rnk
+  FROM product_sales
+)
+SELECT * FROM ranked WHERE rnk <= 3;</code></pre>
+
+<p>언제 무엇을 쓸지 명확히 알아야 한다. <code>ROW_NUMBER</code>는 동점 없이 엄격한 고유 순위, <code>RANK</code>는 동점자에게 같은 순위 부여하고 다음 순위 건너뜀, <code>DENSE_RANK</code>는 동점자에게 같은 순위 부여하되 다음 순위를 건너뛰지 않음. 면접관은 문제 중간에 동작 방식을 바꿔달라고 요구해서 차이를 이해하는지 확인한다.</p>
+
+<h2>패턴 5: 세션화(Sessionisation)</h2>
+
+<p><strong>테스트 항목:</strong> 고급 윈도우 함수, 비즈니스 로직 변환, 실세계 데이터 사고.</p>
+
+<p>Netflix, Amazon, Meta의 시니어 데이터 엔지니어 면접에서 등장하는 심화 패턴이다. 타임스탬프가 있는 사용자 이벤트 테이블이 주어지고, 연속 이벤트 간격이 30분을 넘지 않는 이벤트들을 하나의 세션으로 묶어 session_id를 부여하라는 문제다.</p>
+
+<blockquote>
+<p><strong>예제 시나리오:</strong> <em>user_id와 event_timestamp가 있는 페이지뷰 이벤트 테이블에서, 각 이벤트에 session_id를 부여하라.</em></p>
+</blockquote>
+
+<pre><code>WITH session_flags AS (
+  SELECT
+    user_id,
+    event_timestamp,
+    CASE
+      WHEN event_timestamp - LAG(event_timestamp) OVER (
+        PARTITION BY user_id ORDER BY event_timestamp
+      ) > INTERVAL '30 minutes'
+      OR LAG(event_timestamp) OVER (
+        PARTITION BY user_id ORDER BY event_timestamp
+      ) IS NULL
+    THEN 1 ELSE 0
+    END AS is_new_session
+  FROM page_views
+)
+SELECT
+  user_id,
+  event_timestamp,
+  SUM(is_new_session) OVER (
+    PARTITION BY user_id ORDER BY event_timestamp
+  ) AS session_id
+FROM session_flags;</code></pre>
+
+<p><strong>로직 설명:</strong> 이전 이벤트와의 간격이 30분을 초과하는 이벤트를 새 세션의 시작으로 플래그하고, 그 플래그의 누적 합계를 session_id로 사용한다. 한번 이해하면 우아한 패턴이지만, 한 번도 연습하지 않은 상태에서 면접 압박 속에 떠올리기는 매우 어렵다.</p>
+
+<h2>한 가지 더: 서브쿼리 대신 항상 CTE를 써라</h2>
+
+<p>모든 MAANG SQL 면접에서 중첩 서브쿼리 대신 CTE(Common Table Expression)로 풀어라. 단순히 스타일의 문제가 아니다. 복잡한 문제를 이름 있는 단계로 분해해서 생각한다는 것을 보여주는 것이다. 면접관은 실시간으로 당신의 코드를 읽는다. 로직을 따라가기 쉽게 만들어라.</p>
+
+<h2>이 패턴들로 무엇을 해야 하는가</h2>
+
+<p>읽기만 하지 말고 직접 풀어봐야 한다. DataLemur, StrataScratch, HackerRank SQL, 또는 LeetCode SQL 50 섹션에서 각 패턴별로 문제를 하나씩 찾아 풀어라. 답을 보지 말고 스스로 풀어라. 그런 다음 하나 더 풀어라. 목표는 쿼리를 외우는 게 아니라, 문제를 읽는 순간 어떤 패턴인지 인식하는 것이다.</p>
+
+<p>"3일 연속 활동한 사용자를 찾아라"를 읽는 순간 머릿속에서 "스트릭 감지, LAG와 누적 그루핑"이 자동으로 떠오를 때—그때가 MAANG SQL 라운드에 준비된 것이다.</p>
+
+<p>그 인식 속도가 통과하는 지원자와 탈락하는 지원자를 가르는 기준이다.</p>
+
+<blockquote>
+<p><strong>참고:</strong> 이 글의 더 자세한 설명이 필요하다면 댓글로 알려주세요. 더 구체적으로 다루겠습니다.</p>
+</blockquote>
+
+</body>
+</html>

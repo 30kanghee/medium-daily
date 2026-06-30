@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quick Insights on Materialized Views</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Quick Insights on Materialized Views</h1>
+<div class="meta">Vu Trinh · Data Engineer Things · 8분 · <a href="https://medium.com/@vutrinh274/quick-insights-on-materialized-views-486d8d286f19" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@vutrinh274/quick-insights-on-materialized-views-486d8d286f19" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">Materialized View의 개념, 증분 갱신 방식, 비용-신선도 트레이드오프를 실용적 관점에서 정리한다.</p>
+<h3>요약</h3>
+<p>Materialized View(구체화 뷰, MV)는 미리 계산된 쿼리 결과를 물리적 테이블로 저장한 객체로, 일반 뷰의 유연성과 테이블의 성능을 동시에 갖는다. 원본 데이터가 변경될 때 MV를 효율적으로 갱신하는 기법인 증분 뷰 유지(IVM)는 Timely Dataflow, Differential Dataflow, DBSP라는 세 가지 현대적 접근법을 중심으로 발전해 왔다. MV를 도입할 때는 데이터 신선도와 갱신 비용 사이의 트레이드오프를 반드시 고려해야 하며, 전체 재계산 방식과 증분 갱신 방식 중 유스케이스에 맞는 전략을 선택해야 한다. 실시간 스트림 처리 분야에서도 MV는 핵심 개념으로 자리잡고 있으며, Apache Flink의 Dynamic Table이나 RisingWave, ClickHouse 같은 시스템들이 이 원리를 적극적으로 활용한다. SQL 문법만으로 실시간 처리를 구현할 수 있다는 단순함이 MV의 가장 큰 매력이다.</p>
+</div>
+
+<h3>들어가며</h3>
+<p>데이터 엔지니어로 일하다 보면 결국 다루는 것은 언제나 데이터다.</p>
+<p>본질적으로 데이터는 0과 1로 이루어진 디지털 비트의 집합이다. 하지만 우리가 실제로 마주하는 데이터는 그런 형태가 아니다. Parquet이나 CSV 같은 파일로, 혹은 더 높은 추상화 단계인 행과 열로 구성된 2차원 테이블 형태로 데이터를 접한다.</p>
+<p>대부분의 경우(약 80%) 이 표 형식의 데이터는 테이블이나 뷰(view)로 존재한다. 두 개념의 차이는 명확하다. 테이블은 데이터를 디스크에 직접 저장하는 반면, 뷰는 실행 시점에 테이블 형태의 결과를 만들어내는 쿼리를 저장해둔 것에 불과하다.</p>
+<p>나머지 20%에 해당하는 상황에서는 테이블과 뷰의 특성을 모두 물려받은 "자식" 같은 존재, 즉 구체화 뷰(Materialized View, MV)를 다루게 된다. 물론 MV가 테이블이나 뷰보다 덜 유용하다는 의미는 아니다. MV는 적합한 유스케이스에서 사용할 때 비로소 진가를 발휘한다.</p>
+<blockquote>
+<p>위 통계는 제가 만들어낸 수치입니다 :d</p>
+</blockquote>
+<p>이 글에서는 필자가 구체화 뷰를 다루면서 직접 관찰하고 정리한 내용을 공유한다.</p>
+
+<h3>Materialized View란 무엇인가?</h3>
+<p>뷰(view)는 저장된 SQL 쿼리다. <code>FROM</code> 절에서 뷰를 참조할 때마다 데이터베이스는 해당 쿼리를 실행하고 결과를 반환한 뒤 다음 명령을 수행한다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*Pf4E5_0tTtxQ7SIm.png" alt="뷰의 동작 방식">
+  <figcaption>뷰는 저장된 SQL 쿼리로, 조회할 때마다 쿼리가 실행된다.</figcaption>
+</figure>
+
+<p>테이블은 데이터를 디스크에 실제로 저장한다. 쿼리 결과나 입력 데이터 파일로부터 테이블을 생성할 수 있으며, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>를 통해 데이터를 갱신한다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*n0CEgT64AFc5RrHx.png" alt="테이블의 동작 방식">
+  <figcaption>테이블은 데이터를 디스크에 물리적으로 저장한다.</figcaption>
+</figure>
+
+<p>MV는 이 둘의 특성을 모두 갖는다. 미리 계산된 쿼리 결과를 물리적 테이블 형태로 저장하는 것이다. 뷰처럼 쿼리를 인식하면서도, 테이블처럼 데이터를 저장한다. 원본 데이터(뷰 쿼리에서 참조하는 소스 테이블)가 변경되면 사용자가 MV를 새로고침할 수 있다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*S5Ml_VxpwfcZVpM4.png" alt="Materialized View의 동작 방식">
+  <figcaption>MV는 미리 계산된 결과를 물리 테이블로 저장하며, 필요 시 새로고침할 수 있다.</figcaption>
+</figure>
+
+<hr>
+
+<p>소프트웨어 공학에서 캐시(cache)란 자주 사용되는 데이터의 일부를 빠른 저장소(예: RAM)에 임시로 보관해 원래 위치(디스크, 오브젝트 스토리지, 복잡한 데이터베이스 쿼리 등)보다 빠르게 접근할 수 있도록 하는 계층이다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*BU273XiIyweu8i6a.png" alt="캐시의 개념">
+  <figcaption>캐시는 원본보다 빠른 저장소에 데이터를 보관해 접근 속도를 높인다.</figcaption>
+</figure>
+
+<p>MV 역시 일종의 캐시로 볼 수 있다. 원본 소스 테이블에 직접 접근하는 대신, 이미 계산된 뷰 결과에 접근함으로써 쿼리를 훨씬 빠르게 처리할 수 있기 때문이다.</p>
+<p>캐시의 가장 큰 과제는 데이터가 오래되는 문제를 방지하는 것이다. MV의 경우, 이 문제는 "소스 테이블이 변경될 때 MV를 어떻게 최신 상태로 유지할 것인가"라는 질문으로 이어진다.</p>
+
+<h3>증분 뷰 유지(Incremental View Maintenance, IVM)</h3>
+<p>MV를 생성하면 데이터베이스는 정의된 쿼리를 한 번 실행하고 그 결과를 디스크에 저장한다. 이후 쿼리는 소스 테이블을 재계산하지 않고 저장된 결과에 직접 접근한다. 그렇다면 소스 테이블이 변경될 때 어떤 일이 일어날까?</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*L-R2RS2bXyoHaCQI.png" alt="MV 갱신 문제">
+  <figcaption>소스 테이블 변경 시 MV를 어떻게 갱신할 것인지가 핵심 과제다.</figcaption>
+</figure>
+
+<p>가장 단순한 방법은 소스가 변경될 때마다 전부 다시 계산하는 것이다. 그러나 이 방식은 비용이 높고 지연 시간도 늘어난다.</p>
+<p>보다 합리적인 접근은 "변경에 영향을 받은 부분만 새로고침하는 것"이다. 그렇다면 데이터베이스는 이를 어떻게 효율적으로 수행할까? 이 방식에는 이름이 있다. 바로 증분 뷰 유지(Incremental View Maintenance, IVM)이며, 오랫동안 연구되어 온 주제다.</p>
+
+<hr>
+
+<p>현대적인 IVM 접근법은 크게 세 가지로 나뉜다.</p>
+
+<blockquote>
+<p><strong>참고 1</strong>: 모든 데이터베이스가 이 중 하나를 구현하는 것은 아니다. 각 데이터베이스가 독자적인 방식으로 MV를 유지할 수 있다.</p>
+</blockquote>
+<blockquote>
+<p><strong>참고 2</strong>: BigQuery, Snowflake, Redshift 같은 클라우드 데이터 웨어하우스가 실제로 증분 MV를 어떻게 유지하는지에 관한 자료는 찾지 못했다.</p>
+</blockquote>
+
+<ul>
+<li>Timely Dataflow(TD)</li>
+<li>Differential Dataflow(DD)</li>
+<li>DBSP</li>
+</ul>
+
+<p>세 가지 접근법을 간략히 살펴보자.</p>
+
+<blockquote>
+<p>구체화 뷰에 관한 글을 미루고 있는 이유 중 하나가, 이 접근법들이 수학적으로 매우 복잡하고 난해하기 때문이다. 이 절에서는 각 방식의 큰 그림을 전달하는 것을 목표로 했으므로, 빠진 내용이 있다면 양해를 구한다.</p>
+</blockquote>
+
+<h3>Timely Dataflow (TD)</h3>
+<p>Naiad 논문에서 소개된 Timely Dataflow는 <strong>범용 계산 모델</strong>로, 더 높은 수준의 시스템들이 그 위에 구축될 수 있는 저수준 기반 구조다. TD의 목표는 배치 처리기의 높은 처리량, 스트림 처리기의 낮은 지연 시간, 그리고 반복 연산 지원을 단일 프레임워크 안에서 모두 달성하는 것이다.</p>
+<p>Naiad 이전에는 이 세 가지 요구사항을 충족하려면 별도의 시스템 세 개가 필요했다.</p>
+<p>TD에서 모든 메시지는 논리적 타임스탬프를 가지고 있으며, TD API는 네 가지 메서드를 제공한다.</p>
+<ul>
+<li>메시지 전송</li>
+<li>메시지 수신</li>
+<li>특정 타임스탬프에서 알림 요청</li>
+<li>해당 알림 수신</li>
+</ul>
+<p>알림 쌍이 핵심 메커니즘이다. 노드는 시스템에 "타임스탬프 t의 처리가 완료되면 알려달라"고 요청할 수 있다. 그러면 시스템은 전체 분산 클러스터를 추적하며 해당 타임스탬프에 속한 메시지가 아직 도착할 가능성이 있는지 확인한다.</p>
+<p>더 이상 메시지가 도착하지 않음이 확실해져야만 알림이 발송된다. 이 추적은 데이터 스트림과 독립적으로 진행되기 때문에, 여러 작업이 서로 다른 시점의 처리를 동시에 수행할 수 있다.</p>
+<p>TD는 그래프 처리와 같이 깊이 중첩된 반복 알고리즘을 지원하도록 설계되었다. 강력한 기능이지만, 대부분의 SQL MV는 반복문을 포함하지 않는다. 여기서 중요한 것은 알림 보장 메커니즘이다. 뷰의 특정 버전 처리가 완료되어 결과를 출력해도 안전한 시점을 시스템이 판단할 수 있게 해주는 메커니즘이기 때문이다.</p>
+
+<h3>Differential Dataflow (DD)</h3>
+<p>DD는 Timely Dataflow를 기반으로 구축된 프로그래밍 모델이다. DD가 답하려는 질문은 이것이다. "언제 계산이 완료되는지 알 수 있다면, 입력이 변경될 때 최소한의 계산만으로 결과를 유지할 수 있을까?"</p>
+<p>DD의 핵심 아이디어는 데이터 상태를 여러 버전으로 추적하고, TD의 타임스탬프를 이용해 순서를 부여하는 것이다. 이 순서 덕분에 갱신이 도착할 때 이전 계산 결과를 재활용하여 비용을 절감할 수 있다.</p>
+
+<h3>DBSP</h3>
+<p>DBSP는 앞의 두 접근법과는 다른 방향에서 출발한다.</p>
+<p>데이터플로우 기반에서 위로 쌓아 올리는 대신, 회로와 신호의 수학인 <strong>디지털 신호 처리(Digital Signal Processing)</strong>로부터 아이디어를 빌려온다.</p>
+<p>데이터베이스는 스냅샷의 스트림이고, 데이터베이스의 변경은 델타(차분)의 스트림이며, 뷰는 각 스냅샷에 적용된 쿼리다. 뷰를 증분으로 유지한다는 것은 데이터베이스 델타 스트림으로부터 뷰 델타 스트림을 계산하는 것을 의미한다.</p>
+<p>DBSP는 이를 네 가지 연산자, 즉 lift, delay, 그리고 재귀 프로그램을 위한 연산자 두 개로 형식화한다. 이 연산자들은 SQL의 모든 관계형 연산에 대해 함수적 완전성을 가지며, 임의의 표준 SQL 쿼리를 자동으로 증분 버전으로 변환할 수 있다.</p>
+
+<p>IVM 이론은 잠시 내려놓고, 더 실용적인 질문으로 넘어가자.</p>
+
+<h3>MV의 트레이드오프는 무엇인가?</h3>
+<p>MV는 쿼리 속도를 높여주지만 공짜가 아니다.</p>
+<p>이 절에서는 MV를 현명하게 활용하기 위해 알아야 할 트레이드오프를 살펴본다.</p>
+<p>필자는 MV 도입 결정이 결국 두 가지 질문으로 귀결된다고 생각한다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*8lprrlqlsEQWsd1q.png" alt="MV 트레이드오프 핵심 질문">
+  <figcaption>MV 도입의 핵심은 신선도 요구사항과 지불 가능한 비용을 파악하는 것이다.</figcaption>
+</figure>
+
+<ul>
+<li>데이터가 얼마나 최신 상태여야 하는가?</li>
+<li>그것을 위해 얼마만큼의 비용을 감수할 수 있는가?</li>
+</ul>
+
+<p>이렇게 생각해보자. MV를 활용한다는 것은 무거운 연산을 읽기 시점에서 쓰기(갱신) 시점으로 옮기는 것이다. 쿼리가 빨라지는 것은 공짜가 아니라, 새로고침 시점에 미리 계산 비용을 지불함으로써 읽기 연산을 빠르게 만드는 것이다.</p>
+<p>데이터 신선도가 높을수록 MV는 더 자주 새로고침된다. 즉, 더 잦은 갱신에 따른 더 높은 비용을 지불해야 한다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/1*rwILmkuuvmMl9H-VFR3dQg.png" alt="신선도와 비용의 관계">
+  <figcaption>갱신 빈도가 높을수록 비용이 증가하는 신선도-비용 트레이드오프를 나타낸 도표.</figcaption>
+</figure>
+
+<ul>
+<li><strong>전체 새로고침(Full refresh)</strong>은 단순하다. 일정 주기마다(매시간, 매일 등) 전체를 다시 계산한다. 예측 가능하고 이해하기 쉽다. 다만 실행 사이의 간격 동안 데이터가 오래되고, 데이터셋이 크면 비용이 많이 든다. 매번 새로고침할 때마다 전체 계산 비용이 발생한다.</li>
+<li><strong>증분 새로고침(IVM)</strong>은 계산 효율을 높인다. 전체를 다시 계산하는 대신 변경된 부분만 처리한다. 이 방식은 잦은 새로고침도 경제적으로 가능하게 해준다. 변경 규모가 전체 데이터셋에 비해 작을 때 새로고침당 비용이 크게 줄어든다. 다만 IVM도 비용을 완전히 없애주지는 않는다. 갱신 빈도가 높을수록 계산 비용도 여전히 늘어난다.</li>
+</ul>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*NiSoStnGDlFsF7Yc.png" alt="전체 vs 증분 새로고침 비교">
+  <figcaption>전체 새로고침과 증분 새로고침의 비용 비교.</figcaption>
+</figure>
+
+<p>MV를 도입하기로 했다면, 우선 사용 중인 데이터베이스가 증분 새로고침을 지원하는지 확인하자. <a href="https://clickhouse.com/docs/materialized-view/incremental-materialized-view" target="_blank">ClickHouse</a>, <a href="https://docs.databricks.com/aws/en/optimizations/incremental-refresh" target="_blank">Databricks</a>, <a href="https://cloud.google.com/bigquery/docs/materialized-views-intro" target="_blank">BigQuery</a>, <a href="https://docs.snowflake.com/en/user-guide/views-materialized" target="_blank">Snowflake</a>(?)(불확실) 등이 증분 새로고침을 지원한다. 유스케이스에 증분 새로고침을 적용할 수 있다면 우선적으로 활용하자. 새로고침 프로세스를 훨씬 효율적으로 만들 수 있다.</p>
+<p>다만 증분 새로고침 MV는 일부 SQL 연산을 지원하지 않는 경우도 있다. 예를 들어 BigQuery MV는 JOIN의 오른쪽 테이블에 새 데이터가 있을 때만 증분 갱신이 가능하다.</p>
+<p>비용과 신선도 사이의 트레이드오프에는 절대적인 정답이 없다. 유스케이스에 따라 요구사항이 전혀 다르기 때문이다. 금융 사기 탐지 시스템과 시간 단위 보고 대시보드의 신선도 요구사항은 완전히 다르다.</p>
+
+<h3>스트림 처리에서의 MV</h3>
+<p>실시간 처리 유스케이스에서는 데이터가 끊임없이 유입되고, 그 스트림에서 최대한 빠르게 인사이트를 뽑아내야 한다. 데이터를 소비하고, 처리하고, 결과를 가능한 한 빠르게 출력해야 하는 것이다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*QYVlJ9R-pNFcIRTa.png" alt="스트림 처리 아키텍처">
+  <figcaption>실시간 처리 유스케이스에서의 데이터 흐름.</figcaption>
+</figure>
+
+<p>스트림 데이터를 테이블에 적재하고, 그 위에 MV를 정의한 뒤, 지연 시간 요구사항이 허용하는 한 빠르게 MV를 새로고침하여 처리 로직을 새 데이터에 적용한다면 어떨까? 이것만으로도 실시간 처리 유스케이스의 목적을 달성할 수 있지 않을까?</p>
+
+<hr>
+
+<p><a href="https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/concepts/dynamic_tables/" target="_blank">Apache Flink의 Dynamic Table</a>은 MV의 개념을 기반으로 구현되어 있다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*X1p-oFKBvCzxybaj.png" alt="Flink Dynamic Table">
+  <figcaption>출처: Flink 공식 문서, Dynamic Tables.</figcaption>
+</figure>
+
+<p>Dynamic Table은 기저 스트림이 변화함에 따라 시간이 지나면서 바뀌는 테이블이다. Dynamic Table에 SQL 쿼리를 실행하면 <strong>연속 쿼리(continuous query)</strong>가 된다. 이 쿼리는 종료되지 않고 입력이 변할 때마다 결과를 지속적으로 갱신한다. 그리고 그 결과 자체도 Dynamic Table이다. Dynamic Table에 대한 연속 쿼리는 즉각적인 뷰 갱신(eager view updating)을 수행하는 MV와 의미적으로 동일하다.</p>
+
+<hr>
+
+<p><a href="https://risingwave.com/" target="_blank">RisingWave</a>는 스트리밍 OLAP 데이터베이스로, 동일한 원리를 기반으로 구축되어 있다. 소스 데이터가 변경되면 RisingWave는 데이터플로우 그래프를 통해 흐르는 변경 스트림을 활용해 영향받는 행만 갱신한다. 전체 재계산 없이도 뷰를 최신 상태로 유지하는 것이다.</p>
+
+<hr>
+
+<p><a href="https://clickhouse.com/docs/materialized-view/incremental-materialized-view" target="_blank">ClickHouse의 증분 MV</a>는 테이블에 데이터가 삽입될 때 해당 데이터의 일부에 대해 쿼리를 실행하는 트리거 방식으로 동작한다. 그 결과는 별도의 테이블에 삽입되고, 이후에 도착하는 새 데이터의 결과도 이 테이블에 추가되어 기존 데이터와 병합된다. 이 병합 결과는 전체 소스 데이터에 쿼리를 실행한 것과 의미적으로 동일하다.</p>
+<p>ClickHouse는 실시간 분석 유스케이스에서 MV를 스트림 프로세서처럼 다룬다.</p>
+
+<hr>
+
+<p>MV는 실시간/스트림 처리 세계에서 핵심 개념으로 자리잡고 있다. 이제 MV는 주기적 또는 요청 시 갱신에 그치지 않고, 유입되는 데이터 흐름에 발맞추어 백그라운드에서 지속적으로 갱신된다.</p>
+<p>실시간 처리 유스케이스를 마주할 때, Apache Flink 같은 스트림 처리 도구나 Apache Pinot 같은 특화 데이터베이스와 함께 데이터베이스 MV도 검토 후보 목록에 올려보자. MV는 SQL 문법만으로 실시간 처리를 구현할 수 있는 단순함을 제공하며, 기존에 사용하던 데이터베이스 환경을 그대로 유지할 수 있다는 장점이 있다.</p>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/700/0*3xst9eCdGc59_0WN.png" alt="MV vs 전용 스트림 처리 시스템 비교">
+  <figcaption>MV, Apache Flink, Apache Pinot의 특성 비교.</figcaption>
+</figure>
+
+<p>남은 고려사항은 원하는 데이터 신선도를 의미 있는 (새로고침) 비용으로 달성할 수 있는지의 여부다. MV로 유스케이스를 충족하기 어려울 때(예: 일부 MV 구현이 JOIN의 모든 테이블 변경을 완전히 포착하지 못하는 경우) Flink와 같은 복잡한 솔루션으로 전환해도 늦지 않다.</p>
+
+<h3>마치며</h3>
+<p>이 글에서는 구체화 뷰(MV)에 대해 필자가 이해하고 관찰한 내용을 정리했다. MV가 무엇인지, 어떻게 동작하는지(IVM), 트레이드오프는 무엇인지, 그리고 실시간/스트림 처리에서의 역할에 대해 살펴보았다.</p>
+<p>끝까지 읽어주셔서 감사하다.</p>
+<p>다음 글에서 또 만나자.</p>
+
+<h3>참고 자료</h3>
+<p>[1] Chris Riccomini, <a href="https://materializedview.io/p/everything-to-know-incremental-view-maintenance" target="_blank">Everything You Need to Know About Incremental View Maintenance</a>, 2025</p>
+<p>[2] Tyler Akidau, Slava Chernyak, Reuven Lax, <a href="https://www.oreilly.com/library/view/streaming-systems/9781491983867/" target="_blank">Streaming Systems</a> (2018)</p>
+
+</body>
+</html>

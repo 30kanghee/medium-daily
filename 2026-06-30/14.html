@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>There Are 5 Data Ingestion Patterns, and Choosing Wrong Will Cost You Months</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  table{border-collapse:collapse;width:100%;margin:1.2em 0;font-size:.9em;}
+  th,td{border:1px solid #ddd;padding:8px 12px;text-align:left;}
+  th{background:#f6f8fa;font-weight:600;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>There Are 5 Data Ingestion Patterns, and Choosing Wrong Will Cost You Months</h1>
+<div class="meta">Think Data · · 10분 · <a href="https://medium.com/@think-data/there-are-5-data-ingestion-patterns-and-choosing-wrong-will-cost-you-months-35ba4e18ea71" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@think-data/there-are-5-data-ingestion-patterns-and-choosing-wrong-will-cost-you-months-35ba4e18ea71" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">데이터 수집 패턴 5가지 — 잘못 고르면 몇 달을 날린다</p>
+<h3>요약</h3>
+<p>데이터 수집(data ingestion) 방식은 비용, 신선도, 복잡도, 신뢰성 등 데이터 파이프라인의 거의 모든 요소를 결정한다. 이 글은 음식 배달 스타트업 BiteRunner의 성장 과정을 따라가며 다섯 가지 수집 패턴 — 전체 로드(Full Load), 증분 수집(Incremental), 스트리밍(Streaming), 이벤트 기반(Event-Driven), 하이브리드(Hybrid) — 을 실제 코드와 함께 비교 설명한다. 각 패턴은 저마다 최적화하는 영역이 있는 반면, 반드시 희생하는 부분도 따른다. 시니어 엔지니어들이 결국 깨닫는 교훈은 하나다: "지금 당장 가장 단순하게 작동하는 패턴을 선택하고, 실제로 한계에 부딪혔을 때 비로소 다음 단계로 넘어가라."</p>
+</div>
+
+<figure>
+  <img src="https://freedium-mirror.cfd/img/4000/1*1JwtkzAJpEuLgq0kFpWLxQ.png" alt="데이터 수집 패턴 개요">
+  <figcaption>데이터 수집 패턴 개요</figcaption>
+</figure>
+
+<p>대시보드가 느리게 로딩된다. 보고서는 어제 숫자를 보여준다. 실시간 사기 감지 알람이 20분 뒤에야 울린다.</p>
+
+<p>그제서야 누군가 묻는다.</p>
+
+<blockquote>"우리 데이터는 도대체 어떻게 시스템으로 들어오고 있는 거죠?"</blockquote>
+
+<p>데이터가 발생하는 곳에서 실제로 쓰이는 곳까지 이동하는 과정, 그것이 바로 데이터 수집(data ingestion)이다. 어떤 패턴을 선택하느냐에 따라 비용, 데이터 신선도, 복잡도, 신뢰성 등 하위 파이프라인의 거의 모든 것이 달라진다.</p>
+
+<p>까다로운 점이 있다면, 언제나 옳은 정답이 없다는 것이다.</p>
+
+<p>하나의 시스템이 소규모 스타트업에서 대형 플랫폼으로 성장하는 과정을 따라가며, 다섯 가지 패턴을 차례로 살펴보자.</p>
+
+<hr>
+
+<h2>예시 배경: 음식 배달 스타트업</h2>
+
+<p>당신이 <strong>BiteRunner</strong>라는 음식 배달 앱을 만들고 있다고 가정해 보자.</p>
+
+<p>핵심 데이터 구조는 이렇다:</p>
+
+<pre>orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    restaurant_id INT,
+    status TEXT,
+    total_amount DECIMAL,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+)</pre>
+
+<p>이 단 하나의 테이블이 다음 모든 시스템에 데이터를 공급한다:</p>
+<ul>
+  <li>매출 대시보드</li>
+  <li>드라이버 배차 시스템</li>
+  <li>레스토랑 분석</li>
+  <li>고객 알림</li>
+  <li>사기 탐지</li>
+</ul>
+
+<p>BiteRunner가 성장하면서, 이 데이터를 옮기는 방식도 변해간다 — 때로는 뼈아픈 방식으로.</p>
+
+<hr>
+
+<h2>패턴 #1 — 전체 로드 (Full Load Ingestion)</h2>
+
+<h3>"그냥 다 복사하는" 방식</h3>
+
+<p>BiteRunner가 막 서비스를 시작했을 때다. 레스토랑 세 곳, 하루 주문 40건, 혼자서 모든 걸 담당하는 엔지니어 한 명.</p>
+
+<p>가장 단순한 수집 방법은 이렇다:</p>
+
+<pre>import pandas as pd
+from sqlalchemy import create_engine
+
+source = create_engine("postgresql://biterunner_prod")
+warehouse = create_engine("postgresql://biterunner_warehouse")
+# Just grab everything
+df = pd.read_sql("SELECT * FROM orders", source)
+# Overwrite the warehouse table
+df.to_sql("orders", warehouse, if_exists="replace", index=False)
+print(f"Loaded {len(df)} orders")</pre>
+
+<p>이걸 cron으로 스케줄링해서 매 시간 실행한다. 끝이다.</p>
+
+<h3>엔지니어들이 여기서 시작하는 이유</h3>
+
+<p>이 방식은 다음과 같은 장점이 있기 때문이다:</p>
+<ul>
+  <li>구현이 극도로 단순하다.</li>
+  <li>레코드를 빠뜨릴 가능성이 없다.</li>
+  <li>디버깅이 쉽다 ("테이블 보면 다 나오잖아").</li>
+  <li>추적해야 할 상태도, 워터마크도, 오프셋도 없다.</li>
+</ul>
+
+<p>테이블에 500개 행이 있을 때는 2초면 끝난다.</p>
+
+<h3>그러다 BiteRunner가 인기를 얻는다</h3>
+
+<p>6개월이 지났다. 레스토랑 200곳, 하루 주문 5만 건, 수백만 건의 누적 데이터.</p>
+
+<p>이제 똑같은 스크립트가:</p>
+<ul>
+  <li>실행에 45분이 걸린다.</li>
+  <li>프로덕션 DB에 심각한 부하를 준다.</li>
+  <li>웨어하우스 컴퓨팅 비용이 실제 돈으로 느껴진다.</li>
+  <li>매 사이클마다 최신 데이터를 오래된 스냅샷으로 덮어쓴다.</li>
+</ul>
+
+<p>2초 걸리던 쿼리가 이제 2,700초가 된다.</p>
+
+<h3>전체 로드가 여전히 유효한 경우</h3>
+
+<p>이 방식을 완전히 버릴 필요는 없다. 아래 상황에서는 전체 로드가 여전히 올바른 선택이다:</p>
+
+<table>
+  <thead>
+    <tr><th>상황</th><th>전체 로드가 적합한 이유</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>소규모 참조 테이블</td><td>수백 행 수준으로 작다</td></tr>
+    <tr><td>룩업 데이터 (국가 코드 등)</td><td>거의 변경되지 않는다</td></tr>
+    <tr><td>주간 컴플라이언스 스냅샷</td><td>속도보다 완전성이 중요하다</td></tr>
+    <tr><td>소스에 타임스탬프 컬럼이 없는 경우</td><td>변경 사항을 추적할 방법이 없다</td></tr>
+  </tbody>
+</table>
+
+<p>기준은 간단하다: 테이블 전체가 메모리에 여유 있게 올라오고, 속도보다 정확성이 더 중요하다면 — 전체 로드면 충분하다. 최적화가 필요 없는 곳에 시간을 쏟지 말자.</p>
+
+<hr>
+
+<h2>패턴 #2 — 증분 수집 (Incremental Ingestion)</h2>
+
+<h3>"변경된 것만 가져오는" 방식</h3>
+
+<p>BiteRunner 엔지니어는 깨닫는다: 대부분의 주문은 실행 사이에 바뀌지 않는다. 200개만 새로 생겼는데 백만 행을 왜 다 복사해야 하나?</p>
+
+<pre>import pandas as pd
+from sqlalchemy import create_engine
+import json
+from pathlib import Path
+
+source = create_engine("postgresql://biterunner_prod")
+warehouse = create_engine("postgresql://biterunner_warehouse")
+
+# Load the last bookmark
+state_file = Path("ingestion_state.json")
+if state_file.exists():
+    state = json.loads(state_file.read_text())
+    last_loaded = state["last_updated_at"]
+else:
+    last_loaded = "1970-01-01"
+
+# Only fetch what changed
+query = f"""
+    SELECT * FROM orders
+    WHERE updated_at > '{last_loaded}'
+    ORDER BY updated_at
+"""
+df = pd.read_sql(query, source)
+
+if not df.empty:
+    # Append new/changed rows
+    df.to_sql("orders_staging", warehouse, if_exists="replace", index=False)
+    # Merge into final table
+    merge_query = """
+        INSERT INTO orders
+        SELECT * FROM orders_staging
+        ON CONFLICT (order_id)
+        DO UPDATE SET
+            status = EXCLUDED.status,
+            total_amount = EXCLUDED.total_amount,
+            updated_at = EXCLUDED.updated_at
+    """
+    with warehouse.connect() as conn:
+        conn.execute(merge_query)
+    # Save new bookmark
+    new_bookmark = str(df["updated_at"].max())
+    state_file.write_text(json.dumps({"last_updated_at": new_bookmark}))
+    print(f"Incrementally loaded {len(df)} changed orders")
+else:
+    print("No new changes")</pre>
+
+<h3>이것이 엄청난 개선인 이유</h3>
+
+<p>수백만 행을 스캔하던 작업이 이제 수백 행만 건드린다.</p>
+
+<pre>Full load:    SELECT * FROM orders          → 2,000,000 rows
+Incremental:  SELECT * WHERE updated > X    → 347 rows</pre>
+
+<p>프로덕션 DB는 거의 영향을 받지 않는다. 웨어하우스 비용이 줄어든다. 분 단위가 아니라 초 단위로 끝난다.</p>
+
+<h3>증분 수집이 무너지는 지점</h3>
+
+<p><strong>문제 1: 삭제가 보이지 않는다</strong></p>
+
+<p>고객이 GDPR에 근거해 데이터 삭제를 요청한다. 소스 DB에서 행이 사라진다. 하지만 증분 쿼리는 이를 전혀 감지하지 못한다. 웨어하우스는 그 유령 데이터를 영원히 보관한다.</p>
+
+<p><strong>문제 2: 북마크가 취약하다</strong></p>
+
+<pre># What happens if this file gets deleted?
+state_file = Path("ingestion_state.json")</pre>
+
+<p>북마크 파일이 사라지면, 전체 데이터를 다시 처리하거나 일부 구간을 영영 놓치게 된다.</p>
+
+<p><strong>문제 3: 늦게 도착하는 데이터</strong></p>
+
+<p>주문이 10:08에 생성됐지만 느린 트랜잭션 안에 있어 10:13에야 커밋된다. 그런데 <code>updated_at</code>에는 10:08이 기록된다.</p>
+
+<p>배치 잡은 10:10에 실행됐고, 워터마크를 10:10으로 저장했다.</p>
+
+<p>다음 실행 시: <code>WHERE updated_at > '10:10'</code></p>
+
+<p><code>updated_at = 10:08</code>인 그 주문은 영원히 사라진다. 오류도 없고, 경고도 없다. 그냥 조용히 매출이 누락된다.</p>
+
+<h3>증분 수집을 써야 할 때</h3>
+<ul>
+  <li>테이블에 수백만 건의 데이터가 있을 때</li>
+  <li>신뢰할 수 있는 <code>updated_at</code>이나 자동 증가 컬럼이 있을 때</li>
+  <li>삭제가 드물거나 별도로 처리할 때</li>
+  <li>5~15분 주기 정도의 신선도면 충분할 때</li>
+</ul>
+
+<p>프로덕션 배치 파이프라인의 대부분은 이 패턴을 사용한다. 일상적인 주력 패턴이다.</p>
+
+<hr>
+
+<h2>패턴 #3 — 스트리밍 수집 (Streaming Ingestion)</h2>
+
+<h3>"발생 즉시 밀어 넣는" 방식</h3>
+
+<p>BiteRunner가 이제 50개 도시에 진출했다. 드라이버는 실시간 배차가 필요하다. 고객은 주문 현황을 실시간으로 보고 싶어한다. 사기 탐지는 15분을 기다릴 여유가 없다.</p>
+
+<p>배치 방식으로는 더 이상 안 된다.</p>
+
+<pre>                  ┌──────────────┐
+                  │  Order Event │
+                  └──────┬───────┘
+                         │
+                         ▼
+               ┌─────────────────┐
+               │   Kafka Topic   │
+               │  "order-events" │
+               └────────┬────────┘
+                        │
+          ┌─────────────┼─────────────┐
+          │             │             │
+          ▼             ▼             ▼
+    ┌──────────┐   ┌───────────┐   ┌──────────┐
+    │ Warehouse│   │  Fraud    │   │  Driver  │
+    │  Sink    │   │  Detector │   │ Dispatch │
+    └──────────┘   └───────────┘   └──────────┘</pre>
+
+<p>프로듀서 — 주문 서비스 측:</p>
+
+<pre>from kafka import KafkaProducer
+import json
+from datetime import datetime
+
+producer = KafkaProducer(
+    bootstrap_servers="localhost:9092",
+    value_serializer=lambda v: json.dumps(v).encode("utf-8")
+)
+
+def publish_order_event(order_id, status, amount):
+    event = {
+        "order_id": order_id,
+        "status": status,
+        "total_amount": float(amount),
+        "event_time": datetime.utcnow().isoformat(),
+        "event_type": "ORDER_UPDATED"
+    }
+    producer.send("order-events", value=event)
+    producer.flush()
+
+# Called from your order service
+publish_order_event(order_id=42, status="CONFIRMED", amount=28.50)</pre>
+
+<p>컨슈머 — 웨어하우스에 쓰는 쪽:</p>
+
+<pre>from kafka import KafkaConsumer
+import json
+
+consumer = KafkaConsumer(
+    "order-events",
+    bootstrap_servers="localhost:9092",
+    group_id="warehouse-consumer",
+    auto_offset_reset="earliest",
+    value_deserializer=lambda v: json.loads(v.decode("utf-8"))
+)
+
+for message in consumer:
+    event = message.value
+    if event["event_type"] == "ORDER_UPDATED":
+        upsert_to_warehouse(event)
+        print(f"Ingested order {event['order_id']} - {event['status']}")</pre>
+
+<h3>스트리밍으로 무엇이 달라지는가</h3>
+
+<table>
+  <thead>
+    <tr><th>항목</th><th>배치 처리</th><th>스트리밍 처리</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>데이터 신선도</td><td>분~시간 단위</td><td>초 단위 또는 준실시간</td></tr>
+    <tr><td>레코드 누락 위험</td><td>잡 실패 시 발생 가능</td><td>보장 설정 시 매우 낮음</td></tr>
+    <tr><td>인프라</td><td>스케줄 잡 (Cron, Airflow 등)</td><td>Kafka, Kinesis, Pulsar, 컨슈머</td></tr>
+    <tr><td>운영 복잡도</td><td>비교적 낮음</td><td>상당히 높음</td></tr>
+    <tr><td>비용 구조</td><td>실행 시에만 컴퓨팅 소비</td><td>인프라가 24시간 상시 가동</td></tr>
+  </tbody>
+</table>
+
+<h3>스트리밍 수집이 무너지는 지점</h3>
+
+<p><strong>문제 1: 중복은 피할 수 없다</strong></p>
+
+<p>Kafka는 at-least-once 전달을 보장한다. 컨슈머는 같은 이벤트를 두 번 이상 볼 수 있다.</p>
+
+<pre>ORDER_CONFIRMED → ✓
+ORDER_CONFIRMED → ✓ (duplicate — network hiccup)
+ORDER_CONFIRMED → ✓ (duplicate — consumer rebalance)</pre>
+
+<p>중복 제거 없이는 매출 대시보드가 $28.50 대신 $85.50을 표시한다.</p>
+
+<p>해결책: 컨슈머를 멱등적(idempotent)으로 만든다.</p>
+
+<pre>def upsert_to_warehouse(event):
+    """
+    Uses order_id as key + event_time for ordering.
+    Safe to call multiple times with the same event.
+    """
+    query = """
+        INSERT INTO orders (order_id, status, total_amount, updated_at)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (order_id) DO UPDATE
+        SET status = EXCLUDED.status,
+            total_amount = EXCLUDED.total_amount,
+            updated_at = EXCLUDED.updated_at
+        WHERE EXCLUDED.updated_at > orders.updated_at
+    """
+    execute(query, (
+        event["order_id"],
+        event["status"],
+        event["total_amount"],
+        event["event_time"]
+    ))</pre>
+
+<p><strong>문제 2: 이벤트 순서가 뒤바뀐다</strong></p>
+
+<p>네트워크 지연으로 이벤트 순서가 섞일 수 있다. <code>DELIVERED</code> 이벤트가 <code>CONFIRMED</code>보다 먼저 도착하기도 한다. 타임스탬프 기반 보호 로직이 없으면 웨어하우스는 주문 상태가 거꾸로 진행됐다고 기록한다.</p>
+
+<p><strong>문제 3: 백필(backfill)이 고통스럽다</strong></p>
+
+<p>스트리밍은 이후에 발생하는 이벤트만 포착한다. Kafka를 설치하기 전에 이미 존재했던 200만 건의 과거 주문은 어떻게 할 것인가? 결국 일회성 배치 로드가 필요하다. 그 위에 스트리밍을 얹고, 이 전환 시점에서 중복이나 누락이 생기지 않도록 제대로 처리하는 데 대부분의 팀이 몇 주를 쏟는다.</p>
+
+<h3>스트리밍을 써야 할 때</h3>
+<ul>
+  <li>1초 이내 또는 1분 이내의 데이터 신선도가 실제 요구 사항일 때</li>
+  <li>여러 하위 시스템이 동일한 이벤트를 필요로 할 때</li>
+  <li>스트리밍 인프라를 이미 갖추었거나 투자할 준비가 됐을 때</li>
+  <li>데이터가 본래 이벤트 형태일 때 (클릭, 거래, 상태 변경 등)</li>
+</ul>
+
+<hr>
+
+<h2>패턴 #4 — 이벤트 기반 수집 (Event-Driven Ingestion)</h2>
+
+<h3>"신호에 반응하는" 방식</h3>
+
+<p>모든 데이터가 "일정 주기로 폴링"하거나 "계속 스트리밍"하는 방식에 딱 맞아 떨어지지는 않는다.</p>
+
+<p>BiteRunner는 이제 다음과 같은 데이터를 받는다:</p>
+<ul>
+  <li>레스토랑 메뉴 업데이트 — S3에 CSV 파일로 업로드</li>
+  <li>파트너 인보이스 — 공유 폴더에 PDF로 투하</li>
+  <li>제3자 API에서 오는 프로모션 가격 파일 — 불규칙한 스케줄로 도착</li>
+</ul>
+
+<p>이것들은 정해진 간격으로 오지 않는다. 올 때 온다.</p>
+
+<pre>Restaurant uploads CSV
+         │
+         ▼
+┌─────────────────┐
+│   S3 Bucket     │
+│  /menu-uploads/ │
+└────────┬────────┘
+         │ (S3 event notification)
+         ▼
+┌──────────────────┐
+│  Lambda / Cloud  │
+│  Function        │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Parse + Load    │
+│  into Warehouse  │
+└──────────────────┘</pre>
+
+<pre>import boto3
+import pandas as pd
+from io import StringIO
+
+def handle_s3_event(event, context):
+    """Triggered automatically when a file lands in S3."""
+    s3 = boto3.client("s3")
+    bucket = event["Records"][0]["s3"]["bucket"]["name"]
+    key = event["Records"][0]["s3"]["object"]["key"]
+    print(f"New file detected: s3://{bucket}/{key}")
+
+    # Download and parse
+    response = s3.get_object(Bucket=bucket, Key=key)
+    content = response["Body"].read().decode("utf-8")
+    df = pd.read_csv(StringIO(content))
+
+    # Validate before loading
+    required_columns = {"item_id", "restaurant_id", "price", "item_name"}
+    if not required_columns.issubset(df.columns):
+        print(f"REJECTED: {key} - missing columns: {required_columns - set(df.columns)}")
+        move_to_quarantine(bucket, key)
+        return
+
+    # Clean and load
+    df["ingested_at"] = pd.Timestamp.utcnow()
+    df["source_file"] = key
+    load_to_warehouse(df, table="menu_items")
+    print(f"Loaded {len(df)} menu items from {key}")</pre>
+
+<h3>이벤트 기반이 스트리밍과 다른 점</h3>
+
+<p>많은 사람이 이 둘을 혼동한다. 차이를 명확히 하면 이렇다:</p>
+
+<pre>Streaming: continuous flow of small events
+→ Kafka consumer running 24/7
+
+Event-driven: triggered by an external signal
+→ function wakes up, processes, goes back to sleep</pre>
+
+<p>스트리밍은 소방 호스처럼 계속 흐르고, 이벤트 기반은 초인종처럼 신호가 왔을 때만 작동한다.</p>
+
+<h3>이벤트 기반 수집이 무너지는 지점</h3>
+
+<p><strong>문제 1: 정확히 한 번 처리(exactly-once)는 사실상 불가능하다</strong></p>
+
+<p>S3는 중복 알림을 보낼 수 있다. 함수가 타임아웃되면 재시도된다. 그러면 같은 CSV가 두 번 로드된다.</p>
+
+<p>해결책: 처리한 파일을 추적한다.</p>
+
+<pre>def already_processed(file_key):
+    """Check if we've already ingested this file."""
+    result = query("SELECT 1 FROM ingestion_log WHERE source_file = %s", (file_key,))
+    return len(result) > 0
+
+def mark_processed(file_key, row_count):
+    execute(
+        "INSERT INTO ingestion_log (source_file, rows_loaded, processed_at) VALUES (%s, %s, %s)",
+        (file_key, row_count, datetime.utcnow())
+    )</pre>
+
+<p><strong>문제 2: 잘못된 파일(poison file)</strong></p>
+
+<p>형식이 깨진 CSV 하나가 함수를 죽인다. 이벤트가 재시도된다. 함수가 또 죽는다. 무한 루프다. 해결책: dead-letter queue와 격리 버킷(quarantine bucket)을 사용한다. 세 번 실패하면 파일을 격리하고 담당자에게 알린다.</p>
+
+<p><strong>문제 3: 처리 순서가 보장되지 않는다</strong></p>
+
+<p>메뉴 업데이트 파일 두 개가 1분 간격으로 도착한다. 클라우드 함수가 병렬로 실행된다. 오래된 파일이 새 파일보다 늦게 완료되면, 최신 가격 정보가 오래된 가격으로 덮어 씌워진다.</p>
+
+<h3>이벤트 기반을 써야 할 때</h3>
+<ul>
+  <li>데이터가 불규칙한 일정으로 파일 형태(CSV, JSON, Parquet)로 도착할 때</li>
+  <li>외부 시스템이 데이터를 밀어 보낼 때 (웹훅, S3 업로드, FTP 투하)</li>
+  <li>데이터가 실제로 도착할 때만 비용을 내고 싶을 때 (서버리스 비용 구조)</li>
+  <li>파일 간 의존성이 없어 각 파일을 독립적으로 처리할 수 있을 때</li>
+</ul>
+
+<hr>
+
+<h2>패턴 #5 — 하이브리드 수집 (Lambda Architecture)</h2>
+
+<h3>"왜 하나만 쓰나, 둘 다 쓰는" 방식</h3>
+
+<p>BiteRunner는 이제 진지한 기업이 됐다. 수백만 건의 주문, 수백 개의 레스토랑. 실시간 사기 탐지와 월말 재무 보고서가 동시에 필요하다.</p>
+
+<p>불편한 진실이 있다:</p>
+
+<blockquote>단 하나의 수집 패턴으로 모든 요구를 충족할 수는 없다.</blockquote>
+
+<p>실시간 스트리밍은 속도를 주지만 완전성과 충돌한다. 배치는 완전성을 주지만 속도를 낼 수 없다. 하이브리드는 둘 다 쓰고, 나중에 합산해서 조율한다.</p>
+
+<pre>┌─────────────────────┐
+│    Order Service    │
+└──────────┬──────────┘
+           │
+  ┌────────┴────────┐
+  │                 │
+  ▼                 ▼
+┌──────────────────┐ ┌───────────────────┐
+│   Kafka Stream   │ │  Database Table   │
+│   (real-time)    │ │ (source of truth) │
+└────────┬─────────┘ └────────┬──────────┘
+         │                    │
+         ▼                    ▼
+┌──────────────────┐ ┌──────────────────┐
+│   Speed Layer    │ │   Batch Layer    │
+│  (seconds-old)   │ │    (nightly)     │
+└────────┬─────────┘ └────────┬─────────┘
+         │                    │
+         └──────────┬──────────┘
+                    │
+                    ▼
+         ┌──────────────────┐
+         │  Serving Layer   │
+         │  (reconciled)    │
+         └──────────────────┘</pre>
+
+<p>속도 레이어(Speed Layer) — 실시간을 처리:</p>
+
+<pre>from kafka import KafkaConsumer
+import json
+
+consumer = KafkaConsumer(
+    "order-events",
+    bootstrap_servers="localhost:9092",
+    group_id="speed-layer",
+    value_deserializer=lambda v: json.loads(v.decode("utf-8"))
+)
+
+for message in consumer:
+    event = message.value
+    # Write to a "fast" table - approximate but fresh
+    upsert_to_realtime_table(event)</pre>
+
+<p>배치 레이어(Batch Layer) — 야간에 실행되며 완전성을 보장:</p>
+
+<pre>import pandas as pd
+from sqlalchemy import create_engine
+
+source = create_engine("postgresql://biterunner_prod")
+warehouse = create_engine("postgresql://biterunner_warehouse")
+
+def nightly_batch_load():
+    """Full authoritative load - corrects any streaming inconsistencies."""
+    df = pd.read_sql("""
+        SELECT * FROM orders
+        WHERE updated_at >= CURRENT_DATE - INTERVAL '2 days'
+    """, source)
+    # Load into batch table
+    df.to_sql("orders_batch_staging", warehouse, if_exists="replace", index=False)
+    # Reconcile: batch layer wins on conflicts
+    reconcile_query = """
+        MERGE INTO orders_final t
+        USING orders_batch_staging s
+        ON t.order_id = s.order_id
+        WHEN MATCHED AND s.updated_at >= t.updated_at THEN
+            UPDATE SET
+                status = s.status,
+                total_amount = s.total_amount,
+                updated_at = s.updated_at
+        WHEN NOT MATCHED THEN
+            INSERT (order_id, status, total_amount, updated_at)
+            VALUES (s.order_id, s.status, s.total_amount, s.updated_at)
+    """
+    execute(reconcile_query)
+    print(f"Batch reconciled {len(df)} orders")
+
+nightly_batch_load()</pre>
+
+<p>서빙 레이어(Serving Layer) — 어느 레이어를 신뢰할지 결정:</p>
+
+<pre>def get_order(order_id):
+    """
+    Check real-time table first for freshness.
+    Fall back to batch table for completeness.
+    """
+    realtime = query("SELECT * FROM orders_realtime WHERE order_id = %s", (order_id,))
+    batch = query("SELECT * FROM orders_batch WHERE order_id = %s", (order_id,))
+
+    if realtime and batch:
+        # Trust whichever is newer
+        if realtime["updated_at"] > batch["updated_at"]:
+            return realtime
+        return batch
+    return realtime or batch</pre>
+
+<h3>하이브리드가 존재하는 이유</h3>
+
+<p>팀마다 원하는 것이 근본적으로 다르기 때문이다:</p>
+
+<table>
+  <thead>
+    <tr><th>팀</th><th>가장 중요한 요구 사항</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>사기 탐지팀</td><td>의심 활동을 준실시간으로 탐지</td></tr>
+    <tr><td>재무팀</td><td>월말 보고서의 완벽한 정확도</td></tr>
+    <tr><td>고객 지원팀</td><td>최신 고객 및 주문 정보 즉시 접근</td></tr>
+    <tr><td>데이터 사이언스팀</td><td>완전하고 신뢰할 수 있는 히스토리 데이터셋</td></tr>
+  </tbody>
+</table>
+
+<p>단 하나의 패턴으로 이 네 가지 모두를 만족시킬 수 없다.</p>
+
+<h3>하이브리드가 무너지는 지점</h3>
+
+<p><strong>문제 1: 파이프라인을 두 개 운영해야 한다.</strong> 인프라도 두 배, 모니터링도 두 배, 새벽 3시 온콜 페이지도 두 배가 된다.</p>
+
+<p><strong>문제 2: 조율(reconciliation) 로직이 빠르게 복잡해진다.</strong> 어느 레이어가 이기는가? 스트리밍에는 있지만 배치에는 없는 이벤트는? 그 반대는? 모든 엣지 케이스가 판단을 요구한다.</p>
+
+<p><strong>문제 3: 팀이 어느 테이블을 쿼리해야 할지 혼란스러워한다.</strong> "<code>orders_realtime</code>을 써야 하나, <code>orders_final</code>을 써야 하나?" 명확한 문서가 없으면 잘못된 테이블에서 잘못된 답을 얻는 일이 반복된다.</p>
+
+<h3>하이브리드를 써야 할 때</h3>
+<ul>
+  <li>실시간성과 배치 정확도 모두 진짜 요구 사항일 때</li>
+  <li>각기 다른 컨슈머가 근본적으로 다른 신선도 요건을 가질 때</li>
+  <li>두 개의 병렬 경로를 유지할 엔지니어링 역량이 있을 때</li>
+  <li>어느 방향으로든 틀렸을 때의 비용이 이 복잡도를 정당화할 만큼 클 때</li>
+</ul>
+
+<hr>
+
+<h2>올바른 패턴을 고르는 법</h2>
+
+<p>대부분의 엔지니어는 이 선택을 지나치게 복잡하게 생각한다. 실제 요구 사항 — 2년 후에 생길 거라고 상상하는 요구 사항이 아니라 — 을 충족하는 가장 단순한 패턴부터 시작하라.</p>
+
+<pre>Do you need real-time?
+         │
+ ┌───────┴───────┐
+ │               │
+Yes             No
+ │               │
+ ▼               ▼
+Multiple     Is the source
+consumers?   table small?
+ │               │
+ ┌───┴───┐   ┌───┴───┐
+ │       │   │       │
+Yes     No  Yes     No
+ │       │   │       │
+ ▼       ▼   ▼       ▼
+Streaming Event  Full  Incremental
+         Driven  Load  Load</pre>
+
+<p>실시간과 배치 정확도 둘 다 필요하다면? 그때가 바로 하이브리드의 복잡도가 값어치를 하는 시점이다.</p>
+
+<table>
+  <thead>
+    <tr><th>패턴</th><th>신선도</th><th>복잡도</th><th>비용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>전체 로드 (Full Load)</td><td>시간 단위</td><td>매우 낮음</td><td>높음*</td></tr>
+    <tr><td>증분 수집 (Incremental)</td><td>분 단위</td><td>낮음</td><td>낮음</td></tr>
+    <tr><td>스트리밍 (Streaming)</td><td>초 단위</td><td>높음</td><td>중간</td></tr>
+    <tr><td>이벤트 기반 (Event-Driven)</td><td>신호 수신 시</td><td>중간</td><td>낮음**</td></tr>
+    <tr><td>하이브리드 (Hybrid)</td><td>초 단위</td><td>매우 높음</td><td>높음</td></tr>
+  </tbody>
+</table>
+
+<p>* 대규모에서 &nbsp;&nbsp;** 서버리스 = 호출 시에만 과금</p>
+
+<hr>
+
+<h2>시니어 엔지니어들이 결국 깨닫는 것</h2>
+
+<p>데이터 수집은 기술 선택의 문제가 아니다. 트레이드오프 협상의 문제다.</p>
+
+<p>모든 패턴은 무언가를 최적화하는 대신 다른 무언가를 희생한다:</p>
+<ul>
+  <li>전체 로드는 단순성을 최적화한다 — 효율을 희생한다.</li>
+  <li>증분 수집은 효율을 최적화한다 — 완전성을 희생한다.</li>
+  <li>스트리밍은 신선도를 최적화한다 — 단순성을 희생한다.</li>
+  <li>이벤트 기반은 반응성을 최적화한다 — 순서 보장을 희생한다.</li>
+  <li>하이브리드는 커버리지를 최적화한다 — 주말을 희생한다.</li>
+</ul>
+
+<p>최고의 데이터 엔지니어는 "가장 좋은" 패턴을 고르지 않는다.</p>
+
+<p>그들은 자다가 깨어나지 않아도 되는, 가장 저렴한 패턴을 선택한다.</p>
+
+<p>그리고 — 그 패턴이 실제 프로덕션 압력 아래서 진짜로 한계에 부딪혔을 때만 — 다음 단계로 넘어간다.</p>
+
+</body>
+</html>
