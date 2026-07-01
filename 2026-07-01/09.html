@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apache Airflow Is Dead: Why The Future Is "Asset-Based"</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Apache Airflow Is Dead: Why The Future Is "Asset-Based"</h1>
+<div class="meta">Sarath C · 3분 읽기 · <a href="https://medium.com/@bvsarathc06/apache-airflow-is-dead-why-the-future-is-asset-based-908a547052d9" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@bvsarathc06/apache-airflow-is-dead-why-the-future-is-asset-based-908a547052d9" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">Airflow는 작업이 끝났는지를 묻지만, 현대 데이터 플랫폼은 데이터가 신뢰할 수 있는지를 물어야 한다.</p>
+<h3>요약</h3>
+<p>Airflow는 태스크 중심의 오케스트레이터로, 스크립트가 오류 없이 완료됐는지만 추적한다. 데이터가 실제로 올바른지는 알지 못한다. 이 "맹목적 오케스트레이션"은 대시보드는 초록불인데 데이터는 비어 있는 조용한 장애를 만들어낸다. Dagster 같은 에셋 기반 도구는 태스크가 아닌 데이터 에셋을 중심으로 파이프라인을 정의하며, 업스트림 데이터가 비어 있으면 다운스트림 작업 자체가 실행을 거부한다. 이벤트 기반의 서버리스 아키텍처는 단순한 워크플로에서 상시 켜진 스케줄러 없이도 거의 비용 없이 작동한다. 현대 데이터 스택은 '태스크 순서'가 아닌 '데이터 품질'을 이해하는 오케스트레이터를 요구한다.</p>
+</div>
+
+<p>데이터 엔지니어라면 아침 루틴이 아마 이럴 것이다.</p>
+
+<ol>
+<li>Airflow UI를 연다.</li>
+<li>초록 네모로 가득 찬 화면을 본다 (성공).</li>
+<li>실제 대시보드를 확인한다.</li>
+<li>패닉. 데이터가 비어 있다.</li>
+</ol>
+
+<p>Airflow가 거짓말을 한 것이다.</p>
+
+<p>태스크는 "성공"했다 — Python 스크립트가 오류 없이 끝났다. 하지만 데이터는 쓰레기다.</p>
+
+<p>이것이 지난 10년 오케스트레이션의 근본적인 결함이다. 우리는 "어떻게(How)"(태스크)에만 집중하고, "무엇을(What)"(데이터)은 무시했다.</p>
+
+<p>소스 데이터가 실제로 도착했는지와 무관하게, 무조건 오전 9시에 발동되는 크론 잡의 거대한 루브 골드버그 기계를 만들어왔다. 우리는 "맹목적 오케스트레이션"을 구축했다. 그리고 그것이 신뢰성을 갉아먹고 있다.</p>
+
+<h2>태스크 기반의 함정</h2>
+
+<p>Airflow는 2014년 Airbnb가 "크론의 진화판"으로 만들었다. 세상을 동사의 목록으로 바라본다.</p>
+
+<pre>extract_data()
+transform_data()
+load_data()</pre>
+
+<p><code>extract_data</code>가 무엇을 생산하는지 Airflow는 모른다. 그냥 Exit Code 0으로 끝났다는 것만 안다.</p>
+
+<p>물론 Airflow도 진화했다. Sensor, SLA, Dataset, 지연 가능 오퍼레이터가 추가됐다. 하지만 이것들은 근본적으로 태스크 우선 모델에 덧붙인 부가기능일 뿐이다. 데이터의 일급 추상화가 아니다. 스케줄러는 여전히 데이터의 정확성이 아닌 태스크 완료 여부를 기준으로 작동한다.</p>
+
+<p>이것이 "조용한 장애" 문제를 만든다.</p>
+
+<p>시나리오를 보자. 태스크 A(추출)가 API 스펙이 바뀌어서 0개의 행을 가져오면서도 성공한다. 태스크 B(변환)가 0개의 행에 대해 성공적으로 실행된다. 태스크 C(적재)가 프로덕션 테이블을 아무것도 없는 것으로 덮어쓴다. Airflow는 "전부 초록! 잘 됐어요!"라고 표시한다. CEO가 전화를 걸어오기 전까지는 아무도 모른다.</p>
+
+<h2>복잡성 세금: "스케줄러 루프"</h2>
+
+<p>Airflow는 무겁다. "Hello World" 파이프라인 하나를 실행하는데 다음이 전부 필요하다.</p>
+
+<ul>
+<li>웹서버 (Flask)</li>
+<li>스케줄러 (하트비트)</li>
+<li>메타스토어 (Postgres)</li>
+<li>큐 (Redis)</li>
+<li>워커 (Celery / Kubernetes)</li>
+</ul>
+
+<p>엔지니어링 시간의 30%를 Airflow 스케줄러를 살려두는 데 썼다. DAG 파싱 타임아웃과 씨름하고, 하트비트가 왜 지연되는지 디버깅하고, SQL 쿼리 하나 실행하기 위해 분산 시스템 전체를 관리해야 했다.</p>
+
+<h2>전환: 태스크 스케줄링에서 데이터 스케줄링으로</h2>
+
+<p>업계는 에셋 중심의 데이터 인지형 오케스트레이션으로 이동하고 있다. 태스크 대신 에셋을 기준으로 파이프라인을 정의하는 방식이다. Dagster와 Mage 같은 도구들이 이 모델을 기본으로 구현하고 있다.</p>
+
+<p>태스크("이것을 해라")를 정의하는 대신, 에셋("이 테이블이 필요하다")을 정의한다.</p>
+
+<ul>
+<li>기존 방식(Airflow): "job_2 다음에 job_3을 실행해라."</li>
+<li>새로운 방식(Dagster): "<code>users_clean</code> 테이블은 <code>users_raw</code> 테이블에 의존한다. <code>users_raw</code>가 바뀔 때마다 <code>users_clean</code>을 갱신해라."</li>
+</ul>
+
+<p>이것이 모든 것을 바꾸는 이유는 다음과 같다. 첫째, 더 이상 맹목적이지 않다. 오케스트레이터가 데이터의 스키마와 신선도를 안다. 업스트림 테이블이 비어 있으면 다운스트림 작업 자체가 실행을 거부한다. 둘째, 이벤트 기반이다. 오전 9시 크론 잡이 없어진다. S3 파일이 도착하는 즉시 파이프라인이 실행된다. 셋째, 가볍다. 도커 컨테이너 5개를 띄우지 않고도 노트북에서 실행할 수 있다.</p>
+
+<h2>이벤트 기반 대안</h2>
+
+<p>무거운 오케스트레이터 자체가 필요 없는 팀에게는 서버리스 이벤트 방식이 대안이다.</p>
+
+<p>S3 이벤트 알림 → AWS Lambda → dbt Cloud</p>
+
+<p>하루에 배치를 한 번 실행하는데 왜 항상 켜진 Airflow 스케줄러(EC2 비용)를 유지해야 하는가? 이 방식은 복잡한 의존성 그래프를 대체하는 것이 아니다. 단순하지만 신호가 명확한 워크플로에서 맹목적 스케줄링을 대체하는 것이다.</p>
+
+<p>경량 작업들을 EventBridge Pipes로 옮겼을 때의 결과는 이렇다. 비용은 거의 0에 가깝고, 지연도 거의 없으며, 유지보수도 없다.</p>
+
+<h2>요약: 동사가 아닌 데이터를 스케줄링하라</h2>
+
+<p>Airflow는 Hadoop처럼 레거시 기업에서 표준으로 남을 것이다.</p>
+
+<p>하지만 현대 데이터 스택은 맥락을 요구한다. "리포트 공장"을 만드는 거라면 Airflow로 충분하다. 하지만 데이터 제품이나 AI 에이전트를 만드는 거라면, 태스크 순서가 아닌 데이터 품질을 이해하는 오케스트레이터가 필요하다.</p>
+
+<p>이 전환의 핵심은 이것이다. Airflow는 "스크립트가 끝났나?"를 묻는다. 현대 플랫폼은 "데이터를 믿을 수 있나?"를 묻는다. 차이는 미묘해 보이지만, "초록 대시보드"와 "신뢰할 수 있는 플랫폼" 사이의 차이가 바로 거기 있다.</p>
+
+<blockquote><p>Spark는 무게에 무너졌다. Kubernetes는 복잡성에 무너졌다. Airflow는 맹목성에 무너지고 있다.</p></blockquote>
+</body>
+</html>

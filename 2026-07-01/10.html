@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Most Dangerous Person in Data Engineering</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>The Most Dangerous Person in Data Engineering</h1>
+<div class="meta">Jagadesh Jamjala · 2분 읽기 · <a href="https://medium.com/@jagadeshjamjalanarayanan/the-most-dangerous-person-in-data-engineering-5d490f2cfd9e" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@jagadeshjamjalanarayanan/the-most-dangerous-person-in-data-engineering-5d490f2cfd9e" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">데이터 엔지니어링에서 가장 위험한 사람은 "금방 되는 변경"이라는 말을 입에 달고 다니는 바로 그 사람이다.</p>
+<h3>요약</h3>
+<p>프로덕션 이슈를 일으키는 건 모든 권한을 가진 엔지니어도, 40억 행에 SELECT *를 날리는 분석가도 아니다. "금방 되는 작은 변경"이라고 말하는 사람이 진짜 위험 인물이다. "컬럼 하나만 바꾸면 되잖아요"라는 말 뒤에는 6개 파이프라인 재구축, 14개 다운스트림 테이블 변경, 아무도 문서화하지 않은 숨겨진 의존성이 숨어 있다. 금요일 오후에 배포를 밀어붙이는 것은 카지노 모드이고, 하위 환경에서 잘 됐다고 프로덕션에서도 된다는 보장은 없다. 이 글은 그 상황을 데이터 엔지니어의 시각으로 유머러스하게 묘사한다.</p>
+</div>
+
+<p>데이터 엔지니어링에서 가장 위험한 사람이 누구냐고 물으면 대부분 이렇게 대답한다.</p>
+
+<ul>
+<li>모든 접근 권한을 가진 그 엔지니어</li>
+<li>400억 행에 <code>SELECT *</code>를 날리는 분석가</li>
+<li>프로덕션 테이블을 Excel로 직접 수정하는 사람</li>
+</ul>
+
+<p>틀렸다.</p>
+
+<p>가장 위험한 사람은 이렇게 말하는 사람이다.</p>
+
+<h2>"금방 되는 변경이에요."</h2>
+
+<p>그 한 문장이 지금까지 만들어낸 것들을 보면 이렇다. 서비스 장애, 마이그레이션, 전체 재작성, 긴급 브릿지 콜, 그리고 Slack에서의 감정적 붕괴 최소 열네 번.</p>
+
+<p>보통은 무해하게 시작된다. 스테이크홀더가 회의에 들어오며 말한다.</p>
+
+<h2>"딱 하나만 살짝 수정하면 돼요."</h2>
+
+<p>경력 있는 엔지니어들은 즉시 경계 태세에 들어간다. 데이터 엔지니어링에서 "살짝 수정"이 보통 의미하는 것들이 있기 때문이다. 파이프라인 6개 재구축, 다운스트림 테이블 14개 변경, 2017년산 비즈니스 로직 수정, 아무도 유지보수하지 않는 숨겨진 의존성 발견.</p>
+
+<p>그러고 나서 후속 공격이 날아온다.</p>
+
+<h2>"컬럼 하나만 바꾸면 되는 거잖아요?"</h2>
+
+<p>이 순간 시니어 엔지니어는 이미 허공을 응시하고 있다. 모두가 알기 때문이다. "딱 하나의 컬럼"이란 건 존재하지 않는다는 것을.</p>
+
+<p>그 컬럼은 대시보드에서 사용되고 있고, ML 모델에 데이터를 공급하고, 임원진 KPI를 구동하며, 38개의 문서화되지 않은 SQL 파일에서 참조되고, 어찌된 이유인지 재무 보고와도 연결되어 있다. 그 컬럼을 제거하면 분기 매출이 의도치 않게 바뀔 수 있고, 리더십이 "긴급 정렬 논의"라는 제목의 회의를 소집할 수 있다.</p>
+
+<p>그리고 기업 역사상 가장 공포스러운 문장이 등장한다.</p>
+
+<blockquote><p>"주말 전에 배포할 수 있을까요?"</p></blockquote>
+
+<p>그렇다. 금요일 배포. 소프트웨어 엔지니어링의 카지노 모드다. 금요일 저녁 프로덕션 배포만큼 엔지니어를 경건하게 만드는 것은 없다. 갑자기 모두가 이런 말을 하기 시작한다.</p>
+
+<ul>
+<li>"면밀히 모니터링합시다."</li>
+<li>"롤백 준비는 됐죠?"</li>
+<li>"최악의 경우엔 되돌리면 되고."</li>
+<li>"하위 환경에서는 잘 됐어요."</li>
+</ul>
+
+<p>"하위 환경에서는 잘 됐어요"도 위험한 문장이다. 하위 환경에는 이런 것들이 있기 때문이다. 데이터 200행, 깔끔한 데이터, 완벽한 스키마, 중복 없음, 지연 도착 이벤트 없음, 그리고 꿈.</p>
+
+<p>프로덕션에는 이런 것들이 있다. 혼돈, 역사, 손상된 레코드, 비즈니스 예외, 그리고 2019년에 재무팀이 수동으로 업로드한 CSV 파일 하나가 아직도 모든 것에 영향을 미치고 있다.</p>
+
+<p>그리고 그 "금방 되는 변경"이 배포된다.</p>
+
+<p>7분 동안 아무 문제가 없어 보인다. 엔지니어들이 긴장을 풀기 시작한다. 누군가 말한다.</p>
+
+<blockquote><p>"안정적으로 보이네요."</p></blockquote>
+
+<p>이 문장은 즉시 분산 시스템의 법칙을 작동시킨다.</p>
+
+<p>알림이 발동되기 시작한다. 대시보드가 빨갛게 물든다. Slack 메시지가 쏟아진다.</p>
+
+<ul>
+<li>"이거 다들 보여요?"</li>
+<li>"매출이 32% 떨어졌어요."</li>
+<li>"고객 수가 두 배가 됐어요."</li>
+<li>"왜 사용자들이 매년 태어나고 있죠?"</li>
+</ul>
+
+<p>이제 조사가 시작된다. 워룸이 열린다. 스무 명이 통화에 참여한다. 처음 40초 동안은 아무도 말이 없다. 모두가 조사하는 척 하면서 사실은 남이 먼저 원인을 찾아주기를 기다리고 있다.</p>
+
+<p>마침내 누군가 근본 원인을 발견한다.</p>
+
+<blockquote><p>"새 컬럼이 예상치 못한 null 동작을 유발해서 조인이 레코드를 중복시켰어요."</p></blockquote>
+
+<p>침묵. 순수한 엔터프라이즈 침묵.</p>
+
+<p>그리고 리더십이 묻는다.</p>
+
+<blockquote><p>"고치는 데 얼마나 걸려요?"</p></blockquote>
+
+<p>이것이 시니어 엔지니어가 최종 형태를 발동하는 순간이다. 실제 답은 7분에서 14 영업일 사이 어딘가라는 걸 알기 때문이다. 하지만 전문가들이 하는 말은 이것이다.</p>
+
+<blockquote><p>"현재 적극적으로 조사 중입니다."</p></blockquote>
+
+<p>그리고 데이터 엔지니어는 몇 가지 원칙을 터득한다.</p>
+
+<p><strong>원칙 1.</strong> 누군가 "금방 되는 변경"이라고 하면 일정을 즉시 두 배로 늘려라. 그리고 감정적으로도 다시 두 배로 늘려라.</p>
+
+<p><strong>원칙 2.</strong> 요청된 변경이 작게 들릴수록, 실제 영향은 더 무서운 경우가 많다.</p>
+
+<p><strong>원칙 3.</strong> 독립된 시스템이란 존재하지 않는다. 모든 것은 문서화되지 않은 고통의 연결 고리로 이어져 있다.</p>
+
+<p><strong>원칙 4.</strong> 다음 단어들을 절대 믿지 말라.</p>
+
+<ul>
+<li>"간단한"</li>
+<li>"작은"</li>
+<li>"살짝"</li>
+<li>"미세한"</li>
+<li>"쉬울 것 같은"</li>
+</ul>
+
+<p>이것들은 추정치가 아니다. 경고 라벨이다.</p>
+
+<p>그리고 마침내, 몇 시간의 디버깅, 롤백 논의, 검증 쿼리, 대시보드 새로고침 끝에 문제가 해결된다. 리더십이 말한다.</p>
+
+<blockquote><p>"잘 수습했어요. 작은 이슈라 다행이에요."</p></blockquote>
+
+<p>엔지니어들은 조용히 화면을 바라본다. 점심 이후로 최소 11년은 더 늙었다는 것을 알면서.</p>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STOP Learning AI Wrong, The Fastest Route to AI Engineer</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>STOP Learning AI Wrong, The Fastest Route to AI Engineer</h1>
+<div class="meta">Egor Howell · 9분 읽기 · <a href="https://medium.com/@egorhowell/stop-learning-ai-wrong-the-fastest-route-to-ai-engineer-7d2ba95b3d4e" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@egorhowell/stop-learning-ai-wrong-the-fastest-route-to-ai-engineer-7d2ba95b3d4e" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">AI 엔지니어가 되려면 최소 2년이 걸리며, 올바른 순서로 체계적으로 학습해야 한다.</p>
+<h3>요약</h3>
+<p>AI 엔지니어는 GPT, Claude 같은 대형 언어 모델을 실제 서비스에 통합하는 전문 소프트웨어 엔지니어로, 연봉이 매우 높고 수요가 폭발적으로 증가하고 있다. 하지만 "3개월 만에 AI 엔지니어"라는 광고는 현실과 거리가 멀다. 저자는 소프트웨어 엔지니어로 1년 이상 경력을 쌓은 뒤, AI/ML 기초와 RAG·프롬프트 엔지니어링·LangChain 등 AI 엔지니어링 전문 개념을 익히고, 실제로 배포 가능한 프로젝트를 만들어 포트폴리오를 구성하는 단계별 로드맵을 제시한다. 취업 시에는 무수한 지원보다 LinkedIn 네트워킹을 통한 레퍼럴이 훨씬 효과적이며, 전체 여정을 현실적으로 보면 약 2년이 소요된다.</p>
+</div>
+
+<h2>AI 엔지니어란 무엇인가?</h2>
+<p>온라인에는 AI 엔지니어에 대한 오해가 많다. 간단히 말하면, AI 엔지니어는 Claude, GPT, BERT 같은 파운데이션 생성형 AI 모델을 활용하고 통합하는 데 특화된 소프트웨어 엔지니어다. 데이터 사이언티스트나 머신러닝 엔지니어처럼 모델을 처음부터 만드는 역할이 아니라, 기존 모델을 가져다 특정 목적에 맞게 적용하는 것이 핵심이다.</p>
+<p>예를 들어 쇼핑몰 웹사이트에 고객 응대 챗봇을 붙이거나, Cursor처럼 IDE에 코딩 어시스턴트를 통합하는 작업이 이에 해당한다. AI 엔지니어는 소프트웨어 엔지니어링 기본기와 AI 시스템에 대한 깊은 이해를 동시에 갖춰야 하기 때문에 희소성이 높고, 그만큼 연봉도 상당하다. levels.fyi 기준으로 많은 기업이 연간 2억~3억 원 수준의 보상을 제시한다.</p>
+
+<h2>1단계: 출발점 선택</h2>
+<p>안타깝게도 아무런 경력 없이 AI 엔지니어로 바로 진입하기는 극히 어렵다. 이 직무는 데이터, 머신러닝, 소프트웨어 엔지니어링, AI 등 여러 분야에 걸친 전문성을 요구하기 때문이다. 따라서 AI 엔지니어로 전환을 고려하기 전에 최소 1년 이상 데이터 사이언티스트 또는 소프트웨어 엔지니어로 실무 경험을 쌓는 것이 필수적이다.</p>
+<p>어느 쪽을 선택할지는 본인의 배경에 달려 있지만, AI 엔지니어링과 더 가까운 역할인 소프트웨어 엔지니어로 시작하는 것을 권장한다. OpenAI CTO 그렉 브록만도 같은 의견이다. 소프트웨어 엔지니어로 일하는 동안 다음 역량을 함께 키워두어야 한다.</p>
+<ul>
+  <li><strong>Python</strong> — AI/ML 생태계 전체가 Python을 기반으로 돌아간다. 프로덕션 수준의 코드를 작성할 수 있어야 한다.</li>
+  <li><strong>SQL</strong> — AI는 데이터 중심이고, SQL은 데이터의 언어다.</li>
+  <li><strong>개발 도구</strong> — git을 이용한 버전 관리, zsh/bash 기초, API 생성 및 활용 방법을 숙지해야 한다.</li>
+  <li><strong>시스템 설계 기술</strong> — 실제로 구축할 AI 시스템은 확장 가능해야 하므로, AWS·Azure·GCP 같은 클라우드 플랫폼과 Docker, Kubernetes를 다룰 줄 알아야 한다.</li>
+</ul>
+<h3>추천 학습 자료</h3>
+<ul>
+  <li>W3Schools Python 강의 (무료) — 좋은 무료 입문 자료다.</li>
+  <li>Harvard CS50 Introduction to Computer Science — 컴퓨터 과학과 소프트웨어 엔지니어링 입문 강의 중 최고라 해도 과언이 아니다.</li>
+</ul>
+<h3>예상 기간</h3>
+<p>STEM 계열 배경이 있고 집중해서 공부한다면 6개월 안에 소프트웨어 엔지니어 또는 데이터 사이언티스트 직무에 취업할 수 있다. 이후 전환을 고려하기 전에 해당 역할에서 약 1년간 기초를 다지는 시간이 필요하다.</p>
+
+<h2>2단계: AI/ML 기초 다지기</h2>
+<p>소프트웨어 엔지니어로 일하면서 동시에 AI/ML 기초 역량을 키워나가야 한다. 박사 수준의 수학 지식까지는 필요 없지만, 나중에 더 심화된 주제를 파고들 때 든든한 토대가 되어줄 것이다. 다음 영역들을 익혀두자.</p>
+<ul>
+  <li><strong>수학 기초</strong> — 통계, 확률, 선형대수, 미적분의 핵심 개념을 이해하면 내부 작동 원리를 파악하는 데 큰 도움이 된다.</li>
+  <li><strong>지도 학습</strong> — 선형 회귀, 의사결정 트리, 서포트 벡터 머신 같은 기본 알고리즘의 작동 방식을 알아야 한다.</li>
+  <li><strong>비지도 학습</strong> — K-Means, K-최근접 이웃 알고리즘의 원리를 이해해야 한다.</li>
+  <li><strong>신경망</strong> — LLM의 근간이 되는 기술이다. 역전파, 기울기 소실 문제, 활성화 함수 개념을 익혀두면 나중에 AI 모델 디버깅 속도가 훨씬 빨라진다.</li>
+  <li><strong>LLM 기초</strong> — 직접 LLM을 만들 일은 없더라도 매일 이와 함께 일하게 된다. 트랜스포머, 오토인코더, 토큰화, 임베딩 같은 핵심 개념을 이해해야 한다.</li>
+</ul>
+<h3>추천 학습 자료</h3>
+<ul>
+  <li><em>Mathematics for Machine Learning</em> — 두루 다루는 최고의 책이지만 밀도가 높다.</li>
+  <li><em>Hands-On ML with Scikit-Learn, Keras, and TensorFlow</em> — 머신러닝 입문서 하나만 고르라면 이 책이다.</li>
+  <li>Neural Networks: Zero to Hero — 신경망을 처음부터 직접 구현하며 배우고, 마지막에는 직접 GPT를 만들어본다.</li>
+</ul>
+<h3>예상 기간</h3>
+<p>퇴근 후 공부 시간만 활용한다고 가정하면, 집중해서 학습할 경우 3~6개월이면 충분히 소화할 수 있다.</p>
+
+<h2>3단계: AI 엔지니어링 핵심 개념</h2>
+<p>이 시점부터는 실무에서 실제로 사용하는 AI 엔지니어링 전문 개념을 깊이 파고들 차례다. 이 분야는 매달 새로운 것이 등장할 만큼 빠르게 변하고 있다. 그중에서도 시간이 지나도 변하지 않는 핵심 기본기를 먼저 익히는 것이 중요하다.</p>
+<ul>
+  <li><strong>AI API</strong> — OpenAI API 같은 서비스를 활용하면 모델을 직접 구축하지 않아도 강력한 AI 기능을 서비스에 통합할 수 있다. 실제 애플리케이션을 가장 빠르게 만드는 방법이다.</li>
+  <li><strong>프롬프트 엔지니어링</strong> — AI 모델과 효과적으로 소통하는 방법을 배우는 것이다. 잘 설계된 프롬프트는 모델 출력 품질을 극적으로 향상시키고 일관된 결과를 얻는 데 필수적이다.</li>
+  <li><strong>검색 증강 생성(RAG)</strong> — Pinecone 같은 외부 데이터베이스를 LLM에 연결해 관련 정보를 실시간으로 제공함으로써 응답 정확도를 높이는 기법이다.</li>
+  <li><strong>모델 컨텍스트 프로토콜(MCP)</strong> — AI 모델을 파일, 서버, 외부 앱 등에 표준화된 방식으로 연결하는 프로토콜이다.</li>
+  <li><strong>LangChain</strong> — Python 환경에서 AI 모델을 다루는 데 가장 널리 쓰이는 라이브러리다. LLM을 구축하고 연결하는 데 필요한 아키텍처를 일관된 방식으로 제공한다.</li>
+  <li><strong>파인튜닝</strong> — 특정 데이터로 AI 모델을 추가 학습시켜 특정 작업에서 더 나은 성능을 내도록 개선하는 방법이다.</li>
+</ul>
+<h3>추천 학습 자료</h3>
+<ul>
+  <li><em>Hands-On Large Language Models</em> — LLM 관련 교재가 많지 않은 상황에서 좋은 평가를 받고 있는 책이다.</li>
+  <li><em>AI Engineering</em> (Chip Huyen 저) — 현재 가장 주목받는 책으로, 프로덕션 ML/AI 시스템 분야의 권위자인 칩 후옌이 집필했다.</li>
+</ul>
+<h3>예상 기간</h3>
+<p>AI/ML 기초보다 다뤄야 할 내용의 양이 적으므로, 제대로 이해하는 데 약 2~3개월이면 충분하다.</p>
+
+<h2>4단계: 프로젝트 구축</h2>
+<p>어떤 프로젝트를 만들어야 취업에 유리한지 헷갈려하는 사람이 많다. 핵심은 단순하다. 자신이 진심으로 관심을 갖는 주제이면서, 실제 사용자나 고객에게 도움이 되는 프로젝트가 최고다. 큰 흐름은 다음과 같다.</p>
+<ul>
+  <li><strong>아이디어 발굴</strong> — 자신의 삶과 관심사에서 해결하고 싶은 문제를 직접 찾아라. 인터넷 검색이나 타인의 제안에 의존하지 말자. 남이 준 아이디어는 처음부터 나쁜 프로젝트다.</li>
+  <li><strong>데이터 수집</strong> — 공개 API, 정부 공공 데이터, 웹 스크래핑 등을 통해 신선하고 흥미로운 데이터를 직접 구해보자. 실무에서 맞닥뜨리게 될 지저분한 데이터를 다루는 경험을 쌓는 것이 중요하다.</li>
+  <li><strong>배포</strong> — AI 시스템을 처음부터 끝까지 직접 배포할 수 있음을 보여주어야 한다. 데이터 저장, 전처리, 모델 연결, 그리고 API나 웹 앱을 통한 프론트엔드 통합까지 전 과정을 실제 AI 엔지니어의 업무와 최대한 유사하게 구현해야 한다.</li>
+  <li><strong>공유 및 문서화</strong> — 만들고 끝내면 아무도 모른다. LinkedIn 포스팅, 블로그 글 작성, 포트폴리오 등록은 필수다. GitHub README를 잘 정리해 누구나 직접 실행해볼 수 있게 하고, 최대한 많은 채널에서 홍보하자. 노출 빈도가 높을수록 잠재적 고용주의 눈에 띌 가능성이 높아진다.</li>
+</ul>
+<h3>예상 기간</h3>
+<p>하루 1시간씩 투자한다고 가정하면, 완성도 높은 프로젝트 2개를 만드는 데 약 3개월이 소요된다.</p>
+
+<h2>5단계: 취업 전략</h2>
+<h3>이력서</h3>
+<p>이력서는 AI 엔지니어링에 집중해서 작성해야 한다. 상단에 AI 엔지니어링 관련 기술 스택을 명확히 나열하고, 프로젝트는 수치와 비즈니스 임팩트를 강조해 눈에 잘 띄게 배치하자. 형식은 단순하게 — 중성적인 색상, 단일 열 레이아웃, 읽기 편한 폰트, 딱 한 페이지로 유지하는 것이 좋다. 소프트웨어 엔지니어 또는 데이터 사이언티스트로서의 관련 경력도 함께 기재한다.</p>
+
+<h3>LinkedIn 프로필</h3>
+<p>LinkedIn 헤드라인에는 "AI Engineer"를 명시해야 한다. "지망생(aspiring)"이라는 표현은 절대 쓰지 말자 — 치과 의사 지망생에게 치료를 받고 싶은 사람이 있겠는가? About 섹션과 경력란 전반에 관련 키워드를 자연스럽게 녹여 넣고, 깔끔한 프로필 사진과 세련된 배너 이미지로 첫인상을 가꾸자. 생각보다 큰 차이를 만든다.</p>
+
+<h3>레퍼럴과 네트워킹</h3>
+<p>많은 사람이 프로젝트를 쌓고 강의를 수강하면 돋보일 거라 생각하지만, 그것은 시간 낭비에 가깝다. 취업의 진짜 열쇠는 레퍼럴(추천)이다. 한 연구에 따르면 레퍼럴은 전체 지원의 7%에 불과하지만 채용의 40%를 차지하며, 레퍼럴을 통해 지원하면 그렇지 않은 경우보다 채용될 확률이 약 6배 높다.</p>
+<p>레퍼럴을 받는 방법은 생각보다 간단하다. 우선 지원하고 싶은 회사나 AI 엔지니어를 채용 중인 회사를 찾는다. LinkedIn에서 비슷한 배경을 가진 직원을 검색하고 연결 요청을 보낸다. 첫 메시지에서는 절대 레퍼럴을 요청하지 말고, 상대방의 커리어나 프로젝트에서 흥미롭게 느낀 점을 진심을 담아 이야기하자. 몇 번 대화를 나눈 후, 그때 이력서 피드백이나 레퍼럴을 부탁하면 된다. 사람들은 자신에 대해 이야기하는 것을 좋아한다. 관심을 보이고 친근하게 접근하면 대부분 흔쾌히 도움을 준다.</p>
+
+<h3>예상 기간</h3>
+<p>레퍼럴 네트워킹에 집중하고 불필요한 프로젝트와 강의에 시간을 낭비하지 않는다면 약 6개월 안에 취업할 수 있다. 물론 운도 따라야 하지만, 올바른 전략을 선택하면 확률은 크게 올라간다.</p>
+
+<hr>
+
+<p>낙관적으로 보아도 AI 엔지니어가 되기까지는 약 2년이 걸린다. 여기에 소프트웨어 엔지니어나 데이터 사이언티스트로 먼저 취업하는 시간도 포함된다. 오래 걸린다고 느낄 수 있지만, 이 직무는 고도의 전문성을 요구하는 만큼 보상도 그에 걸맞다. 단기 강의 몇 개로 바로 뛰어들 수 있다는 생각은 현실이 아니다. 하지만 올바른 순서로 차근차근 나아간다면, 분명히 도달할 수 있는 목표다.</p>
+</body>
+</html>

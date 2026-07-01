@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 System Design Topics Every Data Engineer Is Expected to Know in 2026 Interviews</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>10 System Design Topics Every Data Engineer Is Expected to Know in 2026 Interviews</h1>
+<div class="meta">Rohan Dutt · 18분 읽기 · <a href="https://medium.com/@Rohan_Dutt/10-system-design-topics-every-data-engineer-is-expected-to-know-in-2026-interviews-d74dc4e3b1bb" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@Rohan_Dutt/10-system-design-topics-every-data-engineer-is-expected-to-know-in-2026-interviews-d74dc4e3b1bb" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">2026년 데이터 엔지니어 면접에서 이제 기본으로 전제되는 시스템 설계 개념 10가지를 코드 예시와 함께 정리한다.</p>
+<h3>요약</h3>
+<p>이 글은 CAP 정리, 분산 트랜잭션(Saga vs 2PC), CRDT, 컬럼형 스토리지(Parquet/Arrow), 메시지 큐(Kafka/RabbitMQ/SQS), 합의 알고리즘(Raft), 멱등성 처리, 데이터 계약, 샤딩, 카오스 엔지니어링 등 현대 데이터 엔지니어링의 핵심 개념 10가지를 다룬다. 각 주제에 대해 왜 중요한지, 장단점은 무엇인지, 실용적인 Python 코드 예시, 그리고 2026년 면접에서 돋보이게 해줄 최신 트렌드를 함께 제시한다.</p>
+</div>
+
+<h2>10. 아키텍처 트레이드오프: CAP 정리</h2>
+<p>CAP 정리는 분산 시스템의 근본적인 제약을 설명한다. 네트워크 파티션(P) 상황에서 시스템은 일관성(C)과 가용성(A) 중 하나만 선택할 수 있다. 두 가지를 동시에 가질 수는 없다.</p>
+<p>레이크하우스(Iceberg) 선택부터 Kafka acks 튜닝까지 모든 아키텍처 결정은 CAP 트레이드오프다. 면접에서는 "완벽한" 해법을 찾는 것이 아니라 이 희생을 어떻게 정당화하는지가 중요하다.</p>
+<ul>
+  <li><strong>AP 시스템의 장점</strong>: 전역 동기화 잠금 없이 저렴하고 빠른 확장, 지역 클라우드 장애 중에도 쓰기 가용성 유지.</li>
+  <li><strong>AP 시스템의 단점</strong>: 오래된 읽기와 충돌 해결을 코드에서 직접 처리해야 하는 복잡성. AP에서 CP로 전환하는 것은 고위험 다개월 작업.</li>
+</ul>
+<pre>class DistributedNode:
+    def __init__(self, node_id, mode="AP"):
+        self.node_id = node_id
+        self.mode = mode
+        self.data = "Initial Value"
+        self.is_partitioned = False
+
+    def get_value(self):
+        if self.is_partitioned:
+            if self.mode == "CP":
+                raise ConnectionError(f"Node {self.node_id}: Unavailable (Consistency check failed)")
+            else:
+                return f"{self.data} (STALE/AVAILABLE)"
+        return self.data</pre>
+<p><strong>2026 트렌드: PACELC</strong> — CAP의 확장판으로, 파티션이 없는 정상 상태에서도 지연(Latency)과 일관성(Consistency) 사이의 트레이드오프가 존재함을 설명한다. 면접에서 PACELC를 언급하면 차별점이 된다.</p>
+
+<h2>9. 분산 트랜잭션: Saga vs 2PC</h2>
+<p>단일 데이터베이스 트랜잭션은 모놀리스에서는 간단하다. 하지만 결제, 재고, 배송이 서로 다른 서비스로 분리된 분산 시스템에서 한 단계가 실패하면 나머지를 모두 롤백해야 한다. 2PC는 이를 동기적·엄격하게 처리하고, Saga는 최종 일관성을 통해 비동기적으로 관리한다.</p>
+<p>전략이 없으면 결제는 됐지만 배송이 안 되는 "유령 주문" 문제가 발생한다. 2026년에는 Saga가 업계 표준이다.</p>
+<ul>
+  <li><strong>2PC 장점</strong>: 원자성 보장. 클러스터 전체가 단일 데이터베이스처럼 동작.</li>
+  <li><strong>2PC 단점</strong>: 블로킹 방식. 코디네이터 장애 시 참여 서비스가 잠긴다. 동기식 Prepare/Commit으로 높은 지연.</li>
+  <li><strong>Saga 장점</strong>: 높은 가용성. 서비스가 로컬에서 즉시 커밋하고 잠금이 없다. 여행 예약 같은 장기 실행 프로세스에 이상적.</li>
+  <li><strong>Saga 단점</strong>: 복잡성. 모든 단계에 대해 보상 트랜잭션(undo 로직)을 작성해야 한다. 중간 상태가 노출되는 Dirty Read 위험.</li>
+</ul>
+<pre>class BookingOrchestrator:
+    def execute_saga(self, booking_id):
+        try:
+            self._hotel_reserve(booking_id)
+            self.compensations.append(lambda: self._hotel_cancel(booking_id))
+            self._process_payment(booking_id)  # 실패 시뮬레이션
+        except Exception as e:
+            print(f"Saga Failed: {e}. Starting Compensations...")
+            self._rollback()  # LIFO 순서로 보상 트랜잭션 실행</pre>
+<p><strong>2026 트렌드: 트랜잭셔널 아웃박스 패턴</strong> — DB와 Kafka에 동시에 쓰는 "이중 쓰기(Dual Write)" 문제를 해결한다. 비즈니스 데이터와 이벤트를 같은 로컬 DB 트랜잭션에 원자적으로 쓰고, 별도 릴레이 서비스가 아웃박스 테이블을 읽어 메시지 브로커에 발행한다.</p>
+
+<h2>8. 고가용성 상태: 최종 일관성과 CRDT</h2>
+<p>강한 일관성은 비용이 높다. 모든 노드가 쓰기 전에 합의해야 하기 때문이다. 최종 일관성은 가용성을 우선시한다. 노드가 즉시 쓰기를 수락하고 나중에 조정한다. CRDT(Conflict-Free Replicated Data Types)는 이 조정을 수학적으로 결정적이고 자동으로 만들어주는 특수 데이터 구조다.</p>
+<p>빛의 속도 때문에 지리적으로 분산된 시스템에서 중앙 잠금을 기다리는 것은 불가능하다. Figma, Apple Notes 같은 플랫폼이 CRDT를 사용해 중앙 조정자 없이 동시 편집을 병합한다.</p>
+<pre>class GCounter:
+    """증가만 가능한 카운터 CRDT."""
+    def increment(self):
+        self.state[self.node_id] += 1
+
+    def merge(self, other_gcounter):
+        """Join 연산: 각 노드의 최댓값을 취한다. 교환법칙과 결합법칙을 보장."""
+        all_nodes = set(self.state.keys()).union(other_gcounter.state.keys())
+        for nid in all_nodes:
+            self.state[nid] = max(self.state.get(nid, 0), other_gcounter.state.get(nid, 0))
+
+    @property
+    def value(self):
+        return sum(self.state.values())</pre>
+<p>어떤 순서로 병합해도 최종 결과는 동일하다. 이것이 CRDT의 수학적 수렴 보장이다.</p>
+<p><strong>2026 트렌드: 상태 기반 vs 연산 기반 CRDT, 인과 일관성, Temporal 같은 내구성 있는 실행 프레임워크.</strong></p>
+
+<h2>7. 스토리지 진화: 컬럼형 포맷 (Parquet & Arrow)</h2>
+<p>2026년의 분석 데이터는 더 이상 행 단위로 저장하지 않는다. 디스크의 "콜드" 스토리지에는 Parquet을, 메모리의 "핫" 처리에는 Apache Arrow를 사용한다. 이 분리를 통해 쿼리에 필요한 특정 컬럼만 스캔할 수 있어 I/O 비용이 대폭 줄어든다.</p>
+<p>대부분의 "빅데이터" 병목은 사실 I/O 문제다. CSV, JSON 같은 행 기반 포맷은 컬럼 하나의 평균을 구하기 위해 100개 컬럼을 모두 읽어야 한다. 컬럼형 포맷은 이 O(n) 행 스캔을 선택적 O(k) 컬럼 읽기로 바꿔준다.</p>
+<pre>import pyarrow.parquet as pq
+
+# 컬럼 프루닝 + 프레디케이트 푸시다운
+refined_table = pq.read_table(
+    file_path,
+    columns=["user_id", "revenue"],       # 불필요한 컬럼 건너뜀
+    filters=[("revenue", "&gt;", 95.0)]    # 행 그룹 레벨에서 필터링
+)</pre>
+<p><strong>2026 트렌드</strong>: 벡터화 실행(SIMD로 1024개 정수를 한 번에 처리), Iceberg 매니페스트 파일과 시간 이동(Time Travel), 지연 구체화(Late Materialization).</p>
+
+<h2>6. 비동기 통신: 메시지 큐 (Kafka vs RabbitMQ vs SQS)</h2>
+<p>비동기 통신은 서비스가 응답을 기다리지 않고 대화할 수 있게 해준다. 표준 API 호출은 취약하다. 수신자가 느리면 송신자가 충돌한다. 메시지 큐는 이런 연쇄 장애를 막는 완충재다. 2026년 선택지는 보통 스마트 파이프(RabbitMQ, SQS)와 덤 파이프/스마트 컨슈머(Kafka) 사이에 있다.</p>
+<pre>from confluent_kafka import Producer
+
+conf = {
+    'bootstrap.servers': 'localhost:9092',
+    'acks': 'all',              # 모든 레플리카를 기다려 데이터 손실 방지
+    'retries': 5,               # 일시적 네트워크 오류에 대한 복원력
+    'compression.type': 'snappy'
+}
+
+# user_id로 키잉 → 동일 사용자의 이벤트가 같은 파티션으로 (순서 보장)
+producer.produce(topic, key=str(user_id), value=json.dumps(payload))</pre>
+<p><strong>2026 트렌드</strong>: 도구 선택 기준 — Kafka는 재생 가능성(지난주 화요일로 되감기), RabbitMQ는 복잡한 라우팅 로직, SQS는 서버리스 단순성(초당 수백만 건이 필요 없을 때).</p>
+
+<h2>5. 분산 조율: 합의 알고리즘 (Raft vs Paxos)</h2>
+<p>합의 알고리즘은 신뢰할 수 없는 노드 그룹이 단일 상태에 동의할 수 있게 해준다. 가장 큰 위험은 두 노드가 모두 자신이 리더라고 생각해 충돌하는 스플릿 브레인 시나리오다. 합의 알고리즘은 모든 결정에 쿼럼(다수결)을 요구해 이를 방지한다. Kubernetes 클러스터 상태 유지와 Amazon Aurora의 빠른 페일오버가 이 원리로 작동한다. Paxos가 원조 수학적 증명이지만, Raft가 2026년 업계 표준이다. 이해하고 구현하기 훨씬 쉽기 때문이다.</p>
+<pre>class RaftNode:
+    def _become_candidate(self):
+        self.state = "Candidate"
+        self.current_term += 1
+        self.votes_received = 1  # 자신에게 투표
+        self._request_votes()
+
+    def _request_votes(self):
+        votes_from_peers = random.randint(0, self.total_nodes - 1)
+        self.votes_received += votes_from_peers
+        quorum = (self.total_nodes // 2) + 1
+        if self.votes_received >= quorum:
+            self._become_leader()  # 과반 확보 시 리더로 전환</pre>
+<p><strong>2026 트렌드: Zookeeper의 종말</strong> — Kafka 3.x+는 KRaft로 Zookeeper를 제거했다. CockroachDB, TiDB는 Raft를 스토리지 레이어에 내장한다. 고보안/Web3 플랫폼 면접에서는 비잔틴 장애 허용(BFT)이 등장한다.</p>
+
+<h2>4. 내결함성: 멱등성과 정확히 한 번 처리</h2>
+<p>분산 시스템에서 "최소 한 번" 전달 보장은 흔하지만 위험하다. 레코드가 처리됐지만 확인 응답 전에 네트워크가 깜빡이면 시스템은 재시도하고, 중복 데이터가 생긴다. 멱등성은 동일 연산을 여러 번 수행해도 한 번 수행한 것과 결과가 같음을 보장한다. 금융 데이터 엔지니어링과 재고 관리에서 중복 이벤트는 이중 청구와 손상된 상태를 만든다.</p>
+<pre>class ResilientProcessor:
+    def process_transaction(self, request_id: str, payload: dict):
+        # 1. 이미 처리된 Request ID 확인
+        if request_id in self.dedup_store:
+            print(f"Duplicate detected for {request_id}. Skipping...")
+            return self.db.get(request_id)
+
+        # 2. 비즈니스 로직 실행
+        self.db[request_id] = {"status": "confirmed", "amount": payload['amount']}
+
+        # 3. 중복 제거 저장소에 커밋
+        self.dedup_store.add(request_id)
+        return self.db[request_id]</pre>
+<p><strong>2026 트렌드</strong>: Kafka 트랜잭션(<code>enable.idempotence=true</code>), Upsert 로직(<code>INSERT ... ON CONFLICT</code>, Delta Lake <code>merge()</code>), Flink 체크포인트를 이용한 상태 기반 처리.</p>
+
+<h2>3. 데이터 계약과 스키마 진화</h2>
+<p>2026년에는 데이터 계약이 수동 QA와 "파이프라인 깨짐" Slack 알림을 대체했다. 데이터 계약은 데이터 제공자와 소비자 사이의 공식 합의로, 교환되는 데이터의 구조, 품질, 의미를 정의한다. 가장 큰 병목인 "업스트림 드리프트" — 백엔드 엔지니어가 DB 스키마를 변경해 다운스트림 대시보드를 망가뜨리는 문제 — 를 "침묵하는 실패"에서 "빌드 실패"로 바꿔준다.</p>
+<pre>from pydantic import BaseModel, Field, field_validator
+
+class UserActivityContract(BaseModel):
+    user_id: int = Field(gt=0)
+    event_type: str = Field(pattern="^(click|view|purchase)$")
+    timestamp: datetime
+
+    @field_validator('timestamp')
+    @classmethod
+    def ensure_not_future(cls, v):
+        if v &gt; datetime.now():
+            raise ValueError('Timestamp cannot be in the future')
+        return v
+
+def ingest_data(raw_payload: dict):
+    try:
+        UserActivityContract(**raw_payload)
+        print("Contract Passed: Processing...")
+    except ValidationError as e:
+        # 파이프라인을 깨지 않고 Dead Letter Queue로 보냄
+        print(f"Contract Violated: Sending to DLQ. Details: {e.json()}")</pre>
+<p><strong>2026 트렌드: 쉬프트 레프트 데이터 품질</strong> — 웨어하우스(dbt 테스트)에서 소스(Kafka/API) 레벨로 품질 검사를 앞당기기. Schema Registry, 코드로서의 계약(Contract-as-Code), CI/CD에서의 계약 호환성 검사.</p>
+
+<h2>2. 수평 확장: 파티셔닝과 샤딩</h2>
+<p>단일 DB 인스턴스는 결국 하드웨어 한계에 부딪힌다. 파티셔닝과 샤딩은 데이터를 여러 논리적·물리적 경계로 분산해 대규모 확장을 달성하는 아키텍처 패턴이다. 파티셔닝 없이는 백업, 배큠, 스키마 변경 같은 유지보수 작업이 프로덕션을 며칠씩 막는 수준이 된다. 샤딩은 선형 확장을 가능하게 한다. 데이터가 두 배 늘어도 노드를 두 배 추가하면 성능이 일정하게 유지된다.</p>
+<pre>class ShardManager:
+    def get_node(self, user_id):
+        """일관된 해싱으로 사용자 데이터가 어느 샤드에 있는지 결정."""
+        user_hash = self._hash_func(str(user_id))
+        sorted_keys = sorted(self.node_map.keys())
+        for node_hash in sorted_keys:
+            if user_hash &lt;= node_hash:
+                return self.node_map[node_hash]
+        return self.node_map[sorted_keys[0]]  # 링 맨 처음으로 래핑</pre>
+<p>일관된 해싱의 핵심 장점: 새 노드를 추가할 때 전체 데이터를 재배치하는 것이 아니라 소량만 이동한다.</p>
+<p><strong>2026 트렌드</strong>: 선언적 파티셔닝(리스트, 범위, 해시), BigQuery/Snowflake의 월별 범위 파티셔닝, 멀티 테넌트 샤딩(대형 엔터프라이즈 고객 전용 하드웨어 격리).</p>
+
+<h2>1. 복원력 엔지니어링: 재해 복구와 카오스 엔지니어링</h2>
+<p>2026년의 데이터 플랫폼은 처리량만이 아니라 "평균 복구 시간(MTTR)"으로 평가된다. 분산 시스템은 본질적으로 불안정하다. 하이퍼스케일로 나아갈수록 스팟 인스턴스 회수, 네트워크 파티션, 지역 단위 클라우드 장애 같은 컴포넌트 실패 확률은 100%에 수렴한다. 사전 테스트 없이는 첫 번째 재해 복구 교훈이 프로덕션 사고 중에 찾아온다.</p>
+<pre>def inject_chaos(failure_rate=0.3, max_delay=2):
+    """데코레이터 패턴으로 제어된 장애를 주입해 시스템 복원력을 테스트."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            delay = random.uniform(0, max_delay)
+            time.sleep(delay)
+            if random.random() &lt; failure_rate:
+                raise ConnectionError("Simulated Chaos: Database/API Unreachable")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+class DataPipeline:
+    @inject_chaos(failure_rate=0.4)
+    def fetch_records(self):
+        return {"status": "success", "data": [101, 102, 103]}
+
+    def run_safe_ingestion(self):
+        """지수 백오프로 재시도하는 회복력 있는 패턴."""
+        attempt = 0
+        while attempt &lt; self.retry_limit:
+            try:
+                return self.fetch_records()
+            except ConnectionError:
+                attempt += 1
+                time.sleep(2 ** attempt)  # 지수 백오프
+        logger.critical("Circuit Breaker: All retries failed. Triggering Disaster Recovery.")</pre>
+<p><strong>2026 트렌드: 단순 백업에서 관찰 기반 복구로</strong> — <code>pg_dump</code>나 S3 버저닝을 넘어, 블라스트 반경 격리(셀 기반 아키텍처), Prometheus/OpenTelemetry 신호를 통한 자동 트래픽 리디렉션(서비스 메시), Kafka 이벤트 재생을 통한 상태 재구성이 핵심이다.</p>
+
+<hr>
+
+<p>이 10가지 개념은 2026년 데이터 엔지니어 면접에서 이미 기본으로 전제되고 있다. 각 주제에 대해 이론을 이해하는 것을 넘어, 언제 어떤 트레이드오프를 선택해야 하는지 그리고 2026년의 최신 진화 방향을 함께 설명할 수 있어야 한다.</p>
+</body>
+</html>

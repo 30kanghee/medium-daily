@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5 Harsh Truths About Being a Data Engineer in the Age of AI</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>5 Harsh Truths About Being a Data Engineer in the Age of AI</h1>
+<div class="meta">Saurav Singh Sisodiya · Towards Data Engineering · 3분 읽기 · <a href="https://medium.com/@sauravsinghsisodiya/5-harsh-truths-about-being-a-data-engineer-in-the-age-of-ai-f263995cb841" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@sauravsinghsisodiya/5-harsh-truths-about-being-a-data-engineer-in-the-age-of-ai-f263995cb841" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">AI가 데이터 엔지니어링을 죽이지 않았다 — 하지만 무엇이 진짜 가치인지를 조용히, 완전히 바꿔놨다.</p>
+<h3>요약</h3>
+<p>AI 시대에 데이터 엔지니어로 일하면서 저자가 체감한 불편한 진실 다섯 가지를 짚는다. 코드를 잘 쓰는 능력은 더 이상 핵심 가치가 아니고, 기본적인 데이터 파이프라인 작업은 이미 범용재가 되어가고 있다. AI는 나쁜 데이터를 정화하는 게 아니라 오히려 조직 전체로 증폭시키기 때문에 데이터 품질 책임은 더 무거워졌다. 경력 성장은 고립된 작업이 아니라 시스템 전체를 꿰뚫어 볼 수 있는 사고에 달려 있고, 가장 생산적인 엔지니어는 더 많이 만드는 사람이 아니라 잘못된 것을 먼저 막는 사람이다.</p>
+</div>
+
+<h2>들어가며</h2>
+
+<p>몇 년 전까지만 해도 데이터 엔지니어의 역할은 명확했습니다. 데이터를 안정적으로 옮기는 것. 탄탄한 파이프라인을 만들고, 시스템이 돌아가게 유지하고, 잘 작동할 때는 눈에 띄지 않다가 문제가 생기면 맨 앞에 나서는 것이었습니다.</p>
+
+<p>2026년, 그 정의는 이제 거의 구시대의 이야기처럼 느껴집니다.</p>
+
+<p>AI가 데이터 엔지니어를 대체하지는 않았습니다. 하지만 우리가 피처를 배포하고, 새벽 2시에 망가진 스키마를 고치고, "그냥 데이터를 더 추가하면 안 되냐"는 질문에 또다시 답하는 동안, AI는 조용히 이 역할의 본질을 바꿔놓았습니다.</p>
+
+<p>이것은 동기부여를 주는 이야기가 아닙니다. AI와 함께 일하면서, AI 위에서도 아래서도 아닌 나란히 일하면서 몸소 배운 불편한 진실들입니다.</p>
+
+<p>아직 이 분야에 있다면, 이미 느끼고 있을 것입니다. 이제 이름을 붙여봅시다.</p>
+
+<h2>1. 코드를 잘 쓰는 것은 더 이상 핵심 가치가 아니다</h2>
+
+<p>깔끔한 Spark 잡과 우아한 SQL에 자부심을 가져온 사람이라면 이 진실이 특히 아프게 느껴질 것입니다.</p>
+
+<p>AI는 이제 파이프라인 코드 초안 작성, 데이터 변환 로직 생성, 스키마 진화 제안, 인프라 설정 보일러플레이트 작성을 누구보다 빠르게 해냅니다.</p>
+
+<p>"나는 다른 사람보다 파이프라인을 더 잘 짠다"는 것을 정체성으로 삼고 있다면, 얇은 얼음 위에 서 있는 셈입니다.</p>
+
+<p>실제 가치는 이미 더 앞단과 뒷단으로 이동했습니다. 어떤 데이터가 존재해야 하는지 결정하는 일, 데이터의 동작 방식이 모델과 의사결정에 어떤 영향을 미치는지 이해하는 일, AI가 절대 예측하지 못할 엣지 케이스에도 무너지지 않는 시스템을 설계하는 일이 그것입니다.</p>
+
+<p>AI는 문법은 잘 압니다. 하지만 맥락은 형편없습니다.</p>
+
+<p>이제 당신의 레버리지는 타이핑 속도가 아니라 판단력에 있습니다. 언제 만들지 않아야 하는지, 데이터가 언제 거짓말을 하고 있는지, 어떤 자동화가 6개월 뒤 조용히 비즈니스를 망가뜨릴지를 아는 것입니다.</p>
+
+<p>2026년의 생산성은 더 많은 일을 해내는 것이 아닙니다. 잘못된 일이 애초에 출시되지 않도록 막는 것입니다.</p>
+
+<h2>2. "데이터 배관 작업"은 원하든 원하지 않든 범용재가 되고 있다</h2>
+
+<p>솔직히 말합시다.</p>
+
+<p>데이터 수집 프레임워크, CDC 파이프라인, 스트리밍 커넥터, 관리형 데이터 웨어하우스는 이제 설정하기가 터무니없이 쉬워졌습니다. AI 보조 도구들은 이것들을 몇 분 만에 구성할 수 있습니다.</p>
+
+<p>이것이 데이터 엔지니어링의 죽음을 의미하는 건 아닙니다. 하지만 기본적인 데이터 엔지니어링은 더 이상 커리어를 지키는 해자(moat)가 될 수 없다는 뜻입니다.</p>
+
+<p>불편한 진실은 이것입니다. A에서 B로 데이터를 옮기는 것만 한다면, 언젠가 더 저렴하게 그 일을 할 수 있는 무언가 혹은 누군가가 나타납니다.</p>
+
+<p>살아남는 것들이 있습니다. 데이터 계약(data contract), 품질 신호, 시맨틱 레이어를 이해하는 엔지니어, 비즈니스 압박 속에서 실시간 처리와 배치 처리의 트레이드오프를 논리적으로 따질 수 있는 사람, 단순히 올바르게 작동하는 것을 넘어 변화에 유연하게 설계된 시스템을 만드는 사람들입니다.</p>
+
+<p>이 직업은 데이터 배관에서 데이터 시스템 설계 쪽으로 이동하고 있습니다. 그리고 설계는 실행보다 자동화하기 훨씬 어렵습니다.</p>
+
+<h2>3. AI는 나쁜 데이터를 덜 위험하게 만드는 게 아니라 더 위험하게 만든다</h2>
+
+<p>이 진실은 많은 팀을 불시에 강타합니다.</p>
+
+<p>AI가 "알아서 정리해 줄 것"이라는 조용한 가정이 있습니다. 실제로는 정반대입니다. AI는 쓰레기 데이터를 엄청난 자신감으로 증폭시키는 데 탁월합니다.</p>
+
+<p>나쁜 데이터가 대시보드에 들어가면 사람들은 의문을 품습니다. 하지만 나쁜 데이터가 AI 시스템에 들어가면 그것이 요약되고, 정규화되고, 임베딩되어 규모 있는 의사결정에 배포됩니다.</p>
+
+<p>그렇게 조용한 데이터 문제가 시스템 전체의 문제가 됩니다.</p>
+
+<p>오늘날 데이터 엔지니어는 단순히 데이터를 옮기는 것이 아니라 조직의 현실을 형성하는 역할을 합니다.</p>
+
+<p>그렇기 때문에 현대적 생산성은 더 빠른 파이프라인을 출시하는 것이 아닙니다. 의미 변화를 잡아내는 관찰 가능성(observability), 조직 개편에도 무너지지 않는 데이터 소유 모델, AI 도구들조차 인식하지 못하는 가드레일을 갖추는 것입니다.</p>
+
+<p>시스템이 더 "지능적"일수록, 허술한 데이터 기반에 더 가혹해집니다.</p>
+
+<h2>4. 시스템 전체로 사고하지 않으면 커리어가 정체된다</h2>
+
+<p>AI 도구는 고립된 작업이 아니라 시스템을 이해하는 사람에게 보상을 줍니다.</p>
+
+<p>2026년의 영향력 있는 데이터 엔지니어들은 데이터 수집부터 모델링, 분석, ML, AI 소비까지 전 과정을 아우릅니다. 지연 시간, 데이터 신선도, 신뢰도가 하위 시스템에 어떻게 전파되는지 이해합니다. 다른 엔지니어뿐 아니라 프로덕트, ML, 인프라 팀과도 막힘없이 소통합니다.</p>
+
+<p>내 DAG에서 작업이 멈춘다면, 영향력도 그 자리에 머뭅니다.</p>
+
+<p>이것이 불편한 전환입니다. 무언가를 만드는 사람에서 시스템이 왜 그렇게 동작하는지 설명하는 사람으로 이동하는 것입니다.</p>
+
+<p>그러려면 소통 능력, 트레이드오프를 따지는 사고, AI가 해결할 수 없는 모호함을 견디는 내성이 필요합니다.</p>
+
+<p>아이러니하게도, AI는 우리 일을 더 기계적으로 만들지 않고 더 인간적으로 만들고 있습니다.</p>
+
+<h2>5. 생산성은 이제 "예스"보다 "노"를 더 많이 말하는 것이다</h2>
+
+<p>AI는 무엇이든 쉽게 만들 수 있게 해줍니다. 바로 그것이 문제입니다.</p>
+
+<p>예전에는 개발 공수가 자연스럽게 혼란을 제한했습니다. 이제 병목은 판단력입니다.</p>
+
+<p>제가 2026년에 가장 생산적이라고 느끼는 데이터 엔지니어들은 파이프라인이 만들어지기 전에 없애버립니다. "AI 기반"이라는 이름으로 데이터 기반이 전혀 없는 요청에는 당당히 반박합니다. 시스템을 더 적게 설계하지만, 그 시스템들은 훨씬 오래 살아남습니다.</p>
+
+<p>그들은 코딩에 덜 쓰고 생각에 더 씁니다. 반응하는 데 덜 쓰고 방향을 잡는 데 더 씁니다.</p>
+
+<p>AI는 움직임을 가속합니다. 방향을 제시하는 것은 오직 인간뿐입니다. 그리고 방향 감각은 현대 데이터 스택에서 가장 희귀한 역량입니다.</p>
+
+<h2>마치며</h2>
+
+<p>AI 시대의 데이터 엔지니어로 산다는 것은 도구를 따라잡는 것보다 자신의 중심을 지키는 것에 가깝습니다.</p>
+
+<p>이 직업이 사라진 게 아닙니다. 더 깊어졌습니다.</p>
+
+<p>불편한 부분은 기술적 탁월함만으로는 더 이상 충분하지 않다는 것을 깨닫는 것입니다. 희망적인 부분은 지혜, 맥락, 책임감이 다시 수요를 얻고 있다는 것입니다.</p>
+
+<p>AI는 계속 발전할 것입니다. 우리도 그래야 합니다. 하지만 우리가 훈련받아온 방식으로가 아니라.</p>
+
+<p>때로 발전은 더 많이 배우는 것이 아닙니다. 지금까지 나를 정의해온 것들을 내려놓는 것처럼 보이기도 합니다.</p>
+</body>
+</html>

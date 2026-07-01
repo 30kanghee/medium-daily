@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Google Gave Me 45 Minutes to Design a URL Shortener. I Used 40 Minutes on the Wrong Thing.</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Google Gave Me 45 Minutes to Design a URL Shortener. I Used 40 Minutes on the Wrong Thing.</h1>
+<div class="meta">speedcraft21 · AWS Tip · 6분 읽기 · <a href="https://medium.com/@speedcraft21/google-gave-me-45-minutes-to-design-a-url-shortener-i-used-40-minutes-on-the-wrong-thing-2a695a898441" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@speedcraft21/google-gave-me-45-minutes-to-design-a-url-shortener-i-used-40-minutes-on-the-wrong-thing-2a695a898441" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">Google 시스템 설계 면접에서 45분 중 40분을 아무 데이터 모델도 없는 화려한 아키텍처 다이어그램에 쏟아붓다 탈락한 뒤 깨달은 것들.</p>
+<h3>요약</h3>
+<p>저자는 Google 면접에서 URL 단축기를 설계하라는 문제를 받고 로드 밸런서, 샤딩, Redis, 분석 파이프라인까지 갖춘 화려한 아키텍처를 그렸지만, 정작 URL 매핑을 저장하는 테이블 스키마 하나를 정의하지 못했다. 면접관이 원한 것은 박식함 과시가 아니라 "요구사항이 불명확한 상황에서 어떻게 의사결정을 내리는가"였다. 진짜 시니어 엔지니어의 움직임은 먼저 요구사항을 좁히고, 작지만 방어 가능한 스키마와 API를 보여준 뒤, 면접관이 실마리를 당길 때만 깊이 들어가는 것이다. 코드 예시와 함께 "처음 10분 안에 했어야 했던 것"을 구체적으로 재구성해 보여준다.</p>
+</div>
+
+<h2>아키텍처는 그럴싸해 보였다. 빠진 스키마가 모든 것을 말해줬다.</h2>
+
+<p>면접관의 카메라가 켜져 있었습니다. 제 카메라도 켜져 있었습니다. 공유 화이트보드는 23분째 아홉 개의 박스가 있는 시스템 다이어그램으로 채워져 있었습니다.</p>
+
+<p>"사용자가 링크를 클릭했을 때 어떤 일이 일어나는지 설명해 주시겠어요?"</p>
+
+<p>저는 다이어그램을 바라봤습니다. 로드 밸런서, API 게이트웨이, 쓰기 서비스, 읽기 서비스, ID 생성 서비스, 캐시, 프라이머리 DB, 읽기 레플리카, 분석 파이프라인. 저는 실제 문제에 답하지 않았습니다. 가상 팀의 조직도를 그린 것이었습니다.</p>
+
+<p>"물론이죠, 요청이 먼저 CDN에 도달하고…"</p>
+
+<p>"그 전에요. 스키마는 무엇인가요?"</p>
+
+<p>저에게는 스키마가 없었습니다. 아키텍처만 있었습니다.</p>
+
+<h2>시스템 설계를 안다고 생각했다. 몰랐다.</h2>
+
+<p>저는 "URL 단축기를 설계하세요"라는 문제가 일종의 겉껍데기라고 생각했습니다. 진짜 질문은 DDIA를 읽었는지 증명하고, 세 가지 복제 전략을 나열하고, 블룸 필터를 찾아보지 않고 설명하는 것이라고 가정했습니다.</p>
+
+<p>저는 시스템 설계 영상을 6개월 동안 봤습니다. 용어들을 알았습니다. 그리고 어휘를 유창함으로 착각한 사람의 자신감을 가지고 면접장에 들어갔습니다.</p>
+
+<h2>40분을 어떻게 태웠는가</h2>
+
+<p>저는 규모 이야기로 시작했습니다. "하루 1억 개의 URL을 가정하면 초당 약 1,200건의 쓰기, 읽기는 100배…" 면접관이 고개를 끄덕였습니다. 5분이 지났습니다. 괜찮았습니다. 심지어 유용했습니다.</p>
+
+<p>그다음 ID 생성으로 넘어갔습니다. Snowflake, base62, 분산 환경에서 글로벌 카운터가 작동하지 않는 이유, 해시 충돌의 생일 역설. 별도 서비스까지 그렸습니다. 면접관이 물었습니다. "지금 당장 그것을 위한 별도 서비스가 필요한가요?"</p>
+
+<p>잠깐. 안 된다고 하지 않았습니다. "지금 당장"이라고 했습니다. 저는 그 한정어를 놓쳤습니다. 필요하다고 대답하고 계속 나아갔습니다.</p>
+
+<p>그다음 샤딩이었습니다. 샤딩된 MySQL을 그렸습니다. 핫 키가 걱정돼서 Redis를 추가했습니다. 캐시 무효화가 걱정돼서 모든 쓰기가 캐시와 DB에 동시에 가는 패턴을 그렸습니다. Redis가 다운됐을 때 폴백이 필요한 상황을 이야기하기 시작했습니다.</p>
+
+<p>38분 즈음 저의 다이어그램은 아마도 트위터의 트래픽을 처리할 수 있었지만, 실제로 URL을 단축할 수는 없었습니다. 긴 URL과 짧은 URL 간의 매핑을 저장하는 테이블을 한 번도 적지 않았기 때문입니다.</p>
+
+<p>"v1만 출시한다고 가정하면," 그가 말했습니다. "데이터베이스 행이 어떻게 생겼나요?"</p>
+
+<p>저는 화이트보드를 바라봤습니다. 데이터를 정의하지 않은 채 시스템을 설계했던 것입니다.</p>
+
+<h2>그 이후</h2>
+
+<p>이틀 후 리크루터에게 연락이 왔습니다. "팀에서 설계에 집중력이 부족하다고 느꼈습니다." 그게 전부였습니다. 저는 그 문장을 다른 무언가를 찾으며 세 번 읽었습니다. 없었습니다.</p>
+
+<p>Google에서 몇 년을 일한 친구가 나중에 이야기해줬습니다. 지원자의 절반이 정확히 이렇게 한다고. 우리는 문제를 답이 유명한 아키텍처인 시험처럼 다루는데, 실제 시험은 "요구사항이 불명확할 때 어떻게 의사결정을 내리는가"라고.</p>
+
+<h2>면접관이 실제로 원하는 것</h2>
+
+<p>시니어 엔지니어의 첫 번째 움직임은 박스를 그리는 것이 아닙니다. 문제를 좁히는 것입니다. URL이 얼마나 많은가? 내부용인가 공개용인가? 링크가 만료되는가? 커스텀 별칭은? 캠페인 급등으로 인해 읽기가 많은가, 아니면 안정적인 상태에서 읽기가 많은가?</p>
+
+<p>그 답 없이는 모든 아키텍처 결정이 추천처럼 포장된 추측입니다. 분산 ID 생성은 어떤 규모에서는 옳고 다른 규모에서는 터무니없습니다. 샤딩은 없을 수도 있는 문제를 해결합니다. 블룸 필터는 문제가 그것을 필요로 할 때는 훌륭하고 그렇지 않을 때는 산만함입니다.</p>
+
+<p>면접관이 테스트하는 것은 당신이 추측을 거부할 것인지입니다. 그들은 이런 말을 듣고 싶어합니다. "X를 가정하면 Y를 하겠습니다. Z를 가정하면 더 단순한 것을 하겠습니다." 다이어그램은 부산물입니다. 추론이 결과물입니다. 대부분의 지원자는 세련된 다이어그램을 만들고 눈에 보이는 추론은 없습니다. 시니어의 움직임은 반대입니다. 눈에 보이는 추론, 작은 다이어그램, 요청받은 곳에서만 확장하는 의지.</p>
+
+<h2>10분 안에 했어야 했던 것</h2>
+
+<p>합격했을 버전은 적고 보면 민망할 만큼 작습니다. 처음부터 끝까지 소개하겠습니다.</p>
+
+<h3>스키마</h3>
+
+<p>칼럼 네 개입니다. <code>short_code</code> 칼럼은 없습니다. 단축 코드는 그냥 <code>base62(id)</code>이기 때문입니다. 저장하는 게 아니라 계산합니다.</p>
+
+<pre>CREATE TABLE urls (
+    id         BIGINT PRIMARY KEY AUTO_INCREMENT,
+    long_url   TEXT NOT NULL,
+    user_id    BIGINT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+<p>이것이 데이터 모델입니다. 이 테이블에 칼럼을 올려놓을 이유를 설명할 수 없다면 추가하지 마세요. <code>expires_at</code>? 링크가 만료된다면요. <code>click_count</code>? 다른 곳에 갑니다. 그 쓰기 경로는 다른 특성을 가집니다. 저항하세요.</p>
+
+<h3>단축 코드</h3>
+
+<p>행 id를 base62로 인코딩합니다. 그게 알고리즘 전부입니다.</p>
+
+<pre>ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+BASE = len(ALPHABET)  # 62
+
+def encode_base62(n: int) -> str:
+    if n == 0:
+        return ALPHABET[0]
+    out = []
+    while n > 0:
+        n, rem = divmod(n, BASE)
+        out.append(ALPHABET[rem])
+    return "".join(reversed(out))
+
+def decode_base62(s: str) -> int:
+    n = 0
+    for c in s:
+        n = n * BASE + ALPHABET.index(c)
+    return n</pre>
+
+<p>7자리 base62 문자열은 약 3.5조 개의 id를 커버합니다. 충분합니다.</p>
+
+<p>트레이드오프를 소리 내어 말하세요. 순차적 id는 단축 코드가 추측 가능하다는 것을 의미합니다. 면접관이 그것에 관심을 갖는다면, 링크가 열거 가능해서는 안 된다면, 삽입 시 유니크 체크를 하는 랜덤 코드로 전환합니다. 그 실마리가 당겨질 때 그 변형을 보여줄 것입니다.</p>
+
+<h3>API</h3>
+
+<p>쓰기 엔드포인트 하나, 읽기 엔드포인트 하나입니다. 읽기 엔드포인트는 그냥 301 리다이렉트입니다.</p>
+
+<pre>from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
+from pydantic import BaseModel, HttpUrl
+
+app = FastAPI()
+
+class ShortenRequest(BaseModel):
+    long_url: HttpUrl
+    user_id: int | None = None
+
+@app.post("/shorten")
+def shorten(req: ShortenRequest):
+    row_id = db.insert(long_url=str(req.long_url), user_id=req.user_id)
+    return {"short_url": f"https://sho.rt/{encode_base62(row_id)}"}
+
+@app.get("/{short_code}")
+def redirect(short_code: str):
+    try:
+        row_id = decode_base62(short_code)
+    except ValueError:
+        raise HTTPException(status_code=404)
+    long_url = db.get_long_url(row_id)
+    if long_url is None:
+        raise HTTPException(status_code=404)
+    return RedirectResponse(url=long_url, status_code=301)</pre>
+
+<p>라우트 두 개입니다. 없는 것을 주목하세요. ID 생성 서비스 없음, 별도 읽기 서비스 없음, 분석 파이프라인 없음.</p>
+
+<h3>캐시</h3>
+
+<p>읽기가 지배적이고, 소수의 URL이 트래픽 대부분을 차지합니다. 읽기 경로 앞에 제한된 인프로세스 LRU를 두면 별도 인프라 없이 그것을 처리합니다.</p>
+
+<pre>from functools import lru_cache
+
+@lru_cache(maxsize=100_000)
+def get_long_url_cached(row_id: int) -> str | None:
+    return db.get_long_url(row_id)</pre>
+
+<p>트레이드오프를 언급하세요. 이것은 무효화가 없고, URL이 불변이라면 괜찮습니다. 편집이나 삭제를 추가하는 순간 실제 캐시 무효화가 필요하고, 그 시점에서 LRU는 더 이상 올바른 도구가 아닙니다. 제약을 명명하는 것이 시니어의 움직임입니다. 제약이 없는 척하는 것이 저를 탈락시킨 것입니다.</p>
+
+<p>그게 전부입니다. 주니어라면 일주일 안에 만들 수 있습니다. 시니어의 움직임은 정확히 그것을 기꺼이 제시하고 기다리는 것입니다.</p>
+
+<h2>언제 깊이 들어가는가</h2>
+
+<p>깊이는 면접관이 실마리를 당긴 후에 옵니다. 반드시 당깁니다.</p>
+
+<h3>"URL이 추측 가능하면 안 된다면?"</h3>
+
+<p>순차 인코딩 대신 랜덤 코드로 전환하고, 삽입 시 유니크 체크가 필요하다는 것을 인정하고, 충돌 시 재시도합니다.</p>
+
+<pre>import secrets
+
+def random_code(length: int = 7) -> str:
+    return "".join(secrets.choice(ALPHABET) for _ in range(length))
+
+def shorten_random(long_url: str, user_id: int | None, max_retries: int = 5) -> str:
+    for _ in range(max_retries):
+        code = random_code()
+        try:
+            db.insert_with_code(long_url=long_url, code=code, user_id=user_id)
+            return code
+        except UniqueViolation:
+            continue
+    raise RuntimeError("Could not allocate unique code")</pre>
+
+<p>이제 행에 유니크 인덱스가 있는 <code>short_code</code> 칼럼이 필요합니다. 수학을 언급하세요. 7자리와 62^7 ≈ 3.5조 코드에서 수억 개의 행을 저장할 때까지 충돌 확률은 무시할 만합니다. 그 이후에는 8자리로 늘립니다.</p>
+
+<h3>"한 URL이 한 시간에 1억 번 클릭된다면?"</h3>
+
+<p>리다이렉트 경로가 핫 경로입니다. 두 가지가 많은 것을 해결합니다. 301의 CDN 엣지 캐싱, 그리고 캐시 미스가 N개의 동일한 DB 쿼리로 번지지 않도록 애플리케이션 계층에서의 요청 집약입니다.</p>
+
+<pre>import asyncio
+
+_inflight: dict[int, asyncio.Future] = {}
+
+async def get_long_url_collapsed(row_id: int) -> str | None:
+    if row_id in _inflight:
+        return await _inflight[row_id]
+    fut = asyncio.get_event_loop().create_future()
+    _inflight[row_id] = fut
+    try:
+        result = await db.get_long_url_async(row_id)
+        fut.set_result(result)
+        return result
+    finally:
+        _inflight.pop(row_id, None)</pre>
+
+<h3>"분석이 필요하다면?"</h3>
+
+<p>리다이렉트 경로에서 카운터를 쓰지 마세요. 큐에 발송 후 잊어버리고(fire-and-forget) 하위에서 집계하세요. 리다이렉트는 301과 메모리 조회로 유지되고, 분석 파이프라인은 자체 일정과 자체 실패 도메인으로 실행됩니다.</p>
+
+<h3>"세 개 지역에서 실행된다면?"</h3>
+
+<p>이제 제가 서둘러 뛰어들었던 ID 생성 질문이 실제로 중요해집니다. 지역별 id 범위, 또는 id에 지역 비트를 집어넣는 Snowflake 스타일의 방식이 글로벌 코디네이터 없이 충돌을 방지합니다. 이제 다이어그램이 세 번째 박스를 얻을 자격이 생깁니다.</p>
+
+<p>각 실마리는 그 자체로 15분이 걸릴 수 있습니다. 선점하지 마세요. 당겨지기를 기다리고, 그다음에 들어가세요.</p>
+
+<h2>텅 빈 화이트보드</h2>
+
+<p>저는 그 다이어그램을 가끔 생각합니다. 박스 아홉 개, 스키마 없음, 40분의 아키텍처. 단 하나의 URL도 실제로 단축할 수 없는 시스템에 대해 유창하게 들리는 이야기를 했습니다.</p>
+
+<p>교훈은 더 많이 알아야 한다는 것이 아니었습니다. 더 적게, 더 일찍 보여줄 의지를 가져야 한다는 것이었습니다. 그리고 대화가 저를 더 깊이 데려가도록 신뢰해야 한다는 것이었습니다. 깊이를 과시하는 것이 아니라 사고를 보여주는 척하면서 이것을 한 적이 있나요?</p>
+</body>
+</html>

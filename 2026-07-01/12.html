@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Building a RAG Pipeline for 10M+ Documents With Near-Zero Hallucination</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Building a RAG Pipeline for 10M+ Documents With Near-Zero Hallucination</h1>
+<div class="meta">Fareed Khan · 37분 읽기 · <a href="https://medium.com/@fareedkhandev/building-a-rag-pipeline-for-10m-documents-with-near-zero-hallucination-788e4b5b7f25" target="_blank">원문</a> · <a href="https://freedium-mirror.cfd/https://medium.com/@fareedkhandev/building-a-rag-pipeline-for-10m-documents-with-near-zero-hallucination-788e4b5b7f25" target="_blank">freedium</a></div>
+<div class="summary">
+<p class="oneline">1,000만 개 이상의 문서를 처리하는 RAG 파이프라인에서 환각을 거의 제로에 가깝게 줄이는 방법을 코드와 함께 단계별로 설명한다.</p>
+<h3>요약</h3>
+<p>문서 코퍼스가 수백만 건으로 늘어날수록 RAG 시스템의 환각 문제는 더욱 심해진다. 이 글은 하이브리드 검색(밀집 벡터 + BM25), 문맥 청킹, 상호 순위 융합(RRF), 재순위 지정, 인용 기반 생성, 원자 단위 주장 검증, 그리고 교정 루프로 구성된 CRAG 에이전트를 단계별로 구축하는 과정을 보여준다. 200개 질문 평가 세트(답변 가능 100개, 불가능 100개)에서 시스템은 답변 불가능한 질문의 98%를 올바르게 기권하며 환각률 2%를 달성했고, 신뢰성 점수는 0.908을 기록했다. 또한 LanceDB IVF_PQ 인덱스를 통해 1,000만 개 벡터에서 18ms p95 검색 지연을 실측으로 증명한다.</p>
+</div>
+
+<h2>왜 환각이 더 어려워지는가</h2>
+<p>RAG 시스템에 문서를 더 많이 쌓을수록 모델이 답을 만들어낼 경로도 늘어난다. 코퍼스가 수백만에서 1,000만 건을 넘어서면 환각 문제는 한층 더 심각해진다. 이 문제를 근본적으로 해결하려면 모델이 자신의 근거를 스스로 점검하고, 모든 주장에 인용을 달며, 근거가 없을 때는 답변을 거부하는 파이프라인이 필요하다. Claude가 인용을 달아 답하는 방식과 동일한 아이디어다.</p>
+<p>파이프라인은 다음 단계로 구성된다. 코퍼스 다운로드 및 전처리, 정규화와 근접 중복 제거를 통한 청킹, LanceDB와 BM25를 결합한 하이브리드 인덱스 구축, RRF 융합 및 재순위 지정을 통한 검색, 질문 분류 및 멀티홉 분해, 인용 기반 생성, 원자 단위 주장 검증, 미지원 답변 기권, 그리고 자기 교정 CRAG 루프. 전체 코드는 GitHub에 공개되어 있다.</p>
+
+<h2>1단계: 프로젝트 설정</h2>
+<p>모든 난수 시드를 고정하여 실행 재현성을 보장하는 것이 첫 번째 작업이다. NumPy, Python 해시, PyTorch 시드를 한 번에 설정하는 함수를 만들고 시드 42로 초기화한다.</p>
+<pre>import json, os, random, subprocess, time
+from dataclasses import dataclass, asdict, field
+import numpy as np
+
+def set_determinism(seed: int) -> None:
+    """Seed every RNG we touch so runs are reproducible."""
+    random.seed(seed)
+    np.random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    try:
+        import torch
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    except Exception:
+        pass
+
+set_determinism(42)</pre>
+<p>GPU는 80GB NVIDIA H100 PCIe 한 장이며, 호스트에는 180GB RAM과 750GB NVMe 디스크가 있다. 생성 모델(Qwen3-32B)은 별도의 vLLM 서버로 돌리고, 이 노트북에서는 OpenAI 호환 클라이언트로 통신한다. 전체 설정은 하나의 config 객체에 고정된다. 주요 파라미터: 청크 크기 256 토큰, 검색 후보 150개, 재순위 후 상위 20개, RRF k=60, 최대 홉 수 3회, 신뢰도 임계값 0.3.</p>
+
+<h2>2단계: 데이터 수집</h2>
+<p>코퍼스로는 HotpotQA(distractor 설정)를 사용한다. 각 질문에 문장 단위 정답 근거가 함께 제공되어 검색 재현율을 정확히 측정할 수 있기 때문이다. 답변 불가능한 질문 측정을 위해 SQuAD v2 불가능 질문과 거짓 전제 질문을 별도로 준비한다.</p>
+<p>검증 셋 7,405개 질문에서 2만 개 구절 제한으로 빌드하면 패시지 20,007개와 QA 항목 2,073개가 추출된다. 평균 패시지 길이는 89 단어이며, 비교 질문의 예시로 "Scott Derrickson과 Ed Wood는 같은 국적인가?"를 파이프라인 전체에 걸쳐 추적한다.</p>
+
+<h2>3단계: 코퍼스 정제</h2>
+<p>NFKC 정규화로 유니코드를 통일하고 소프트 하이픈과 공백 연속을 제거한다. 이렇게 하면 합자 "ﬁ"가 "fi"로 변환되고 탭과 연속 공백이 단일 공백으로 정리된다. BM25는 원시 문자 단위로 토큰화하기 때문에 이 정규화가 누락되면 단어가 쪼개지거나 합쳐져 검색 재현율이 조용히 저하된다.</p>
+<p>근접 중복 제거에는 MinHash LSH를 사용한다. 쌍별 비교는 2차 시간이라 코퍼스 규모에서는 불가능하지만, MinHash는 선형에 가까운 시간으로 근접 중복을 찾아낸다. 임계값 0.9로 실행하면 20,007개에서 19개 중복이 제거되어 19,987개가 남는다. 1,000만 건 규모에서도 동일한 코드가 작동한다.</p>
+
+<h2>4단계: 청킹과 컨텍스트 부착</h2>
+<p>고정 크기 청킹은 엔티티를 문맥과 분리시키므로 멀티홉 질문에서 치명적이다. 대신 토큰 예산(256 토큰)에 맞춰 문장 경계를 유지하며 32 토큰 중첩으로 청킹한다. 19,987개 패시지에서 21,259개 청크가 생성되며 평균 125 토큰이다.</p>
+<p>그다음 각 청크에 상황 설명 문장을 앞에 붙인다. "revenue grew 3 percent that quarter" 같은 청크는 단독으로는 검색이 불가능하기 때문이다. Qwen3-32B가 문서 제목과 청크 내용을 보고 25단어 이내의 컨텍스트 문장을 생성하며, 이 작업은 스레드 풀로 병렬화된다. 이 컨텍스트 접두사가 검색 재현율을 크게 끌어올린다.</p>
+
+<h2>5단계: 하이브리드 인덱스 구축</h2>
+<p>단일 검색기로는 부족하다. 밀집 임베딩은 패러프레이즈를 잡지만 희귀 고유명사를 놓친다. BM25는 정확한 토큰 매칭에 강하지만 다른 표현을 놓친다. 두 방식을 모두 인덱싱해 상호보완한다.</p>
+<p>밀집 벡터는 LanceDB에 NVMe 디스크에 저장한다. 메모리 크기를 초과하는 인덱스도 같은 코드로 처리할 수 있어 1,000만 벡터 확장이 가능하다. BM25는 bm25s로 구축한다. 전체 21,259 청크의 인덱스 크기는 디스크에서 약 11.1MB에 불과하다.</p>
+
+<h2>6단계: 검색 — 융합과 재순위</h2>
+<h3>상호 순위 융합(RRF)</h3>
+<p>두 검색기의 점수는 서로 다른 척도에 있으므로 직접 비교가 불가능하다. RRF는 점수를 무시하고 순위만 사용한다. 각 결과에 1/(k+순위) 가중치를 부여하고 두 목록에서 합산한다. 두 검색기 모두 높은 순위에 올린 문서가 자연스럽게 상위에 오른다.</p>
+<pre>def rrf_fuse(rankings: list[list[str]], k: int = 60) -> list[tuple[str, float]]:
+    scores: dict[str, float] = {}
+    for ranking in rankings:
+        for rank, cid in enumerate(ranking):
+            scores[cid] = scores.get(cid, 0.0) + 1.0 / (k + rank + 1)
+    return sorted(scores.items(), key=lambda x: -x[1])</pre>
+
+<h3>재순위</h3>
+<p>융합 후 150개 후보를 크로스인코더 재순위 모델(Qwen3-Reranker-4B)에 넘긴다. 양방향 인코더 임베딩은 빠르지만 엔티티를 단지 언급하는 패시지와 실제로 질문에 답하는 패시지를 구분하지 못한다. 크로스인코더는 정확하지만 느리기 때문에 후보 150개에만 적용하는 것이 적절한 절충점이다. 이 비용은 인덱스가 2만이든 1,000만이든 항상 150쌍으로 고정된다.</p>
+<p>우리의 추적 예시 "Scott Derrickson과 Ed Wood는 같은 국적인가?"에서 두 정답 패시지가 재순위 점수 0.999, 0.996으로 상위에 오른다. 전체 평가에서 컨텍스트 재현율은 0.97을 기록한다.</p>
+
+<h2>7단계: 라우팅과 질문 분해</h2>
+<p>모든 질문이 완전한 파이프라인이 필요하지는 않다. 질문을 세 가지로 분류한다. <code>no_retrieval</code>(인사말이나 의견), <code>single_hop</code>(단일 사실 조회), <code>multi_hop</code>(여러 문서의 사실 결합). 라우팅은 짧은 분류 호출 하나로 이루어지며, 불필요한 검색과 검증 비용을 절약한다.</p>
+<p>멀티홉 질문은 2~3개의 독립적인 하위 질문으로 분해한다. 거짓 전제 탐지기도 함께 동작하지만, 작은 예/아니오 탐지기는 노이즈가 많아 하드 게이트가 아닌 신호로만 사용하며 실제 판단은 검증 단계에서 한다.</p>
+
+<h2>8단계: 인용 기반 생성</h2>
+<p>이것이 첫 번째 환각 방화벽이다. 시스템 프롬프트는 세 가지 규칙을 강제한다. 외부 지식 사용 금지, 모든 문장에 패시지 ID 인용 부착, 근거가 없을 경우 <code>INSUFFICIENT_EVIDENCE</code> 토큰 출력.</p>
+<p>생성 후에는 모든 인용 마커를 파싱하여 실제 청크 ID와 대조한다. 모델이 만들어낸 가짜 인용은 곧바로 제거된다. 자신감 있는 문장 뒤에 달린 인용이 실제 근거를 보증하지 않는 경우가 가장 위험한 환각인데, 이 단계에서 가짜 인용은 사용자에게 도달하기 전에 삭제된다.</p>
+
+<h2>9단계: 검증 게이트</h2>
+<p>결정적인 방화벽이다. 인용 자체는 모델이 패시지를 가리켰다는 증거일 뿐, 그 패시지가 실제로 주장을 지지한다는 보증이 아니다. 이 간극을 메우는 것이 검증 게이트다.</p>
+<p>답변을 원자 단위 주장으로 분해한 뒤, 각 주장을 인용된 패시지와 대조해 신뢰도 점수를 매긴다. 판사 모델은 Qwen3-32B 자체이며, 작은 NLI 모델이 여러 긴 패시지를 동시에 읽어야 할 때 취약해지기 때문이다. 모든 주장이 임계값(0.3)을 넘어야 통과하며, 하나라도 실패하면 전체 답변이 기권으로 처리된다.</p>
+<p>핵심 설계 원칙: 게이트는 평균이 아닌 최솟값을 보고한다. 긴 답변에서 80%는 근거가 있어도 하나의 창작된 사실이 숨어 있을 수 있다. 주장 수준 게이트는 그 하나를 골라낸다.</p>
+<p>추적 예시에서 세 가지 원자 주장 모두 1.00 점수로 통과한다. 반면 "마리 퀴리가 달에 여행했다"는 주장은 0.20을 받아 전체 답변이 기권된다.</p>
+<p>경계선에 있는 답변에는 한 번의 자가 수정 기회를 준다(CoVe). 패시지로 지지되지 않는 문장을 삭제하거나 완화한 수정본을 만들고 게이트를 다시 통과시킨다.</p>
+
+<h2>10단계: 기권 정책</h2>
+<p>기권은 실패가 아니라 올바른 답이다. 라우터가 <code>no_retrieval</code>로 분류했거나, 모델이 기권 토큰을 출력했거나, 검증 게이트가 실패하면 기권한다. 이것이 "거의 제로" 환각을 가능하게 하는 핵심이다. 모델이 틀릴 가능성을 없앨 수 없지만, 근거 없는 질문에는 시스템이 거부하도록 만들 수 있다.</p>
+
+<h2>11단계: CRAG 에이전트</h2>
+<p>모든 컴포넌트를 LangGraph로 연결한다. 흐름이 직선이 아니라 실제 그래프(라우팅, 교정 루프, 기권 경로)이기 때문에 LangGraph가 적합하다. 에이전트 상태는 질문, 라우트, 근거, 채점, 초안, 게이트 결과, 지연 시간을 누적하는 typed dictionary다.</p>
+<p>핵심 흐름: 라우팅 → 검색 → 근거 채점 → 강하면 생성, 약하면 질문 재구성 후 재검색(최대 3홉), 완전히 약하면 기권. 교정 루프는 예산 내 지연 시간을 유지하면서도 두 번, 세 번 더 시도할 수 있게 한다.</p>
+<p>추적 예시 결과: 라우트=single_hop, 홉=0, 채점=1.00, 상태=answered, 이유=verified, 총 4.6초. 반대로 "아이작 뉴턴이 1700년에 발명한 프로그래밍 언어는?"은 채점 0.15로 생성 단계 없이 3.3초 만에 기권 반환된다.</p>
+
+<h2>결과: 얼마나 잘 작동하는가</h2>
+<h3>골든 세트 평가</h3>
+<p>200개 질문(답변 가능 100개, 불가능 100개)으로 평가한다. 불가능한 쪽이 핵심이다. 검증 게이트가 없는 일반 RAG라면 이 질문들에 자신 있게 답할 것이다.</p>
+<p>혼동 행렬 결과는 이렇다. 답변 가능 100개 중 46개 답변, 54개 기권. 답변 불가능 100개 중 2개 답변, 98개 기권. 즉 환각률은 2%다. 상위 행이 이 안전성의 대가다. 답변 가능한 100개 중 46%만 실제로 답하고 나머지는 기권한다.</p>
+<p>임계값은 조정 가능하다. 리스크-커버리지 곡선을 그려 환각을 5% 이하로 유지하면서 최대 커버리지를 내는 임계값을 자동으로 선택한다. 최종 지표: 신뢰성 0.908, 답변 관련성 0.817, 컨텍스트 재현율@k 0.97. 어디서 커버리지와 안전성 사이를 타협할지는 도메인 결정이다.</p>
+
+<h3>검증기 성능</h3>
+<p>게이트 전체가 검증기에 의존하므로, 검증기를 별도로 평가한다. HaluBench 300개 항목으로 측정한 AUROC는 0.702다. 랜덤보다 명확히 낫지만 완벽과는 거리가 있다. 이것이 전체 시스템의 실제 상한선이다. 더 강한 검증기 하나만 교체해도 모든 하위 지표가 개선된다. 아키텍처는 이 교체를 나머지 코드를 건드리지 않고 가능하게 설계되어 있다.</p>
+
+<h2>1,000만 벡터로 확장</h2>
+<p>LanceDB IVF_PQ 인덱스를 10만, 100만, 1,000만 벡터 규모에서 실제로 벤치마크한다. 정확 탐색은 n에 선형이어서 1,000만 규모에서는 불가능하고, 근사 인덱스는 전체 공간 대신 몇 개의 파티션만 탐색한다.</p>
+<p>결과:</p>
+<ul>
+  <li>10만 벡터: 빌드 42초, 0.39GB, p95 10.6ms</li>
+  <li>100만 벡터: 빌드 81초, 3.9GB, p95 14.5ms</li>
+  <li>1,000만 벡터: 빌드 347초(약 6분), 38.8GB, p95 18.5ms</li>
+</ul>
+<p>핵심 발견: 데이터가 100배 늘어도 지연은 2배 미만으로 증가한다. 디스크는 선형으로 늘어나지만 NVMe에 저장되므로 단일 서버로 처리 가능하다. 100M 벡터 외삽 시 p95 77.6ms, 388GB 인덱스로 여전히 한 대의 서버로 수용 가능하다. 쿼리당 에이전트 비용에서는 검색(평균 4.2초)이 생성(1.6초)과 검증(1.8초)을 합친 것보다 지배적이다. 병목은 벡터 스토어가 아니라 LLM 호출이다.</p>
+
+<h2>한계와 다음 단계</h2>
+<p>몇 가지 사실을 명확히 한다. 환각률 2%는 0%가 아니다. 생성 모델에서 진정한 0%는 달성 불가능하다. 답변 가능 질문 커버리지는 0.46으로, 이것은 의도적인 설계 선택이다. 1,000만 벡터 벤치마크는 합성 벡터를 사용하므로 지연과 디스크 확장성을 증명하며 실제 재현율은 실코퍼스에서 확인해야 한다. 검증기 AUROC 0.702가 가장 큰 개선 여지다.</p>
+<p>다음 개선 방향: 더 강한 검증기, 실제 임베딩으로 규모 확장 실험, 샤딩과 양자화(라우팅/검증 논리는 변경 불필요), 도메인별 임계값 교정.</p>
+
+<hr>
+
+<p>이 파이프라인의 핵심 아이디어는 하나다. 모델이 절대 틀리지 않도록 만드는 것이 아니라, 증명할 수 있는 것만 말하고 나머지는 기권하는 시스템을 만드는 것이다. 인덱스는 1,000만 벡터에서 18ms로 확장되고, 답변 신뢰성은 0.908을 유지하며, 근거 없는 질문에는 자신 있는 추측 대신 "충분한 근거가 없다"는 솔직한 답이 돌아온다.</p>
+</body>
+</html>
