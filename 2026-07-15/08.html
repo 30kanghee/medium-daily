@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Java Records vs Lombok: I Refactored 50K Lines - Here's the Verdict</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  .notice{color:#888;font-size:.85em;border-top:1px solid #eee;margin-top:2em;padding-top:1em;}
+</style>
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Java Records vs Lombok: I Refactored 50K Lines - Here's the Verdict</h1>
+<div class="meta">The Thread Whisperer · 4분 읽기 · <a href="https://medium.com/@maahisoft20/java-records-vs-lombok-i-refactored-50k-lines-heres-the-verdict-282af923e614" target="_blank">원문</a></div>
+<div class="summary">
+<p class="oneline">롬복(Lombok)이 만들어내는 '보이지 않는 코드'에 지친 개발자가 실제 서비스 코드 5만 줄을 자바 레코드로 갈아엎은 뒤 내린 결론.</p>
+<h3>요약</h3>
+<p>필자는 IDE와 컴파일러가 분명히 존재한다고 알려주는 메서드가 실제로는 소스코드 어디에도 없다는 사실을 뒤늦게 깨닫고 밤새 헤맨 경험을 계기로, 결국 지난 분기에 실제 프로덕션 코드 5만 줄에서 롬복을 걷어내고 자바 레코드로 교체하는 대규모 리팩터링을 감행했다. 롬복은 컴파일 시점에 바이트코드를 생성해 getter 같은 메서드를 자동으로 만들어주지만, 그 코드가 사람이 작성한 텍스트로 존재하지 않기 때문에 디버깅이나 협업 과정에서 혼란을 일으킬 수 있다는 게 필자의 핵심 비판이다. 이 글은 단순한 기능 비교표가 아니라, 실제 리팩터링 과정에서 겪은 시행착오와 스스로도 민망했던 실수까지 솔직하게 담은 경험담 형식으로 쓰였다. 필자는 자바 레코드가 불변 데이터 객체를 다루기에는 더 투명하고 안전하지만, 가변성이 필요하거나 빌더 패턴 같은 고급 기능이 필요한 경우에는 여전히 롬복이 쓸모 있다는 균형 잡힌 결론을 제시한다.</p>
+</div>
+<p class="notice">이 페이지는 Medium Daily Digest에 소개된 글을 한국어로 간단히 요약한 것입니다. 저작권 보호를 위해 전문 번역은 싣지 않으며, 전문은 위 '원문' 링크에서 확인하세요.</p>
+</body>
+</html>
