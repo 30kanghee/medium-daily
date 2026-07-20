@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stop Designing REST APIs Like a Mid-Level Dev: 4 Advanced Patterns Senior Engineers Use Instead</title>
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  .backlink{display:inline-block;margin-bottom:18px;color:#1a73e8;text-decoration:none;font-size:.95em;}
+  .note{color:#999;font-size:.85em;margin-top:2em;border-top:1px solid #eee;padding-top:1em;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+</style>
+</head><body>
+<a class="backlink" href="index.html">&larr; 목록으로</a>
+<h1>Stop Designing REST APIs Like a Mid-Level Dev: 4 Advanced Patterns Senior Engineers Use Instead</h1>
+<div class="meta">HabibWahid · Stackademic · 8 min · <a href="https://medium.com/@habib11wahid/stop-designing-rest-apis-like-a-mid-level-dev-4advanced-patterns-senior-engineers-use-instead-c8ecbd116b27" target="_blank" rel="noopener">원문 보기 (Medium)</a></div>
+<div class="summary">
+  <h3>요약</h3>
+  <p class="oneline">미들레벨 개발자의 REST API와 시니어의 API를 가르는 건 결제 재시도, 동시 수정, 폐기 전략 같은 디테일이다.</p>
+  <p>이 글은 한 프린서플 엔지니어가 던진 질문, 즉 결제 요청이 실패해 재시도되면 어떻게 되는지, 두 클라이언트가 같은 레코드를 동시에 수정하면 어떻게 되는지, 엔드포인트를 폐기할 때 클라이언트에게 무엇을 알려줄지에서 출발한다. 저자는 이런 질문에 답하지 못하는 설계가 바로 미들레벨 개발자 수준에 머무는 이유라고 지적한다. 첫 번째 패턴은 멱등성으로, 결제처럼 부수효과가 있는 POST 요청에는 Idempotency-Key를 부여하고 서버에서 중복 요청을 걸러내야 한다고 설명한다. 두 번째로 스트라이프의 이중 버전 관리 방식을 예로 들어, URL에는 메이저 버전만 노출하되 API 키마다 날짜 기반 버전을 고정시켜 기존 클라이언트가 안전하게 옛 버전을 계속 쓸 수 있게 하는 전략을 소개한다. 마지막으로 오프셋 기반 페이지네이션은 실시간으로 바뀌는 데이터에 취약하므로, 커서 기반 페이지네이션으로 이를 해결해야 한다고 강조한다.</p>
+</div>
+<hr>
+<p class="note">이 페이지는 원문 전체가 아닌 요약입니다. 저작권 보호를 위해 전문 번역 대신 핵심 내용만 한국어로 정리했습니다. 전체 내용은 위 원문 링크에서 확인하세요.</p>
+</body></html>
