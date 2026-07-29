@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docker Is Dead Weight — I Rebuilt Our Pipeline Without It and Cut Costs 60%</title>
+
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  .note{color:#999;font-size:.82em;margin-top:2em;}
+</style>
+
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Docker Is Dead Weight — I Rebuilt Our Pipeline Without It and Cut Costs 60%</h1>
+<div class="meta">Ark Protocol · 4 min read<br><a href="https://medium.com/@ArkProtocol1/docker-is-dead-weight-i-rebuilt-our-pipeline-without-it-and-cut-costs-60-d45aceb0a591" target="_blank" rel="noopener">원문 보기 (Medium)</a></div>
+<div class="summary">
+<h3>요약</h3>
+<p class="oneline">도커 이미지를 매번 처음부터 다시 빌드하는 파이프라인은 결국 아무도 쓰지 않는 컨테이너에 매달 수천 달러를 쏟아붓는 구조였다.</p>
+<p>저자의 팀은 파이썬 API, Node.js 워커, Go 바이너리로 구성된 세 개 서비스를 각각 별도의 Dockerfile로 관리했는데, 설정 파일 한 줄만 고쳐도 대규모 기능 배포와 똑같이 이미지를 처음부터 다시 빌드해야 했다. 이 때문에 하루 15~20회씩 커밋하는 3인 팀 기준으로 매일 3시간 넘는 시간이 순전히 컨테이너 빌드 대기에만 소모되고 있었다. 비용을 항목별로 뜯어보니 CI 러너 사용료, 1.8GB짜리 이미지를 매번 주고받는 데이터 전송료, 그리고 몇 달째 배포되지 않은 이미지 버전들이 쌓여 있는 저장 비용까지 합쳐 매달 4200달러가 새어나가고 있었다. 저자는 이를 당연하게 여기던 팀의 관행에 의문을 던지며 도커 중심 파이프라인을 걷어내는 재설계에 나섰고, 그 결과 파이프라인 비용을 60% 절감했다고 밝힌다.</p>
+</div>
+
+<p class="note">전문 번역이 아닌 요약만 제공합니다. 전체 내용은 원문 링크에서 확인하세요.</p>
+</body>
+</html>
