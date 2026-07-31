@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jackson 3 Is Here: The Biggest JSON Upgrade Java Has Seen in Years</title>
+
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  .note{color:#999;font-size:.82em;margin-top:2em;}
+</style>
+
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>Jackson 3 Is Here: The Biggest JSON Upgrade Java Has Seen in Years</h1>
+<div class="meta">Umesh Kumar Yadav · 6 min read<br><a href="https://medium.com/@umeshcapg/jackson-3-is-here-the-biggest-json-upgrade-java-has-seen-in-years-c35d9062873b" target="_blank" rel="noopener">원문 보기 (Medium)</a></div>
+<div class="summary">
+<h3>요약</h3>
+<p class="oneline">8년 만에 나온 잭슨3는 편의성 대신 불변성과 성능을 택하며 자바 JSON 생태계를 통째로 갈아엎었다.</p>
+<p>스프링 부트4로 업그레이드한 개발자들이 겪는 컴파일 오류와 런타임 예외의 주범은 대부분 잭슨3로의 전환이다. 잭슨3는 자바17을 최소 요구사항으로 못 박고 패키지 경로를 com.fasterxml.jackson에서 tools.jackson으로 바꾸는 등 하위 호환성보다 현대적 설계를 우선했다. 가장 큰 변화는 ObjectMapper가 더 이상 가변 객체가 아니라 빌더로 생성한 뒤 잠기는 불변 객체가 되어 스레드 안전성을 보장한다는 점이며, JSON·YAML·XML마다 전용 매퍼 클래스를 쓰도록 강제한다. 예외 체계도 체크 예외에서 언체크 예외인 JacksonException 중심으로 재편됐고, 날짜를 타임스탬프 대신 ISO-8601 문자열로 출력하는 등 기본 설정도 대거 바뀌어 기존 애플리케이션이 예상치 못한 곳에서 깨질 수 있다. 다행히 애노테이션 패키지는 그대로 유지돼 잭슨2와 잭슨3를 한 프로젝트 안에서 병행하며 점진적으로 마이그레이션할 수 있다.</p>
+</div>
+
+<p class="note">전문 번역이 아닌 요약만 제공합니다. 전체 내용은 원문 링크에서 확인하세요.</p>
+</body>
+</html>

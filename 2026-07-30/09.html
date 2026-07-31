@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDD, Kent Beck, and Martin Fowler: Why Spec-Anchored Development Wins</title>
+
+<style>
+  body{max-width:760px;margin:0 auto;padding:32px 20px 80px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;color:#222;background:#fff;font-size:18px;}
+  h1{font-size:1.9em;line-height:1.3;margin:.2em 0 .4em;}
+  h2{font-size:1.4em;margin:1.8em 0 .5em;border-bottom:1px solid #eee;padding-bottom:.2em;}
+  h3{font-size:1.15em;margin:1.4em 0 .4em;}
+  .meta{color:#666;font-size:.9em;margin-bottom:1.2em;} .meta a{color:#1a73e8;text-decoration:none;}
+  .summary{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;padding:18px 22px;margin:1.2em 0;}
+  .summary h3{margin-top:0;} .summary .oneline{font-weight:600;color:#111;}
+  figure{margin:1.5em 0;text-align:center;} figure img{max-width:100%;height:auto;border-radius:8px;}
+  figcaption{color:#888;font-size:.85em;margin-top:.5em;} img{max-width:100%;height:auto;}
+  pre{background:#0d1117;color:#e6edf3;padding:16px;border-radius:8px;overflow-x:auto;font-size:.82em;line-height:1.5;}
+  p code,li code{background:#f0f0f0;color:#c7254e;padding:.1em .35em;border-radius:4px;font-size:.88em;}
+  blockquote{border-left:4px solid #ddd;margin:1.2em 0;padding:.2em 1em;color:#555;}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.8em 0;}
+  .note{color:#999;font-size:.82em;margin-top:2em;}
+</style>
+
+</head>
+<body>
+<a href="index.html" style="color:#1a73e8;text-decoration:none;font-size:.9em;">← 목록으로</a>
+<h1>SDD, Kent Beck, and Martin Fowler: Why Spec-Anchored Development Wins</h1>
+<div class="meta">Jaroslaw Wasowski · Level Up Coding · 10 min read<br><a href="https://medium.com/@wasowski.jarek/sdd-kent-beck-and-martin-fowler-why-spec-anchored-development-wins-a4c838d5be11" target="_blank" rel="noopener">원문 보기 (Medium)</a></div>
+<div class="summary">
+<h3>요약</h3>
+<p class="oneline">켄 벡과 마틴 파울러가 저격한 것은 스펙 자체가 아니라 구현 전에 스펙을 얼려버리는 습관이다.</p>
+<p>스펙 주도 개발(SDD)이 &#x27;바이브 코딩&#x27;의 대안으로 떠올랐지만, 익스트림 프로그래밍의 창시자인 켄 벡과 마틴 파울러가 구현 전에 명세 전체를 확정짓는 방식을 비판했고 소트웍스 레이더 역시 SDD를 관망 단계로 분류하며 안티패턴 회귀를 경고했다는 내용을 다룬다. 저자는 이 비판이 스펙 작성 자체가 아니라 구현 과정에서 얻는 새로운 배움을 반영하지 못하는 &#x27;얼어붙은 스펙&#x27;을 겨냥한 것이라며, 스펙을 아예 없애기(사실 우선), 미리 완전히 확정하기(경직된 SDD), 코드를 스펙에서 자동 생성하기(스펙 소스화) 사이의 중간 지점인 &#x27;스펙 앵커드&#x27;가 정답이라고 주장한다. 실제 실험에서는 경직된 SDD가 간단한 기능 하나에도 수천 줄의 문서를 만들어내며 시간을 낭비했고, 대규모 레거시 코드베이스에서는 개발자들이 체감상 20% 빨라졌다고 느꼈지만 실제로는 19% 느려졌다는 조사 결과도 소개된다. 저자는 큰 규모의 브라운필드 작업에는 살아있는 스펙을 코드 옆에 유지하며 테스트로 동기화를 검증하는 방식을, 작은 수정에는 무거운 스펙 없이, 동시성처럼 중요한 부분에는 TLA+ 같은 정형 명세를 선택적으로 적용하라고 제안하며, 결국 어떤 방식이든 린터·테스트·타입 체커 같은 피드백 장치 없이는 스펙과 코드가 어긋난다고 강조한다.</p>
+</div>
+
+<p class="note">전문 번역이 아닌 요약만 제공합니다. 전체 내용은 원문 링크에서 확인하세요.</p>
+</body>
+</html>
